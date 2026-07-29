@@ -97,6 +97,7 @@ COPY --chown=kullanici data/global_location.py  data/global_location.py
 COPY --chown=kullanici data/open_meteo.py       data/open_meteo.py
 COPY --chown=kullanici data/soilgrids_wcs.py    data/soilgrids_wcs.py
 COPY --chown=kullanici data/one_cikan.py        data/one_cikan.py
+COPY --chown=kullanici data/gaez_lookup.py      data/gaez_lookup.py
 
 # ONBELLEK IMAJIN ICINE GIRIYOR (155 dosya / 463 KB). Ucretsiz barindirmada
 # disk kalici degil: Space uykudan kalkinca calisma anindaki onbellek silinir.
