@@ -141,7 +141,11 @@ def get_monthly_climate(lat: float, lon: float, yil: int = 30, timeout: int = 60
         try:
             kayit = json.loads(onb.read_text(encoding="utf-8"))
             yas = (date.today() - date.fromisoformat(kayit["_tarih"])).days
-            if yas <= ONBELLEK_TTL_GUN:
+            # ALAN KONTROLU: onbellek dosyasi eski SURUMDEN kalmis olabilir.
+            # "yillik_ekstrem_min" sonradan eklendi; sadece tarihe bakip donseydik
+            # eski kayitlar bu alan olmadan gelir, oneri motoru da onu None gorup
+            # don elemesini SESSIZCE atlardi. Alan yoksa kayit bayattir.
+            if yas <= ONBELLEK_TTL_GUN and "yillik_ekstrem_min" in kayit:
                 return {k: v for k, v in kayit.items() if k != "_tarih"}
         except Exception:
             pass   # bozuk onbellek sorun degil, yeniden sorulur
@@ -165,6 +169,7 @@ def get_monthly_climate(lat: float, lon: float, yil: int = 30, timeout: int = 60
     sic_min: list[list[float]] = [[] for _ in range(12)]
     yag: list[dict[int, float]] = [{} for _ in range(12)]   # ay -> {yil: toplam}
     mutlak_min: float | None = None
+    yil_min: dict[int, float] = {}      # yil -> o yilin en dusuk gunluk minimumu
     yillar: set[int] = set()
 
     for i, t in enumerate(tarihler):
@@ -175,6 +180,8 @@ def get_monthly_climate(lat: float, lon: float, yil: int = 30, timeout: int = 60
         if i < len(minler) and minler[i] is not None:
             sic_min[ay].append(minler[i])
             mutlak_min = minler[i] if mutlak_min is None else min(mutlak_min, minler[i])
+            onceki = yil_min.get(y)
+            yil_min[y] = minler[i] if onceki is None else min(onceki, minler[i])
         if i < len(yagislar) and yagislar[i] is not None:
             yag[ay][y] = yag[ay].get(y, 0.0) + yagislar[i]
 
@@ -187,6 +194,21 @@ def get_monthly_climate(lat: float, lon: float, yil: int = 30, timeout: int = 60
         "ay_yagis": ay_yagis,
         "yillik_yagis": round(sum(v for v in ay_yagis if v is not None), 1),
         "mutlak_min": round(mutlak_min, 1) if mutlak_min is not None else None,
+        # HER YILIN en soguk gecesinin ORTALAMASI. USDA dayaniklilik bolgesi
+        # tam olarak boyle tanimlidir ve bahcecilik esikleri (bir turun "-25 C'ye
+        # dayanir" denmesi) bu istatistige goredir.
+        #
+        # NEDEN AYRI BIR ALAN: eleme once mutlak_min ile yapiliyordu, yani 31
+        # yilin REKOR gecesiyle. Olctuk (Bursa Hasanaga): rekor -13.5 C, ama
+        # yillarin en soguk gecelerinin ortalamasi -8.0 C. Aradaki 5.5 C fark
+        # enginari, zeytini ve incir gibi urunleri haksiz yere eliyordu. Rekor
+        # gece 31 yilda bir yasanan bir olay; esikler ise ortalamaya gore
+        # kalibre edilmis. Iki istatistigi karsilastirmak olcu hatasiydi.
+        #
+        # mutlak_min SILINMEDI: rekor soguk hala gercek bir risk ve kullaniciya
+        # UYARI olarak gosteriliyor. Sadece artik ELEME onunla yapilmiyor.
+        "yillik_ekstrem_min": (round(sum(yil_min.values()) / len(yil_min), 1)
+                               if yil_min else None),
         "yil_sayisi": len(yillar),
     }
     onb.parent.mkdir(parents=True, exist_ok=True)

@@ -74,6 +74,57 @@ AGIRLIK = {"sicaklik": 1.0, "yagis": 0.9, "ph": 0.6, "doku": 0.4}
 SOGUKLAMA_KTMPR_ESIK = -10.0
 SOGUKLAMA_AY_ESIK = 10.0
 
+# VEJETASYON DONEMI: cok yillik urunun sicakligi hangi aylarin ortalamasiyla
+# olculur. Esik YERE aittir, URUNE degil - bu ayrim kritik.
+#
+# NEDEN DEGISTI: onceden pencereyi urunun KENDI TMIN'i belirliyordu
+# ("ortalamasi TMIN ustunde olan aylar"). Bu olcut donguseldi ve urunu kendi
+# dayanikliligi yuzunden cezalandiriyordu. Bursa Hasanaga'da olctuk:
+#   Seftali TMIN=7  -> 10 ay pencere -> ortalama 16.3 C -> uyum 0.72
+#   Dut     TMIN=13 ->  6 ay pencere -> ortalama 20.7 C -> uyum 1.00
+# Yani seftali mart (8.4 C) ve aralik (7.2 C) aylarini ortalamaya almak zorunda
+# kaldigi icin dustu; dut ise yuksek TMIN'i sayesinde sadece yazi aldi ve tam
+# puan cekti. Ayni sebeple zeytin 12 ay pencereyle 14.6 C alip 0.64'e dusuyordu.
+# Ozetle soguga dayanikli tur ne kadar dayanikliysa o kadar cezalaniyordu.
+#
+# NEDEN 10 C: agroklimatolojide "aktif vejetasyon donemi" gunluk/aylik ortalama
+# sicakligin 10 C'yi astigi donem olarak tanimlanir; odunsu turlerin surgun ve
+# meyve gelisimi pratikte bu esigin ustunde olur. 5 C esigi de denendi ve
+# olculdu: Rovaniemi'de elma 1.00'dan 0.62'ye, Erzurum'da kiraz 0.88'den
+# 0.67'ye dusuyor, yani kar altindaki omuz aylari ortalamayi yine kirletiyor.
+#
+# GERILEME KONTROLU: tropikte 12 ayin hepsi zaten 10 C ustunde oldugu icin
+# pencere degismez. Daha once dogrulanmis Pencap ve Nakuru sonuclarinin
+# TAMAMI aynen korundu (olculdu, tek bir uyum degeri bile oynamadi).
+#
+# HIC AY YOKSA: pencere 12 aya duser ve ortalama eksiye iner, urun elenir.
+# Bu kasitlidir; ortalamasi hicbir ay 10 C'yi bulmayan yerde cok yillik
+# meyvecilik zaten yapilamaz.
+VEJETASYON_ESIK = 10.0
+
+# EKIM PENCERESI: bir urun icin 12 ekim ayinin hepsi zaten puanlaniyor ama
+# sadece EN IYISI saklanip gerisi atiliyordu. Ciftcinin sordugu soru ise
+# "simdi ne ekebilirim, bunu ekmek icin ne zaman beklemeliyim" oldugu icin
+# tum uygun aylari saklamaya basladik.
+#
+# ESIK NEDEN 0.90: en iyi ekim ayindan en fazla yuzde 10 puan kaybettiren
+# aylar sayiliyor. Oran uydurulmadi, olculdu. Bursa ve Antalya'da 10 urun
+# icin 0.90 ve 0.80 karsilastirildi:
+#   0.90 -> 3 ile 8 ay arasi pencere. Bursa pamugu Nisan-Haziran, Bursa
+#           ispanagi Nisan-Haziran + Eylul-Kasim (iki ayri sezon dogru
+#           ayrisiyor), Antalya ispanagi Ekim-Aralik. Hepsi gercek takvimle
+#           ortusuyor.
+#   0.80 -> Antalya nohudu 10 ay cikiyor, yani "her zaman ekilir" demeye
+#           varan bir pencere. Bilgi tasimiyor.
+#
+# BU BIR EKIM TAKVIMI DEGILDIR, bunu arayuzde de yaziyoruz. Pencere yalnizca
+# SICAKLIK uygunlugudur. EcoCrop'ta vernalizasyon (kislik bugdayin sogukla
+# uyari kirmasi) ve gun uzunlugu alani yoktur. Olctuk ve gorunur oldu: model
+# Bursa'da bugdayi Temmuz ekimi icin 98 puanla uygun buluyor; uc aylik pencere
+# termik olarak gercekten uygun ama Bursa bugdayi Ekim'de ekilir. Bu sinirlama
+# gizlenmiyor, kullaniciya soyleniyor.
+EKIM_PENCERE_ORAN = 0.90
+
 # SULAMA: su AZLIGI giderilebilir, su FAZLALIGI giderilemez.
 # EcoCrop yagmura dayali (rainfed) potansiyeli olcer. Olctuk, bu varsayim testte
 # dogrudan hataya donusuyor:
@@ -143,6 +194,18 @@ def _merkezlik(x: float, band: dict) -> float:
     uygundur; skoru degistirmek modeli kaynagindan saptirir. Sadece IKINCIL SIRALAMA
     anahtari olarak kullaniyoruz: esit skorlu urunler arasinda bandin ortasinda
     olan one gecer. Skorun anlami bozulmaz, siralama bilgilendirici olur.
+
+    SKORA KATMA SECENEGI OLCULDU VE REDDEDILDI. Denenen bicim: uyum degerini
+    (taban + (1-taban)*merkezlik) ile carpmak. Beraberlikleri gercekten bitiriyor
+    (Bursa'da tam 100 alan urun sayisi 10'dan 0'a dusuyor) ama bedeli agir:
+    carpan optimum duzlugun DISINDA kalan degerlere de uygulanmak zorunda, yoksa
+    band kenarinda sureksizlik olusup band disindaki bir urun band icindekinden
+    yuksek puan alabiliyor. Sonuc olarak sinirda olan gercek urunler cezalaniyor:
+    taban=0.85 ile Bursa zeytini 46. siradan 68. siraya dustu. Zeytin Bursa'da
+    gercekten yetisen bir urun, onu asagi itmek yeni bir hata olurdu.
+    Bu yuzden merkezlik skora KATILMIYOR, ARAYUZDE AYRICA GOSTERILIYOR:
+    ayni puani alan urunler arasinda hangisinin bandin ortasinda hangisinin
+    kenarinda oldugunu ciftci kendi goruyor.
     """
     omin, omax = band["opt_min"], band["opt_max"]
     if omin is None or omax is None:
@@ -284,26 +347,25 @@ def urun_oner(soil: SoilData, iklim: dict, adet: int = 10,
 
         if cok_yillik:
             # Cok yillik urun ekim ayi secmez ama yilin 12 ayi da BUYUMEZ.
-            # Sicakligi yillik ortalamayla puanlamak Akdeniz ve iliman iklimde
-            # agaclari haksiz yere dusuruyordu (Antalya zeytini yillik 19.4 C ile
-            # 0.96 aliyor, oysa buyume donemi Nisan-Ekim ortalamasi ~24 C ve tam
-            # optimumda). EcoCrop'un TMIN'i "altinda buyume durur" esigidir; bu
-            # yuzden aktif buyume aylari = ortalama sicakligi TMIN'in ustunde
-            # olan aylar. Hic yoksa urun zaten o yerde buyuyemez.
-            tmin = urun["sicaklik"]["min"]
+            # Sicakligi yillik ortalamayla puanlamak agaclari haksiz yere
+            # dusuruyordu (Antalya zeytini yillik 19.4 C ile 0.96 aliyor, oysa
+            # buyume donemi ortalamasi tam optimumda). Pencereyi VEJETASYON
+            # DONEMI belirler; esik urune degil yere aittir (bkz VEJETASYON_ESIK).
             aktif = [a for a in range(12)
                      if iklim["ay_sicaklik"][a] is not None
-                     and iklim["ay_sicaklik"][a] >= tmin]
+                     and iklim["ay_sicaklik"][a] >= VEJETASYON_ESIK]
             adaylar = [(0, aktif or list(range(12)))]
         else:
             uz = _dongu_ay(urun)
             adaylar = [(b, _pencere(b, uz)) for b in range(12)]
 
         en_iyi = None
+        ay_skor: dict[int, float] = {}
         for basla, aylar in adaylar:
             skor, merkez, faktorler, don, acik = _skor_pencere(urun, aylar, iklim, soil)
             if don is not None:
                 skor = 0.0          # EcoCrop'ta don eleyicidir
+            ay_skor[basla] = skor
             # Esit skorlu pencereler arasinda bandin ortasinda olani sec: 12 ekim
             # ayinin bircogu ayni 100.0'i verdiginde aksi halde hep Ocak seciliyordu.
             if en_iyi is None or (skor, merkez) > (en_iyi[0], en_iyi[1]):
@@ -311,6 +373,13 @@ def urun_oner(soil: SoilData, iklim: dict, adet: int = 10,
         if en_iyi is None:
             continue
         skor, merkez, faktorler, don, su_acigi, basla, aylar = en_iyi
+
+        # Cok yilliklar icin BOS birakiliyor ve bu kasitli. Agac/asma ekilmez,
+        # fidan dikilir; dikim zamani (genelde kis dinlenmesi) EcoCrop'ta yok ve
+        # uydurmuyoruz. Tek yilliklarda ise pencere gercek bir hesaptir.
+        ekim_aylari = ([AYLAR[b] for b, v in sorted(ay_skor.items())
+                        if v > 0 and v >= EKIM_PENCERE_ORAN * skor]
+                       if not cok_yillik and skor > 0 else [])
 
         uyarilar: list[str] = []
         if don:
@@ -322,15 +391,34 @@ def urun_oner(soil: SoilData, iklim: dict, adet: int = 10,
                 f"altında, yani dekara {su_acigi:.0f} ton su/yıl."
             )
 
-        # Cok yillik urunun kisi tarlada gecirmesi gerekir; olculen mutlak
-        # minimum, kis dayanma sinirinin altindaysa urun o yerde yasayamaz.
+        # Cok yillik urunun kisi tarlada gecirmesi gerekir. ELEME OLCUTU, yillarin
+        # en soguk gecelerinin ORTALAMASIDIR; 31 yilin REKOR gecesi degil.
+        #
+        # NEDEN DEGISTI: onceden rekor gece kullaniliyordu. Olctuk (Bursa
+        # Hasanaga): rekor -13.5 C ama yillik ekstrem ortalamasi -8.0 C. Urun
+        # esikleri (bir turun "-25 C'ye dayanir" denmesi) USDA dayaniklilik
+        # bolgesi tanimina gore, yani ORTALAMAYA gore verilir. Rekoru esikle
+        # karsilastirmak iki farkli istatistigi karsilastirmakti ve enginar,
+        # zeytin, incir gibi urunleri haksiz yere eliyordu.
         kis_esik = urun.get("don_dinlenme_c")
+        ekstrem = iklim.get("yillik_ekstrem_min")
         mutlak = iklim.get("mutlak_min")
-        if cok_yillik and kis_esik is not None and mutlak is not None and mutlak < kis_esik:
+        if cok_yillik and kis_esik is not None and ekstrem is not None and ekstrem < kis_esik:
             skor = 0.0
             uyarilar.append(
-                f"Kış dayanıklılığı yetersiz: ölçülen en düşük {mutlak:.1f} C, "
-                f"ürünün sınırı {kis_esik:.0f} C. Örtü altı olmadan yaşamaz."
+                f"Kış dayanıklılığı yetersiz: yılların en soğuk gecesi ortalama "
+                f"{ekstrem:.1f} C, ürünün sınırı {kis_esik:.0f} C. "
+                f"Örtü altı olmadan yaşamaz."
+            )
+        # Elenmedi ama rekor soguk esigin altindaysa bu hala gercek bir risk:
+        # agac o yil olmez, ama bir kere olur ve yatirim gider. Elemiyoruz,
+        # SOYLUYORUZ; karar ciftcinin.
+        elif (cok_yillik and kis_esik is not None and mutlak is not None
+              and mutlak < kis_esik):
+            uyarilar.append(
+                f"Nadir don riski: normal kışlar bu ürün için sorun değil, ancak "
+                f"son {iklim.get('yil_sayisi', 30)} yılda bir kez {mutlak:.1f} C "
+                f"ölçülmüş ve ürünün sınırı {kis_esik:.0f} C. O yıl ağaç zarar görür."
             )
 
         # Soguklama: ilik iklim meyvesi ise ve o yerde kis yoksa uyar (elemez).
@@ -359,6 +447,7 @@ def urun_oner(soil: SoilData, iklim: dict, adet: int = 10,
             "cok_yillik": cok_yillik,
             "ekim_ayi": None if cok_yillik else AYLAR[basla],
             "hasat_ayi": None if cok_yillik else AYLAR[aylar[-1]],
+            "ekim_aylari": ekim_aylari,
             "faktorler": faktorler,
             "uyarilar": uyarilar,
             "sezon": urun.get("sezon", ""),

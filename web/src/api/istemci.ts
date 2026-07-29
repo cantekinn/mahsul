@@ -73,7 +73,11 @@ export const api = {
   toprak: (lat: number, lon: number) => al<Toprak>("/toprak", { lat, lon }),
   parseller: (lat: number, lon: number, yaricap_m = 1500) =>
     al<Parseller>("/parseller", { lat, lon, yaricap_m }),
-  oneri: (lat: number, lon: number, adet = 12) =>
+  // ADET NEDEN 12 DEGIL: liste artik uc bolume ayriliyor (simdi ekilebilir,
+  // baska mevsimde, cok yillik). 12 urunle Bursa'da "baska mevsimde" bolumu
+  // bos cikiyordu, cunku ilk 12'nin hepsi zaten simdi ekilebilir olanlardi;
+  // yani bolum var ama icerigi yok gibi gorunuyordu. 60 ile ucu de doluyor.
+  oneri: (lat: number, lon: number, adet = 60) =>
     al<OneriKumesi>("/oneri", { lat, lon, adet }),
   rastgele: () => al<Konum>("/rastgele"),
   kisayollar: () => al<Kisayol[]>("/kisayollar"),

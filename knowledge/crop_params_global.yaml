@@ -802,8 +802,8 @@ seftali:
   dongu_gun: {min: 240, max: 270}
   cok_yillik: true
   don_buyume_c: -5
-  don_dinlenme_c: -5
-  don_dinlenme_kaynak: "ecocrop"
+  don_dinlenme_c: -25
+  don_dinlenme_kaynak: "duzeltme"
   sezon: "240-270 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -5 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -818,8 +818,8 @@ kayisi:
   dongu_gun: {min: 180, max: 240}
   cok_yillik: true
   don_buyume_c: -1
-  don_dinlenme_c: -5
-  don_dinlenme_kaynak: "ecocrop"
+  don_dinlenme_c: -29
+  don_dinlenme_kaynak: "duzeltme"
   sezon: "180-240 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -834,8 +834,8 @@ kiraz:
   dongu_gun: {min: 180, max: 240}
   cok_yillik: true
   don_buyume_c: 0
-  don_dinlenme_c: -3
-  don_dinlenme_kaynak: "ecocrop"
+  don_dinlenme_c: -27
+  don_dinlenme_kaynak: "duzeltme"
   sezon: "180-240 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -3 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -850,8 +850,8 @@ visne:
   dongu_gun: {min: 180, max: 240}
   cok_yillik: true
   don_buyume_c: -4
-  don_dinlenme_c: -10
-  don_dinlenme_kaynak: "ecocrop"
+  don_dinlenme_c: -28
+  don_dinlenme_kaynak: "duzeltme"
   sezon: "180-240 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -4 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -10 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -866,8 +866,8 @@ erik:
   dongu_gun: {min: 180, max: 210}
   cok_yillik: true
   don_buyume_c: -2
-  don_dinlenme_c: -10
-  don_dinlenme_kaynak: "ecocrop"
+  don_dinlenme_c: -26
+  don_dinlenme_kaynak: "duzeltme"
   sezon: "180-210 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -2 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -10 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1103,8 +1103,8 @@ findik:
   dongu_gun: {min: 150, max: 210}
   cok_yillik: true
   don_buyume_c: -3
-  don_dinlenme_c: -10
-  don_dinlenme_kaynak: "ecocrop"
+  don_dinlenme_c: -25
+  don_dinlenme_kaynak: "duzeltme"
   sezon: "150-210 günlük yetişme dönemi"
   notlar: "Grup: sert kabuklu. Erken gelişme/çiçek döneminde -3 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -10 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1135,8 +1135,8 @@ badem:
   dongu_gun: {min: 150, max: 240}
   cok_yillik: true
   don_buyume_c: -1
-  don_dinlenme_c: -5
-  don_dinlenme_kaynak: "ecocrop"
+  don_dinlenme_c: -18
+  don_dinlenme_kaynak: "duzeltme"
   sezon: "150-240 günlük yetişme dönemi"
   notlar: "Grup: sert kabuklu. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1384,3 +1384,374 @@ serbetciotu:
   don_dinlenme_kaynak: "elle"
   sezon: "150-210 günlük yetişme dönemi"
   notlar: "Grup: endüstriyel. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+enginar:
+  ad: "Enginar"
+  bilimsel_ad: "Cynara scolymus"
+  grup: "sebze"
+  ph: {min: 5.5, opt_min: 6, opt_max: 6.5, max: 8.3}
+  sicaklik: {min: 5, opt_min: 15, opt_max: 25, max: 30}
+  yagis_mm: {min: 300, opt_min: 900, opt_max: 1200, max: 1500}
+  doku: [tin, siltli_tin, killi_tin, kumlu_tin, kum]
+  dongu_gun: {min: 210, max: 270}
+  cok_yillik: true
+  don_buyume_c: 0
+  don_dinlenme_c: -10
+  don_dinlenme_kaynak: "duzeltme"
+  sezon: "210-270 günlük yetişme dönemi"
+  notlar: "Grup: sebze. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık 1 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+kereviz:
+  ad: "Kereviz"
+  bilimsel_ad: "Apium graveolens"
+  grup: "sebze"
+  ph: {min: 5.5, opt_min: 6, opt_max: 6.8, max: 7.5}
+  sicaklik: {min: 5, opt_min: 15, opt_max: 21, max: 25}
+  yagis_mm: {min: 500, opt_min: 700, opt_max: 1300, max: 1500}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 40, max: 150}
+  cok_yillik: false
+  sezon: "40-150 günlük yetişme dönemi"
+  notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa dayanıklı."
+
+pazi:
+  ad: "Pazı"
+  bilimsel_ad: "Beta vulgaris var. cicla"
+  grup: "sebze"
+  ph: {min: 5.5, opt_min: 6, opt_max: 6.5, max: 8.3}
+  sicaklik: {min: 5, opt_min: 15, opt_max: 25, max: 35}
+  yagis_mm: {min: 500, opt_min: 800, opt_max: 800, max: 1000}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 50, max: 150}
+  cok_yillik: false
+  sezon: "50-150 günlük yetişme dönemi"
+  notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+hindiba:
+  ad: "Hindiba"
+  bilimsel_ad: "Cichorium intybus"
+  grup: "sebze"
+  ph: {min: 4.5, opt_min: 6, opt_max: 7.5, max: 8.3}
+  sicaklik: {min: 6, opt_min: 10, opt_max: 30, max: 35}
+  yagis_mm: {min: 300, opt_min: 1500, opt_max: 2500, max: 4000}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 90, max: 330}
+  cok_yillik: true
+  don_buyume_c: -1
+  don_dinlenme_c: -25
+  don_dinlenme_kaynak: "duzeltme"
+  sezon: "90-330 günlük yetişme dönemi"
+  notlar: "Grup: sebze. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
+
+kuskonmaz:
+  ad: "Kuşkonmaz"
+  bilimsel_ad: "Asparagus officinalis"
+  grup: "sebze"
+  ph: {min: 4.5, opt_min: 6, opt_max: 6.7, max: 8.2}
+  sicaklik: {min: 6, opt_min: 15, opt_max: 30, max: 38}
+  yagis_mm: {min: 500, opt_min: 800, opt_max: 1200, max: 4000}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 210, max: 270}
+  cok_yillik: true
+  don_buyume_c: -1
+  don_dinlenme_c: -30
+  don_dinlenme_kaynak: "duzeltme"
+  sezon: "210-270 günlük yetişme dönemi"
+  notlar: "Grup: sebze. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+rezene:
+  ad: "Rezene"
+  bilimsel_ad: "Foeniculum vulgare"
+  grup: "sebze"
+  ph: {min: 4.8, opt_min: 6.5, opt_max: 7.5, max: 8.2}
+  sicaklik: {min: 6, opt_min: 15, opt_max: 25, max: 32}
+  yagis_mm: {min: 300, opt_min: 700, opt_max: 1500, max: 2600}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 30, max: 110}
+  cok_yillik: true
+  don_buyume_c: -2
+  don_dinlenme_c: -15
+  don_dinlenme_kaynak: "duzeltme"
+  sezon: "30-110 günlük yetişme dönemi"
+  notlar: "Grup: sebze. Erken gelişme/çiçek döneminde -2 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+yaban_havucu:
+  ad: "Yaban havucu"
+  bilimsel_ad: "Pastinaca sativa"
+  grup: "kök/yumru"
+  ph: {min: 5.8, opt_min: 6, opt_max: 6.8, max: 8.3}
+  sicaklik: {min: 5, opt_min: 15, opt_max: 21, max: 25}
+  yagis_mm: {min: 300, opt_min: 500, opt_max: 800, max: 1100}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 80, max: 150}
+  cok_yillik: false
+  don_buyume_c: -1
+  don_dinlenme_c: -5
+  don_dinlenme_kaynak: "ecocrop"
+  sezon: "80-150 günlük yetişme dönemi"
+  notlar: "Grup: kök/yumru. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+maydanoz:
+  ad: "Maydanoz"
+  bilimsel_ad: "Petroselinum crispum"
+  grup: "baharat/tıbbi"
+  ph: {min: 5.3, opt_min: 6, opt_max: 7.5, max: 8.3}
+  sicaklik: {min: 7, opt_min: 11, opt_max: 20, max: 28}
+  yagis_mm: {min: 300, opt_min: 900, opt_max: 1500, max: 2800}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 70, max: 365}
+  cok_yillik: true
+  don_buyume_c: 0
+  don_dinlenme_c: -10
+  don_dinlenme_kaynak: "duzeltme"
+  sezon: "70-365 günlük yetişme dönemi"
+  notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
+
+dereotu:
+  ad: "Dereotu"
+  bilimsel_ad: "Anethum graveolens"
+  grup: "baharat/tıbbi"
+  ph: {min: 5, opt_min: 6, opt_max: 7, max: 8}
+  sicaklik: {min: 6, opt_min: 15, opt_max: 18, max: 26}
+  yagis_mm: {min: 500, opt_min: 800, opt_max: 1200, max: 1700}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 100, max: 180}
+  cok_yillik: false
+  don_buyume_c: 0
+  don_dinlenme_c: -2
+  don_dinlenme_kaynak: "ecocrop"
+  sezon: "100-180 günlük yetişme dönemi"
+  notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+kisnis:
+  ad: "Kişniş"
+  bilimsel_ad: "Coriandrum sativum"
+  grup: "baharat/tıbbi"
+  ph: {min: 4, opt_min: 5.5, opt_max: 7.5, max: 8}
+  sicaklik: {min: 4, opt_min: 15, opt_max: 25, max: 32}
+  yagis_mm: {min: 300, opt_min: 500, opt_max: 1400, max: 2600}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 35, max: 140}
+  cok_yillik: false
+  don_buyume_c: 0
+  don_dinlenme_c: -10
+  don_dinlenme_kaynak: "ecocrop"
+  sezon: "35-140 günlük yetişme dönemi"
+  notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+kimyon:
+  ad: "Kimyon"
+  bilimsel_ad: "Cuminum cyminum"
+  grup: "baharat/tıbbi"
+  ph: {min: 4.5, opt_min: 5, opt_max: 6.5, max: 8.3}
+  sicaklik: {min: 9, opt_min: 17, opt_max: 26, max: 30}
+  yagis_mm: {min: 800, opt_min: 1200, opt_max: 1800, max: 2700}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 60, max: 110}
+  cok_yillik: false
+  sezon: "60-110 günlük yetişme dönemi"
+  notlar: "Grup: baharat/tıbbi. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+cemen:
+  ad: "Çemen otu"
+  bilimsel_ad: "Trigonella foenum-graecum"
+  grup: "baharat/tıbbi"
+  ph: {min: 5.3, opt_min: 7, opt_max: 7.5, max: 8.2}
+  sicaklik: {min: 5, opt_min: 13, opt_max: 27, max: 32}
+  yagis_mm: {min: 380, opt_min: 600, opt_max: 800, max: 1550}
+  doku: [tin, siltli_tin, killi_tin, kumlu_tin, kum]
+  dongu_gun: {min: 60, max: 120}
+  cok_yillik: false
+  don_buyume_c: 0
+  don_dinlenme_c: -15
+  don_dinlenme_kaynak: "ecocrop"
+  sezon: "60-120 günlük yetişme dönemi"
+  notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
+
+nane:
+  ad: "Nane"
+  bilimsel_ad: "Mentha piperita"
+  grup: "baharat/tıbbi"
+  ph: {min: 4.5, opt_min: 5.5, opt_max: 6.5, max: 8.3}
+  sicaklik: {min: 4, opt_min: 15, opt_max: 25, max: 35}
+  yagis_mm: {min: 700, opt_min: 1000, opt_max: 2200, max: 4000}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 40, max: 330}
+  cok_yillik: true
+  don_buyume_c: 0
+  don_dinlenme_c: -30
+  don_dinlenme_kaynak: "duzeltme"
+  sezon: "40-330 günlük yetişme dönemi"
+  notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -8 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+reyhan:
+  ad: "Reyhan (fesleğen)"
+  bilimsel_ad: "Ocimum basilicum"
+  grup: "baharat/tıbbi"
+  ph: {min: 4.3, opt_min: 6, opt_max: 7, max: 8.2}
+  sicaklik: {min: 7, opt_min: 18, opt_max: 27, max: 36}
+  yagis_mm: {min: 600, opt_min: 1000, opt_max: 1600, max: 4300}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 80, max: 270}
+  cok_yillik: false
+  sezon: "80-270 günlük yetişme dönemi"
+  notlar: "Grup: baharat/tıbbi. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+kekik:
+  ad: "Kekik"
+  bilimsel_ad: "Origanum vulgare"
+  grup: "baharat/tıbbi"
+  ph: {min: 4.5, opt_min: 5.5, opt_max: 7, max: 8.7}
+  sicaklik: {min: 4, opt_min: 17, opt_max: 28, max: 32}
+  yagis_mm: {min: 400, opt_min: 700, opt_max: 1300, max: 2700}
+  doku: [kumlu_tin, kum]
+  dongu_gun: {min: 180, max: 300}
+  cok_yillik: true
+  don_buyume_c: 0
+  don_dinlenme_c: -25
+  don_dinlenme_kaynak: "duzeltme"
+  sezon: "180-300 günlük yetişme dönemi"
+  notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+lavanta:
+  ad: "Lavanta"
+  bilimsel_ad: "Lavandula angustifolia"
+  grup: "baharat/tıbbi"
+  ph: {min: 5.8, opt_min: 6.5, opt_max: 7.5, max: 8.3}
+  sicaklik: {min: 7, opt_min: 15, opt_max: 24, max: 28}
+  yagis_mm: {min: 300, opt_min: 500, opt_max: 1000, max: 1300}
+  doku: [tin, siltli_tin, killi_tin, kumlu_tin, kum]
+  dongu_gun: {min: 180, max: 365}
+  cok_yillik: true
+  don_buyume_c: -20
+  don_dinlenme_c: -20
+  don_dinlenme_kaynak: "duzeltme"
+  sezon: "180-365 günlük yetişme dönemi"
+  notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde -20 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -15 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
+
+ayva:
+  ad: "Ayva"
+  bilimsel_ad: "Cydonia oblonga"
+  grup: "meyve"
+  ph: {min: 5.5, opt_min: 6, opt_max: 6.5, max: 7}
+  sicaklik: {min: 7, opt_min: 10, opt_max: 30, max: 35}
+  yagis_mm: {min: 500, opt_min: 700, opt_max: 900, max: 1100}
+  doku: [kil, killi_tin, tin, siltli_tin]
+  dongu_gun: {min: 180, max: 270}
+  cok_yillik: true
+  don_buyume_c: -1
+  don_dinlenme_c: -25
+  don_dinlenme_kaynak: "ecocrop"
+  sezon: "180-270 günlük yetişme dönemi"
+  notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -25 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
+
+dut:
+  ad: "Dut"
+  bilimsel_ad: "Morus alba"
+  grup: "meyve"
+  ph: {min: 4.3, opt_min: 5.5, opt_max: 7.5, max: 8.3}
+  sicaklik: {min: 13, opt_min: 20, opt_max: 28, max: 45}
+  yagis_mm: {min: 300, opt_min: 700, opt_max: 2500, max: 5100}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 180, max: 330}
+  cok_yillik: true
+  don_dinlenme_c: -30
+  don_dinlenme_kaynak: "elle"
+  sezon: "180-330 günlük yetişme dönemi"
+  notlar: "Grup: meyve. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+trabzon_hurmasi:
+  ad: "Trabzon hurması"
+  bilimsel_ad: "Diospyros kaki"
+  grup: "meyve"
+  ph: {min: 5, opt_min: 5.5, opt_max: 6.5, max: 8.3}
+  sicaklik: {min: 8, opt_min: 20, opt_max: 31, max: 35}
+  yagis_mm: {min: 300, opt_min: 1000, opt_max: 1700, max: 3000}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 150, max: 270}
+  cok_yillik: true
+  don_buyume_c: 0
+  don_dinlenme_c: -18
+  don_dinlenme_kaynak: "ecocrop"
+  sezon: "150-270 günlük yetişme dönemi"
+  notlar: "Grup: meyve. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -18 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+bektasi_uzumu:
+  ad: "Bektaşi üzümü"
+  bilimsel_ad: "Ribes uva-crispa"
+  grup: "meyve"
+  ph: {min: 5, opt_min: 6, opt_max: 7, max: 7.5}
+  sicaklik: {min: 3, opt_min: 15, opt_max: 25, max: 40}
+  yagis_mm: {min: 500, opt_min: 900, opt_max: 1300, max: 1700}
+  doku: [kil, killi_tin]
+  dongu_gun: {min: 150, max: 180}
+  cok_yillik: true
+  don_buyume_c: 0
+  don_dinlenme_c: -28
+  don_dinlenme_kaynak: "ecocrop"
+  sezon: "150-180 günlük yetişme dönemi"
+  notlar: "Grup: meyve. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -28 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+aci_bakla:
+  ad: "Acı bakla (termiye)"
+  bilimsel_ad: "Lupinus albus"
+  grup: "baklagil"
+  ph: {min: 4.8, opt_min: 5.5, opt_max: 6.4, max: 8.2}
+  sicaklik: {min: 6, opt_min: 18, opt_max: 24, max: 32}
+  yagis_mm: {min: 360, opt_min: 400, opt_max: 1000, max: 1800}
+  doku: [tin, siltli_tin, killi_tin, kumlu_tin, kum]
+  dongu_gun: {min: 90, max: 180}
+  cok_yillik: false
+  don_buyume_c: -3
+  don_dinlenme_c: -8
+  don_dinlenme_kaynak: "ecocrop"
+  sezon: "90-180 günlük yetişme dönemi"
+  notlar: "Grup: baklagil. Erken gelişme/çiçek döneminde -3 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+ucgul:
+  ad: "Üçgül (kırmızı yonca)"
+  bilimsel_ad: "Trifolium pratense"
+  grup: "yem bitkisi"
+  ph: {min: 4.5, opt_min: 6, opt_max: 7.5, max: 8.2}
+  sicaklik: {min: 4, opt_min: 18, opt_max: 25, max: 40}
+  yagis_mm: {min: 300, opt_min: 700, opt_max: 1200, max: 2100}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 120, max: 300}
+  cok_yillik: false
+  don_buyume_c: 0
+  don_dinlenme_c: -5
+  don_dinlenme_kaynak: "ecocrop"
+  sezon: "120-300 günlük yetişme dönemi"
+  notlar: "Grup: yem bitkisi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+ingiliz_cimi:
+  ad: "İngiliz çimi"
+  bilimsel_ad: "Lolium perenne"
+  grup: "yem bitkisi"
+  ph: {min: 4.5, opt_min: 5, opt_max: 7, max: 8.4}
+  sicaklik: {min: 4, opt_min: 14, opt_max: 25, max: 35}
+  yagis_mm: {min: 500, opt_min: 700, opt_max: 1750, max: 2300}
+  doku: [kil, killi_tin, tin, siltli_tin]
+  dongu_gun: {min: 90, max: 270}
+  cok_yillik: false
+  don_buyume_c: 0
+  don_dinlenme_c: -2
+  don_dinlenme_kaynak: "ecocrop"
+  sezon: "90-270 günlük yetişme dönemi"
+  notlar: "Grup: yem bitkisi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
+
+fig:
+  ad: "Fiğ"
+  bilimsel_ad: "Vicia sativa ssp. nigra"
+  grup: "yem bitkisi"
+  ph: {min: 4.9, opt_min: 6, opt_max: 7, max: 8.2}
+  sicaklik: {min: 4, opt_min: 11, opt_max: 23, max: 28}
+  yagis_mm: {min: 350, opt_min: 600, opt_max: 800, max: 1160}
+  doku: [tin, siltli_tin, killi_tin]
+  dongu_gun: {min: 80, max: 170}
+  cok_yillik: false
+  don_buyume_c: -1
+  don_dinlenme_c: -5
+  don_dinlenme_kaynak: "ecocrop"
+  sezon: "80-170 günlük yetişme dönemi"
+  notlar: "Grup: yem bitkisi. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."

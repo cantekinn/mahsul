@@ -349,6 +349,11 @@ export interface components {
              * @description Elenmeden kalan ürün sayısı
              */
             toplam_uygun: number;
+            /**
+             * Su Anki Ay
+             * @description Sunucunun bulunduğu takvim ayı. Arayüz 'şimdi ekilebilir' ile 'mevsiminde ekilebilir' ayrımını buna göre yapar. Sunucudan gelir çünkü ayrım bir veri sonucudur, kullanıcı cihazının saatine bırakılmamalıdır.
+             */
+            su_anki_ay: string;
             /** Oneriler */
             oneriler: components["schemas"]["OneriYanit"][];
             /** Sure S */
@@ -380,6 +385,17 @@ export interface components {
             ekim_ayi?: string | null;
             /** Hasat Ayi */
             hasat_ayi?: string | null;
+            /**
+             * Ekim Aylari
+             * @description İklim olarak ekilebilir bulunan TÜM aylar: en iyi ekim ayının puanının %90'ından aşağı düşmeyen aylar. Çok yıllıklarda boştur, çünkü ağaç ekilmez fidan dikilir ve dikim zamanı EcoCrop'ta yoktur. Bu bir EKİM TAKVİMİ DEĞİLDİR: yalnızca sıcaklık uygunluğudur, vernalizasyon ve gün uzunluğu hesaba girmez.
+             */
+            ekim_aylari?: string[];
+            /**
+             * Merkezlik
+             * @description Ölçülen değerlerin ürünün optimum aralığının neresinde durduğu: 1.0 tam ortası, 0.0 kenarı. PUANA DAHİL DEĞİLDİR; EcoCrop optimum aralığın içini eşit derecede uygun sayar. Aynı puanı alan ürünleri ayırt etmek içindir.
+             * @default 0
+             */
+            merkezlik: number;
             /**
              * Su Acigi Mm
              * @default 0

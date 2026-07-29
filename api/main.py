@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import os
 import time
+from datetime import date
 
 from pathlib import Path
 
@@ -54,7 +55,7 @@ from data.global_location import (
 )
 from data.one_cikan import ONE_CIKANLAR
 from data.open_meteo import get_monthly_climate
-from models.crop_reco.global_reco import bilgi_tabani, gruba_gore, urun_oner
+from models.crop_reco.global_reco import AYLAR, bilgi_tabani, gruba_gore, urun_oner
 from models.crop_reco.recommender import _texture_class
 
 app = FastAPI(
@@ -162,6 +163,20 @@ class OneriYanit(BaseModel):
     cok_yillik: bool
     ekim_ayi: str | None = None
     hasat_ayi: str | None = None
+    ekim_aylari: list[str] = Field(
+        default_factory=list,
+        description="İklim olarak ekilebilir bulunan TÜM aylar: en iyi ekim "
+                    "ayının puanının %90'ından aşağı düşmeyen aylar. Çok "
+                    "yıllıklarda boştur, çünkü ağaç ekilmez fidan dikilir ve "
+                    "dikim zamanı EcoCrop'ta yoktur. Bu bir EKİM TAKVİMİ "
+                    "DEĞİLDİR: yalnızca sıcaklık uygunluğudur, vernalizasyon "
+                    "ve gün uzunluğu hesaba girmez.")
+    merkezlik: float = Field(
+        default=0.0,
+        description="Ölçülen değerlerin ürünün optimum aralığının neresinde "
+                    "durduğu: 1.0 tam ortası, 0.0 kenarı. PUANA DAHİL DEĞİLDİR; "
+                    "EcoCrop optimum aralığın içini eşit derecede uygun sayar. "
+                    "Aynı puanı alan ürünleri ayırt etmek içindir.")
     su_acigi_mm: int = 0
     faktorler: list[dict] = Field(default_factory=list)
     uyarilar: list[str] = Field(default_factory=list)
@@ -193,6 +208,11 @@ class OneriKumesi(BaseModel):
                     'değer SoilGrids\'e ulaşılamadı.')
     iklim: IklimOzet
     toplam_uygun: int = Field(description="Elenmeden kalan ürün sayısı")
+    su_anki_ay: str = Field(
+        description="Sunucunun bulunduğu takvim ayı. Arayüz 'şimdi ekilebilir' "
+                    "ile 'mevsiminde ekilebilir' ayrımını buna göre yapar. "
+                    "Sunucudan gelir çünkü ayrım bir veri sonucudur, kullanıcı "
+                    "cihazının saatine bırakılmamalıdır.")
     oneriler: list[OneriYanit]
     sure_s: float
 
@@ -383,6 +403,7 @@ def oneri(
         toprak_durum=g.toprak_durum,
         iklim=_iklim_ozet(g.iklim),
         toplam_uygun=len(secili),
+        su_anki_ay=AYLAR[date.today().month - 1],
         oneriler=[OneriYanit(**r) for r in secili[:adet]],
         sure_s=round(time.time() - t0, 2),
     )

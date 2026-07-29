@@ -354,6 +354,68 @@ body {
   color: var(--soluk);
 }
 
+/* Merkezlik cumlesi. Puanin YANINDA degil ALTINDA ve soluk duruyor:
+   puan degildir, puani aciklar. Ayni goruntu agirliginda olsaydi ikinci bir
+   puan sanilirdi. */
+.urun-merkez {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--soluk);
+  line-height: 1.35;
+}
+
+.urun-aylar {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--yesil-koyu);
+  line-height: 1.35;
+}
+
+.oneri-bolum {
+  margin-top: 18px;
+  border-top: 1px solid var(--cizgi);
+  padding-top: 12px;
+}
+
+.bolum-bas {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.bolum-ad {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.bolum-sayi {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--yesil-koyu);
+  background: rgba(47, 122, 62, 0.1);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.bolum-ok {
+  margin-left: auto;
+  font-size: 18px;
+  color: var(--soluk);
+}
+
+.bolum-alt {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--soluk);
+}
+
 .urun-detay {
   margin-top: 8px;
   padding-top: 8px;
