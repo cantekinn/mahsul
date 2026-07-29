@@ -441,3 +441,302 @@ body {
   font-style: italic;
   color: var(--soluk);
 }
+
+/* --------------------------------------------------------------------------
+   Sekme cubugu (harita / teshis arasi anahtar)
+   -------------------------------------------------------------------------- */
+.sekme-cubugu {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--cizgi);
+  margin-bottom: 16px;
+}
+
+.sekme {
+  background: transparent;
+  border: 0;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--soluk);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.sekme:hover {
+  color: var(--metin);
+}
+
+.sekme.aktif {
+  color: var(--yesil-koyu);
+  border-bottom-color: var(--yesil);
+}
+
+/* --------------------------------------------------------------------------
+   Hastalik teshis paneli
+   -------------------------------------------------------------------------- */
+/* teshis-govde: tek kolon, orta hizala. Harita gorunumundeki iki-kolon
+   .govde ile ayni container ama grid disi (tek panel). */
+.teshis-govde {
+  display: block;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.teshis-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.teshis-tanit {
+  color: var(--soluk);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.teshis-yukleme {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Native input gizleniyor, label dugme gorunumunde. Erisilebilirlik icin
+   input DOM'da kaliyor (klavye + ekran okuyucu label htmlFor ile erisir). */
+.teshis-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.teshis-sec-dugme {
+  display: inline-block;
+}
+
+.dugme.yalin {
+  background: transparent;
+  color: var(--soluk);
+  border: 1px solid var(--cizgi);
+}
+
+.dugme.yalin:hover:not(:disabled) {
+  background: var(--zemin);
+  color: var(--metin);
+}
+
+.dugme.birincil {
+  background: var(--yesil-koyu);
+}
+
+.teshis-analiz-dugme {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.teshis-onizleme {
+  margin-top: 12px;
+  border: 1px solid var(--cizgi);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--zemin);
+}
+
+.teshis-onizleme img {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  background: #000;
+}
+
+.teshis-onizleme-alt {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--soluk);
+}
+
+.dosya-ad {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+/* Rozet: seviye renkleri semantik. kesin=yesil (var(--yesil)), olasi=sari,
+   belirsiz=turuncu, tanimsiz=gri. Guven cubugu ile ayni palet. */
+.teshis-rozet {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #fff;
+}
+
+.teshis-rozet.kesin {
+  background: var(--yesil);
+}
+
+.teshis-rozet.olasi {
+  background: #d4a017;
+}
+
+.teshis-rozet.belirsiz {
+  background: #d97706;
+}
+
+.teshis-rozet.tanimsiz {
+  background: #6b7280;
+}
+
+.teshis-guven-satiri {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 12px;
+}
+
+.teshis-guven-cubugu {
+  flex: 1;
+  height: 10px;
+  background: var(--cizgi);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.teshis-guven-doldu {
+  height: 100%;
+  transition: width 0.4s ease-out;
+}
+
+.teshis-guven-doldu.kesin {
+  background: var(--yesil);
+}
+
+.teshis-guven-doldu.olasi {
+  background: #d4a017;
+}
+
+.teshis-guven-doldu.belirsiz {
+  background: #d97706;
+}
+
+.teshis-guven-doldu.tanimsiz {
+  background: #6b7280;
+}
+
+.teshis-guven-yazi {
+  font-size: 13px;
+  color: var(--soluk);
+  min-width: 80px;
+  text-align: right;
+}
+
+.teshis-urun {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.teshis-urun strong {
+  color: var(--metin);
+}
+
+.teshis-uyari {
+  background: #fff8e6;
+  border-left: 3px solid var(--uyari);
+  padding: 10px 12px;
+  margin: 8px 0;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--metin);
+}
+
+.teshis-saglikli {
+  background: #e8f5ea;
+  border-left: 3px solid var(--yesil);
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--yesil-koyu);
+  margin: 8px 0;
+}
+
+.teshis-tedavi {
+  border-top: 1px solid var(--cizgi);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.teshis-tedavi h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: var(--yesil-koyu);
+}
+
+.tedavi-bolum {
+  margin-bottom: 12px;
+}
+
+.tedavi-bolum h4 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--soluk);
+}
+
+.tedavi-bolum p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--metin);
+}
+
+.teshis-alt-tahminler {
+  border-top: 1px dashed var(--cizgi);
+  padding-top: 10px;
+  margin-top: 12px;
+}
+
+.teshis-alt-tahminler h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--soluk);
+}
+
+.teshis-alt-tahminler ol {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.teshis-alt-tahminler li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px dotted var(--cizgi);
+}
+
+.teshis-alt-tahminler li:last-child {
+  border-bottom: 0;
+}
+
+.alt-guven {
+  color: var(--soluk);
+  font-variant-numeric: tabular-nums;
+}

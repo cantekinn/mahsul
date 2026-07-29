@@ -24,3 +24,10 @@ PyYAML==6.0.3
 numpy==1.26.4
 Pillow==11.3.0
 pyproj==3.7.2
+
+# Hastalik teshis (ONNX). PyTorch DEGIL: torch+timm ~800 MB, onnxruntime ~50 MB.
+# Ayni EfficientNetV2-S modeli FP32 ONNX olarak calisir; olcum: torch ile
+# birebir top-1 (20/20 field_benchmark ornegi). python-multipart /teshis uc
+# noktasindaki UploadFile icin gerekli (FastAPI multipart dep).
+onnxruntime==1.19.2
+python-multipart==0.0.9

@@ -99,6 +99,19 @@ COPY --chown=kullanici data/soilgrids_wcs.py    data/soilgrids_wcs.py
 COPY --chown=kullanici data/one_cikan.py        data/one_cikan.py
 COPY --chown=kullanici data/gaez_lookup.py      data/gaez_lookup.py
 
+# Hastalik teshis (ONNX cikarim). Torch KANITLI OLARAK YOK: onnxruntime (~50 MB)
+# ile FP32 model dosyasi (77 MB) beraber calisir. classifier.py'yi de aliyoruz
+# cunku CROP_TR ve label_display sabitleri orada; module-level importlari
+# (importlib.util, functools, pathlib) torch'a dokunmaz, ancak train/Grad-CAM
+# fonksiyonlari lazy. Egitim aciligi asla cagrilmadigi surece torch olmadan
+# guvenle acilir. Model dosyasi ~77 MB imajin en agir tek parcasi.
+COPY --chown=kullanici models/disease/__init__.py                    models/disease/__init__.py
+COPY --chown=kullanici models/disease/classifier.py                  models/disease/classifier.py
+COPY --chown=kullanici models/disease/classifier_onnx.py             models/disease/classifier_onnx.py
+COPY --chown=kullanici models/disease/tedavi.py                      models/disease/tedavi.py
+COPY --chown=kullanici models/disease/labels.txt                     models/disease/labels.txt
+COPY --chown=kullanici models/disease/efficientnetv2_plant.onnx      models/disease/efficientnetv2_plant.onnx
+
 # ONBELLEK IMAJIN ICINE GIRIYOR (155 dosya / 463 KB). Ucretsiz barindirmada
 # disk kalici degil: Space uykudan kalkinca calisma anindaki onbellek silinir.
 # Depoya gomulu kopya her acilista geri gelir, boylece kisayol noktalari
@@ -122,9 +135,10 @@ COPY --from=arayuz --chown=kullanici /kaynak/dist  web/dist
 # Asagisi ayni sorulari dis paket olmadan yanitliyor.
 RUN python -c "\
 from api.main import app, kisayollar; \
+from models.disease.classifier_onnx import is_available as teshis_hazir, _session; \
 yollar = {r.path for r in app.routes}; \
 [__import__('sys').exit(f'uc nokta eksik: {y}') for y in \
- ('/saglik', '/konum', '/toprak', '/parseller', '/oneri', '/kisayollar') \
+ ('/saglik', '/konum', '/toprak', '/parseller', '/oneri', '/kisayollar', '/teshis') \
  if y not in yollar]; \
 k = kisayollar(); \
 assert len(k) == 37, f'kisayol sayisi beklenen 37 degil: {len(k)}'; \
@@ -132,7 +146,9 @@ h = sum(1 for x in k if x.isitildi); \
 assert h >= 25, f'gomulu onbellek imaja girmemis, tam hazir nokta: {h}'; \
 assert any(getattr(r, 'name', '') == 'arayuz' for r in app.routes), \
        'arayuz mount edilmemis: web/dist imaja girmemis'; \
-print(f'duman testi tamam: {len(k)} kisayol, {h} tam hazir')"
+assert teshis_hazir(), 'teshis modeli hazir degil (onnxruntime veya .onnx eksik)'; \
+_session(); \
+print(f'duman testi tamam: {len(k)} kisayol, {h} tam hazir, teshis modeli yuklu')"
 
 EXPOSE 7860
 

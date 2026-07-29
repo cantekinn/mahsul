@@ -216,10 +216,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/teshis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Yaprak fotoğrafından hastalık teşhisi (ONNX)
+         * @description Yaprak fotoğrafı yükle, hastalık etiketi + tedavi kaydı al.
+         *
+         *     Boyut sınırı 6 MB, MIME tipi image/* olmalıdır. Yanıt sözleşmesi TeshisYanit.
+         */
+        post: operations["teshis_teshis_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_teshis_teshis_post */
+        Body_teshis_teshis_post: {
+            /**
+             * Dosya
+             * @description Yaprak fotoğrafı (JPG/PNG).
+             */
+            dosya: string;
+        };
         /**
          * ClimateData
          * @description Open-Meteo'dan gelen iklim ozeti.
@@ -487,6 +517,105 @@ export interface components {
             silt?: number | null;
             /** Organic Carbon */
             organic_carbon?: number | null;
+        };
+        /** TedaviKaydi */
+        TedaviKaydi: {
+            /** Ad */
+            ad: string;
+            /**
+             * Konak
+             * @default []
+             */
+            konak: string[];
+            /**
+             * Belirti
+             * @default
+             */
+            belirti: string;
+            /**
+             * Dogal
+             * @default
+             */
+            dogal: string;
+            /**
+             * Kimyasal
+             * @default
+             */
+            kimyasal: string;
+            /**
+             * Korunma
+             * @default
+             */
+            korunma: string;
+        };
+        /**
+         * TeshisYanit
+         * @description Yaprak fotografindan hastalik teshis sonucu.
+         *
+         *     seviye anlami:
+         *       - kesin: yuksek guven + margin (dogrudan tedavi one cikar)
+         *       - olasi: orta guven veya cekismeli iki sinif (kullaniciya alternatif goster)
+         *       - belirsiz: guven cok dusuk (yeni foto iste)
+         *       - tanimsiz: model 'diger' dedi (hedef urunlerden biri degil)
+         */
+        TeshisYanit: {
+            /**
+             * Etiket
+             * @description Model etiketi (ASCII, snake_case).
+             */
+            etiket: string;
+            /**
+             * Etiket Tr
+             * @description Turkce ad, kullanicida gosterilir.
+             */
+            etiket_tr: string;
+            /** Guven */
+            guven: number;
+            /**
+             * Margin
+             * @description Top1 - Top2 guven farki.
+             */
+            margin: number;
+            /**
+             * Seviye
+             * @description kesin | olasi | belirsiz | tanimsiz
+             */
+            seviye: string;
+            /** Belirsiz */
+            belirsiz: boolean;
+            /**
+             * Sebep
+             * @description hedef_disi | cekismeli | orta_guven | guven_dusuk
+             */
+            sebep?: string | null;
+            /**
+             * Urun
+             * @description Tahmin edilen urun grubu (ornek 'domates').
+             */
+            urun?: string | null;
+            /** Urun Tr */
+            urun_tr: string | null;
+            /** Urun Guven */
+            urun_guven: number;
+            /** Topk */
+            topk: components["schemas"]["TopKMadde"][];
+            /** @description treatments.yaml kaydi. Saglikli/tanimsiz icin null. */
+            tedavi?: components["schemas"]["TedaviKaydi"] | null;
+            /**
+             * Uyari
+             * @description Seviyeye gore kullaniciya mesaj.
+             */
+            uyari?: string | null;
+        };
+        /** TopKMadde */
+        TopKMadde: {
+            /**
+             * Etiket
+             * @description Model etiketi, ornek 'domates_erken_yaniklik'.
+             */
+            etiket: string;
+            /** Guven */
+            guven: number;
         };
         /** ToprakYanit */
         ToprakYanit: {
@@ -807,6 +936,39 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    teshis_teshis_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_teshis_teshis_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeshisYanit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

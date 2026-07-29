@@ -36,7 +36,7 @@ from datetime import date
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -57,6 +57,14 @@ from data.one_cikan import ONE_CIKANLAR
 from data.open_meteo import get_monthly_climate
 from models.crop_reco.global_reco import AYLAR, bilgi_tabani, gruba_gore, urun_oner
 from models.crop_reco.recommender import _texture_class
+from models.disease.classifier import CROP_TR, label_display
+from models.disease.classifier_onnx import (
+    TeshisModelYok,
+    is_available as teshis_hazir,
+    predict as teshis_predict,
+    status as teshis_durum,
+)
+from models.disease.tedavi import tedavi_bul
 
 app = FastAPI(
     title="Tarım Asistanı API",
@@ -77,7 +85,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_KOKENLER,
     allow_credentials=False,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -535,6 +543,127 @@ def urunler() -> dict:
     } for k, u in sorted(kb.items(), key=lambda x: x[1]["ad"])]
     gruplar = sorted({u["grup"] for u in liste if u["grup"]})
     return {"adet": len(liste), "gruplar": gruplar, "urunler": liste}
+
+
+# --------------------------------------------------------------------------
+# Hastalik teshis (yaprak fotografi -> etiket + tedavi)
+# --------------------------------------------------------------------------
+# ONNX FP32 model (77 MB) + onnxruntime. Torch canliya girmez. Model dosyasi
+# yoksa (gelistirici surumu, model henuz commit edilmemis) uc nokta 503 doner;
+# 500 degil, cunku eksik dosya sunucu hatasi degil kurulum eksigi.
+
+MAX_TESHIS_BYTES = 6 * 1024 * 1024  # 6 MB. Mobil kamera JPEG'i 2-4 MB, yer var.
+
+
+class TopKMadde(BaseModel):
+    etiket: str = Field(..., description="Model etiketi, ornek 'domates_erken_yaniklik'.")
+    guven: float = Field(..., ge=0.0, le=1.0)
+
+
+class TedaviKaydi(BaseModel):
+    ad: str
+    konak: list[str] = []
+    belirti: str = ""
+    dogal: str = ""
+    kimyasal: str = ""
+    korunma: str = ""
+
+
+class TeshisYanit(BaseModel):
+    """Yaprak fotografindan hastalik teshis sonucu.
+
+    seviye anlami:
+      - kesin: yuksek guven + margin (dogrudan tedavi one cikar)
+      - olasi: orta guven veya cekismeli iki sinif (kullaniciya alternatif goster)
+      - belirsiz: guven cok dusuk (yeni foto iste)
+      - tanimsiz: model 'diger' dedi (hedef urunlerden biri degil)
+    """
+    etiket: str = Field(..., description="Model etiketi (ASCII, snake_case).")
+    etiket_tr: str = Field(..., description="Turkce ad, kullanicida gosterilir.")
+    guven: float = Field(..., ge=0.0, le=1.0)
+    margin: float = Field(..., description="Top1 - Top2 guven farki.")
+    seviye: str = Field(..., description="kesin | olasi | belirsiz | tanimsiz")
+    belirsiz: bool
+    sebep: str | None = Field(None, description="hedef_disi | cekismeli | orta_guven | guven_dusuk")
+    urun: str | None = Field(None, description="Tahmin edilen urun grubu (ornek 'domates').")
+    urun_tr: str | None
+    urun_guven: float
+    topk: list[TopKMadde]
+    tedavi: TedaviKaydi | None = Field(None, description="treatments.yaml kaydi. Saglikli/tanimsiz icin null.")
+    uyari: str | None = Field(None, description="Seviyeye gore kullaniciya mesaj.")
+
+
+def _uyari_metni(seviye: str, sebep: str | None) -> str | None:
+    """Seviye + sebebe gore kisa mesaj. Sabit metinler; i18n yok (TR tek dil)."""
+    if seviye == "kesin":
+        return None
+    if seviye == "olasi":
+        if sebep == "cekismeli":
+            return "İki hastalık benzer görünüyor. Alt seçenekleri de kontrol edin."
+        return "Orta güven. Farklı bir yapraktan ikinci bir fotoğraf çekmeniz önerilir."
+    if seviye == "belirsiz":
+        return "Güven düşük. Yaprağı ışıkta ve yakından, tek yaprağa odaklanarak yeniden çekin."
+    if seviye == "tanimsiz":
+        return "Model bu görüntüyü desteklenen ürünlerden biri olarak tanımadı. Desteklenen ürünler: " + ", ".join(sorted(CROP_TR.values())) + "."
+    return None
+
+
+@app.post("/teshis", response_model=TeshisYanit, tags=["teshis"],
+          summary="Yaprak fotoğrafından hastalık teşhisi (ONNX)")
+async def teshis(dosya: UploadFile = File(..., description="Yaprak fotoğrafı (JPG/PNG).")) -> TeshisYanit:
+    """Yaprak fotoğrafı yükle, hastalık etiketi + tedavi kaydı al.
+
+    Boyut sınırı 6 MB, MIME tipi image/* olmalıdır. Yanıt sözleşmesi TeshisYanit.
+    """
+    # 1) MIME kontrolu. UploadFile.content_type "image/jpeg", "image/png" gibi.
+    #    Bosluk / farkli tip gelirse 415 doner (400 degil; icerik tipi hatasi).
+    ct = (dosya.content_type or "").lower()
+    if not ct.startswith("image/"):
+        raise HTTPException(415, f"Görüntü dosyası bekleniyor, alınan: {ct or 'bilinmiyor'}")
+
+    # 2) Model hazir mi? Dosya veya onnxruntime yoksa 503. Kullaniciya net mesaj.
+    if not teshis_hazir():
+        raise HTTPException(503, f"Teşhis modeli hazır değil: {teshis_durum()}")
+
+    # 3) Baytlari oku. UploadFile.read() bellekten olsa da tamamini yukleyip
+    #    boyut sinirina uymayan istegi kestik: UploadFile.file.seek(0, 2)
+    #    ile once size'i alabilirdik ama SpooledTemporaryFile'da her zaman
+    #    calismiyor; okuma sonrasi len() kontrolu 6 MB tavani icin yeterli.
+    veri = await dosya.read()
+    if len(veri) > MAX_TESHIS_BYTES:
+        raise HTTPException(
+            413, f"Dosya çok büyük: {len(veri)/1024/1024:.1f} MB (üst sınır 6 MB)"
+        )
+    if not veri:
+        raise HTTPException(400, "Dosya boş")
+
+    # 4) Cikarim. Model bozuksa (dosya var ama okunamaz) TeshisModelYok atar,
+    #    Pillow gecerli imaj degilse UnidentifiedImageError -> 400'e cevrilir.
+    try:
+        sonuc = teshis_predict(veri)
+    except TeshisModelYok as e:
+        raise HTTPException(503, f"Teşhis modeli çalışmadı: {e}") from e
+    except Exception as e:
+        # PIL UnidentifiedImageError, decode hatasi vb. 400 kullanici hatasi.
+        raise HTTPException(400, f"Görüntü çözülemedi: {type(e).__name__}: {e}") from e
+
+    # 5) Zenginlestir: TR ad, urun TR, tedavi kaydi, uyari.
+    tedavi_dict = tedavi_bul(sonuc["etiket"])
+    return TeshisYanit(
+        etiket=sonuc["etiket"],
+        etiket_tr=label_display(sonuc["etiket"]),
+        guven=sonuc["guven"],
+        margin=sonuc["margin"],
+        seviye=sonuc["seviye"],
+        belirsiz=sonuc["belirsiz"],
+        sebep=sonuc["sebep"],
+        urun=sonuc["urun"],
+        urun_tr=CROP_TR.get(sonuc["urun"]) if sonuc["urun"] else None,
+        urun_guven=sonuc["urun_guven"],
+        topk=[TopKMadde(**m) for m in sonuc["topk"]],
+        tedavi=TedaviKaydi(**tedavi_dict) if tedavi_dict else None,
+        uyari=_uyari_metni(sonuc["seviye"], sonuc["sebep"]),
+    )
 
 
 # --------------------------------------------------------------------------
