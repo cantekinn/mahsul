@@ -1,0 +1,372 @@
+:root {
+  --yesil: #2f7a3e;
+  --yesil-koyu: #1f5228;
+  --toprak: #8a6d3b;
+  --metin: #1c2321;
+  --soluk: #6b7671;
+  --cizgi: #e2e6e3;
+  --zemin: #f6f7f5;
+  --kart: #ffffff;
+  --uyari: #9a6b00;
+  --hata: #b23b2e;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--metin);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--zemin);
+}
+
+.kabuk {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.baslik {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.baslik h1 {
+  margin: 0;
+  font-size: 26px;
+  color: var(--yesil-koyu);
+}
+
+.alt {
+  margin: 4px 0 0;
+  color: var(--soluk);
+  font-size: 14px;
+}
+
+.dugme {
+  background: var(--yesil);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dugme:hover:not(:disabled) {
+  background: var(--yesil-koyu);
+}
+
+.dugme:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Hizli erisim kisayollari.
+   Serit YATAY KAYAR, sarmalanmaz: 37 dugme alt alta sarmalandiginda haritayi
+   asagi itip ekranin buyuk kismini yiyordu. Kaydirmali seritte yukseklik
+   tek satirda kaliyor. */
+.kisayollar {
+  margin-bottom: 16px;
+}
+
+.kisayol-baslik {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--soluk);
+  margin-bottom: 6px;
+}
+
+.kisayol-serit {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.kisayol {
+  flex: 0 0 auto;
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  color: var(--metin);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.kisayol:hover {
+  border-color: var(--yesil);
+  color: var(--yesil-koyu);
+}
+
+/* Bir katmani eksik kalan nokta. Gizlemiyoruz, listeden de cikarmiyoruz:
+   dugme calisiyor, sadece o katman icin beklenecek. Soluk gosterip ipucunda
+   hangi katmanin eksik oldugunu yaziyoruz. */
+.kisayol.yarim {
+  color: var(--soluk);
+  border-style: dashed;
+}
+
+.kisayol.secili {
+  background: var(--yesil);
+  border-color: var(--yesil);
+  color: #fff;
+}
+
+.kisayol-alt {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--soluk);
+}
+
+.govde {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .govde {
+    grid-template-columns: 1fr;
+  }
+}
+
+.harita {
+  height: 560px;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--cizgi);
+}
+
+.isaretci {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #d94f3d;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+.yan {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kart {
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.kart-bas {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.kart-bas h2 {
+  margin: 0;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--soluk);
+}
+
+.rozet {
+  font-size: 12px;
+  color: var(--soluk);
+  background: var(--zemin);
+  border-radius: 20px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+
+.yer {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.satirlar {
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.satirlar > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  border-bottom: 1px dashed var(--cizgi);
+  padding-bottom: 5px;
+}
+
+.satirlar dt {
+  color: var(--soluk);
+}
+
+.satirlar dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.yok {
+  color: var(--soluk);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.bekleyen {
+  color: var(--soluk);
+  font-size: 14px;
+  margin: 6px 0 0;
+}
+
+.hata {
+  color: var(--hata);
+  font-size: 14px;
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+
+.uyari {
+  color: var(--uyari);
+  font-size: 13px;
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
+.eksik {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--uyari);
+  font-size: 13px;
+}
+
+.bos-mesaj {
+  color: var(--soluk);
+}
+
+.parsel-liste {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 14px;
+}
+
+.parsel-liste li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--cizgi);
+}
+
+.oneri-alan {
+  margin-top: 16px;
+}
+
+.grup h3 {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--toprak);
+}
+
+.urunler {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.urun {
+  border: 1px solid var(--cizgi);
+  border-left: 4px solid var(--cizgi);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--zemin);
+}
+
+.urun.cok-iyi {
+  border-left-color: #2f7a3e;
+}
+.urun.iyi {
+  border-left-color: #7aa832;
+}
+.urun.orta {
+  border-left-color: #d1a02a;
+}
+.urun.zayif {
+  border-left-color: #b0aca4;
+}
+
+.urun-bas {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.urun-ad {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.urun-skor {
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--yesil-koyu);
+}
+
+.urun-alt {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: var(--soluk);
+}
+
+.urun-detay {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--cizgi);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.urun-detay p {
+  margin: 0 0 5px;
+}
+
+.bilimsel {
+  font-style: italic;
+  color: var(--soluk);
+}

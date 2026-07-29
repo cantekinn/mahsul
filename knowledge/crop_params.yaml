@@ -1,0 +1,77 @@
+# Antalya odakli urun agronomik bilgi tabani (Sprint 1 - Sila)
+#
+# Her urun icin trapez uyelik araliklari:
+#   min      -> altinda uygun degil (skor 0)
+#   opt_min  -> ideal aralik alt siniri (skor 1.0 baslar)
+#   opt_max  -> ideal aralik ust siniri (skor 1.0 biter)
+#   max      -> ustunde uygun degil (skor 0)
+# min..opt_min ve opt_max..max araliklarinda skor dogrusal degisir.
+#
+# Kaynaklar (kamuya acik agronomi rehberleri):
+#   FAO ecocrop, Tarim ve Orman Bakanligi urun kilavuzlari, universite yayin ortalamalari.
+#   Degerler bolgesel ortalama; kesin oneri toprak analizi ile guclenir.
+#
+# doku: tercih edilen toprak dokusu siniflari (recommender USDA ucgeni ile eslestirir)
+# sicaklik: sezon ortalama hava sicakligi (C)
+# yagis_mm: sezon boyu toplam su ihtiyaci (yagis + sulama, mm)
+# azot_g_kg: topraktaki toplam azot (SoilGrids ile karsilastirilir)
+
+domates:
+  ad: "Domates"
+  ph: {min: 5.0, opt_min: 6.0, opt_max: 6.8, max: 7.5}
+  sicaklik: {min: 12, opt_min: 21, opt_max: 27, max: 34}
+  yagis_mm: {min: 300, opt_min: 400, opt_max: 600, max: 900}
+  azot_g_kg: {min: 0.8, opt_min: 1.5, opt_max: 3.0, max: 5.0}
+  doku: [tin, killi_tin, kumlu_tin]
+  sezon: "İlkbahar dikim (Mart-Mayıs), yazlık hasat"
+  notlar: "Antalya örtü altı (sera) üretiminde öne çıkar. İyi drenaj ve düzenli su ister."
+
+biber:
+  ad: "Biber"
+  ph: {min: 5.3, opt_min: 5.8, opt_max: 6.8, max: 7.3}
+  sicaklik: {min: 15, opt_min: 20, opt_max: 30, max: 35}
+  yagis_mm: {min: 300, opt_min: 400, opt_max: 650, max: 900}
+  azot_g_kg: {min: 0.8, opt_min: 1.4, opt_max: 2.8, max: 4.5}
+  doku: [tin, kumlu_tin, killi_tin]
+  sezon: "İlkbahar dikim (Nisan-Mayıs)"
+  notlar: "Sıcak seven ürün; don riskine hassas. Sera üretimi yaygın."
+
+patates:
+  ad: "Patates"
+  ph: {min: 4.8, opt_min: 5.0, opt_max: 6.5, max: 7.0}
+  sicaklik: {min: 10, opt_min: 15, opt_max: 20, max: 28}
+  yagis_mm: {min: 350, opt_min: 500, opt_max: 700, max: 1000}
+  azot_g_kg: {min: 1.0, opt_min: 1.5, opt_max: 3.0, max: 5.0}
+  doku: [kumlu_tin, tin]
+  sezon: "Erken ilkbahar dikim; yumru oluşumu serin sever"
+  notlar: "Hafif asidik ve gevşek toprak tercih eder. Yumru dönemi serin sıcaklık ister."
+
+narenciye:
+  ad: "Narenciye (portakal/mandalina)"
+  ph: {min: 5.5, opt_min: 6.0, opt_max: 7.0, max: 8.0}
+  sicaklik: {min: 13, opt_min: 18, opt_max: 30, max: 38}
+  yagis_mm: {min: 600, opt_min: 900, opt_max: 1200, max: 1600}
+  azot_g_kg: {min: 1.0, opt_min: 1.5, opt_max: 3.0, max: 5.0}
+  doku: [tin, kumlu_tin]
+  sezon: "Çok yıllık; kış ılımanlığına bağlı"
+  notlar: "Antalya kıyı şeridinin klasik ürünü. Don ana sınırlayıcı faktör."
+
+zeytin:
+  ad: "Zeytin"
+  ph: {min: 5.5, opt_min: 6.5, opt_max: 8.0, max: 8.5}
+  sicaklik: {min: 10, opt_min: 15, opt_max: 30, max: 40}
+  yagis_mm: {min: 200, opt_min: 400, opt_max: 700, max: 1000}
+  azot_g_kg: {min: 0.5, opt_min: 1.0, opt_max: 2.5, max: 4.0}
+  doku: [tin, kumlu_tin, killi_tin]
+  sezon: "Çok yıllık; kuraklığa dayanıklı"
+  notlar: "Az su ile idare eder, kireçli toprağa toleranslı. Don hassasiyeti orta."
+
+muz:
+  ad: "Muz (örtü altı)"
+  ph: {min: 5.5, opt_min: 6.0, opt_max: 7.0, max: 7.5}
+  sicaklik: {min: 18, opt_min: 25, opt_max: 30, max: 38}
+  yagis_mm: {min: 900, opt_min: 1200, opt_max: 1800, max: 2500}
+  azot_g_kg: {min: 1.2, opt_min: 2.0, opt_max: 3.5, max: 5.5}
+  doku: [tin, killi_tin]
+  sezon: "Çok yıllık; sera/örtü altı"
+  notlar: "Antalya sera muzu yüksek gelirli. Çok su ve sıcaklık ister, don öldürür."

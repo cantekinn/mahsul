@@ -1,0 +1,26 @@
+# API'nin CALISMASI ICIN GEREKEN TEK LISTE.
+#
+# Neden kok dizindeki requirements.txt kullanilmiyor: oradaki liste tum projeyi
+# (Streamlit arayuzu, LangGraph ajanlari, hastalik teshis CNN'i) kapsiyor ve
+# torch + torchvision + timm + lightgbm ile birlikte ~2.5 GB ediyor. HTTP
+# servisi bunlarin HICBIRINI import etmiyor. Kontrol edildi: api/main.py'nin
+# ulastigi tum moduller (core.schemas, data.global_location, data.open_meteo,
+# data.soilgrids_wcs, models.crop_reco.global_reco, models.crop_reco.recommender)
+# yalnizca asagidaki paketleri cagiriyor.
+#
+# Surumler kurulu ve olculmus ortamdakilerin ayni: WCS dogrulamasi (sapma 0.00)
+# ve arayuz olcumleri bu surumlerle yapildi. Alt sinir yerine tam surum
+# yaziyorum ki canli surum baska bir seyle calisip farkli sayi uretmesin.
+
+fastapi==0.136.1
+uvicorn[standard]==0.46.0
+pydantic==2.13.4
+requests==2.32.5
+PyYAML==6.0.3
+
+# SoilGrids WCS kapisi icin. pyproj Interrupted Goode Homolosine (EPSG:152160)
+# donusumunu, Pillow + numpy GetCoverage'in dondurdugu GeoTIFF'i cozer.
+# Bu ucu olmadan toprak katmani calismaz (REST kapisi ISRIC tarafindan askida).
+numpy==1.26.4
+Pillow==11.3.0
+pyproj==3.7.2
