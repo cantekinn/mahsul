@@ -387,7 +387,7 @@ export interface components {
             hasat_ayi?: string | null;
             /**
              * Ekim Aylari
-             * @description İklim olarak ekilebilir bulunan TÜM aylar: en iyi ekim ayının puanının %90'ından aşağı düşmeyen aylar. Çok yıllıklarda boştur, çünkü ağaç ekilmez fidan dikilir ve dikim zamanı EcoCrop'ta yoktur. Bu bir EKİM TAKVİMİ DEĞİLDİR: yalnızca sıcaklık uygunluğudur, vernalizasyon ve gün uzunluğu hesaba girmez.
+             * @description İklim olarak ekilebilir bulunan TÜM aylar: en iyi ekim ayının puanının %95'inden aşağı düşmeyen aylar. Çok yıllıklarda boştur, çünkü ağaç ekilmez fidan dikilir ve dikim zamanı EcoCrop'ta yoktur. Bu bir EKİM TAKVİMİ DEĞİLDİR: yalnızca sıcaklık uygunluğudur, vernalizasyon ve gün uzunluğu hesaba girmez.
              */
             ekim_aylari?: string[];
             /**
@@ -401,6 +401,11 @@ export interface components {
              * @default 0
              */
             su_acigi_mm: number;
+            /**
+             * Uygunluk Gaez
+             * @description FAO GAEZ v4 Suitability Index (0-100), bu koordinatta bu ürünün ne kadar iyi yetiştiğinin bölgesel ölçümü. Skor buradan 0.7 ağırlıkla hesaba girer; EcoCrop trapezoidinin sıkıştırdığı 90-100 aralığını bölgesel gerçeklikle açar. None ise GAEZ'de bu ürüne eşleme yok veya konum GAEZ yüksek çözünürlük bölgesi (20-48 E, 33-44 N) dışında.
+             */
+            uygunluk_gaez?: number | null;
             /** Faktorler */
             faktorler?: {
                 [key: string]: unknown;

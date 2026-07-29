@@ -83,6 +83,16 @@ function UrunKarti({ o }: { o: Oneri }) {
         <div className="urun-detay">
           <p className="bilimsel">{o.bilimsel_ad}</p>
           <p>{o.sezon}</p>
+          {o.uygunluk_gaez != null && (
+            /* GAEZ 0-100 arasi bir bolgesel uygunluk gostergesi. FAO+IIASA'nin
+               iklim, toprak ve su butcesini birlestirdigi bir global gridden
+               geliyor. Puanin ana ceperi budur (0.7 agirlik); ciftci ayni
+               anda hem birlesik puana hem kaynak sinyaline bakabilsin diye
+               ayrica gosteriyoruz. */
+            <p className="urun-gaez" title="FAO GAEZ v4 Suitability Index (0-100)">
+              FAO GAEZ bölgesel uygunluk: {o.uygunluk_gaez.toFixed(0)}/100
+            </p>
+          )}
           {/* Su acigi icin BURADA ayrica satir yazilmaz. Arka uc su_acigi_mm > 0
               olan her durumda uyarilar listesine zaten daha bilgilendirici bir
               cumle koyuyor (kac mm eksik ve dekara kac ton su ettigi). Ikisini

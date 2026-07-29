@@ -371,6 +371,15 @@ body {
   line-height: 1.35;
 }
 
+/* GAEZ satiri detay bloguna dusuk gorunum agirligiyla giriyor: puan degil,
+   puanin kaynak sinyali. Ana puanla karistirilmasin diye kucuk ve soluk. */
+.urun-gaez {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--soluk);
+  line-height: 1.35;
+}
+
 .oneri-bolum {
   margin-top: 18px;
   border-top: 1px solid var(--cizgi);

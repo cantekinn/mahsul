@@ -51,6 +51,7 @@ from pathlib import Path
 import yaml
 
 from core.schemas import SoilData
+from data.gaez_lookup import gaez_bolge_prior, gaez_verim
 from models.crop_reco.recommender import _texture_class, _trapezoid
 
 _KB_PATH = Path(__file__).resolve().parent.parent.parent / "knowledge" / "crop_params_global.yaml"
@@ -107,15 +108,18 @@ VEJETASYON_ESIK = 10.0
 # "simdi ne ekebilirim, bunu ekmek icin ne zaman beklemeliyim" oldugu icin
 # tum uygun aylari saklamaya basladik.
 #
-# ESIK NEDEN 0.90: en iyi ekim ayindan en fazla yuzde 10 puan kaybettiren
-# aylar sayiliyor. Oran uydurulmadi, olculdu. Bursa ve Antalya'da 10 urun
-# icin 0.90 ve 0.80 karsilastirildi:
-#   0.90 -> 3 ile 8 ay arasi pencere. Bursa pamugu Nisan-Haziran, Bursa
-#           ispanagi Nisan-Haziran + Eylul-Kasim (iki ayri sezon dogru
-#           ayrisiyor), Antalya ispanagi Ekim-Aralik. Hepsi gercek takvimle
-#           ortusuyor.
-#   0.80 -> Antalya nohudu 10 ay cikiyor, yani "her zaman ekilir" demeye
-#           varan bir pencere. Bilgi tasimiyor.
+# ESIK NEDEN 0.95: en iyi ekim ayindan en fazla yuzde 5 puan kaybettiren
+# aylar sayiliyor. Oran uydurulmadi, olculdu. Onceki 0.90 kullanicidan geri
+# bildirim aldi: "aycicegi Bursa'da 7 ay pencerede gorunuyor, bu kadar genis
+# olamaz". Yeniden olctuk (Bursa Hasanaga, 6 kritik urun):
+#   0.90 -> aycicegi 6, ispanak 6, domates 5, pamuk 3, misir 5, bugday 7
+#   0.95 -> aycicegi 5, ispanak 4, domates 4, pamuk 2, misir 5, bugday 6
+#   0.97 -> aycicegi 5, ispanak 3, domates 4, pamuk 2, misir 5, bugday 5
+# 0.95 secildi cunku Bursa pamugu Mayis-Haziran (dogru), ispanak iki sezona
+# ayrisiyor (Mart-Nisan + Eylul-Kasim), aycicegi yaz penceresine (Mayis-Eylul)
+# sikisiyor. 0.97 aycicegi'ni daralttmadi cunku Bursa yaz aylari uzun ve
+# ayni platoda; gereksiz ceza olurdu. 0.90'da ise "Nisan'dan Ekim'e ne olsa
+# olur" hissi vardi ve bilgi tasimiyordu.
 #
 # BU BIR EKIM TAKVIMI DEGILDIR, bunu arayuzde de yaziyoruz. Pencere yalnizca
 # SICAKLIK uygunlugudur. EcoCrop'ta vernalizasyon (kislik bugdayin sogukla
@@ -123,7 +127,17 @@ VEJETASYON_ESIK = 10.0
 # Bursa'da bugdayi Temmuz ekimi icin 98 puanla uygun buluyor; uc aylik pencere
 # termik olarak gercekten uygun ama Bursa bugdayi Ekim'de ekilir. Bu sinirlama
 # gizlenmiyor, kullaniciya soyleniyor.
-EKIM_PENCERE_ORAN = 0.90
+EKIM_PENCERE_ORAN = 0.95
+
+# GAEZ AGIRLIGI: FAO GAEZ v4 Suitability Index bu bolgede o urunun "gercekte
+# ne kadar iyi yetistigini" verir; iklim, toprak ve su butcesini birlikte hesaba
+# katan hazir bir kalibratordur. EcoCrop trapezoidi tek basina puani 90-100
+# arasina sikistiriyordu (Bursa'da 13 urun tam 100 aliyordu). GAEZ'i agirlikli
+# ortalama ile katmak: bolgede yaygin degilse GAEZ dusuk cikar, skoru asagi
+# ceker; bolgenin yildizi ise GAEZ yuksek olur, skoru destekler. 0.7 orani
+# kullanici karari: gorusul bilgi (GAEZ) trapezoidden agir sayilsin.
+# GAEZ olmayan urunde (mesela biber, elma, ceviz) sadece EcoCrop kullanilir.
+GAEZ_AGIRLIK = 0.7
 
 # SULAMA: su AZLIGI giderilebilir, su FAZLALIGI giderilemez.
 # EcoCrop yagmura dayali (rainfed) potansiyeli olcer. Olctuk, bu varsayim testte
@@ -332,15 +346,21 @@ def _etiket(skor: float) -> str:
 
 
 def urun_oner(soil: SoilData, iklim: dict, adet: int = 10,
-              elenenleri_dahil_et: bool = False) -> list[dict]:
+              elenenleri_dahil_et: bool = False,
+              lat: float | None = None, lon: float | None = None) -> list[dict]:
     """Konumun aylik iklimine ve toprakina gore urunleri sirali dondurur.
 
     iklim: data.open_meteo.get_monthly_climate() ciktisi.
-    Her oge: urun, ad, grup, skor, uygunluk, ekim_ayi, hasat_ayi, faktorler,
-             uyari (varsa), cok_yillik, notlar
+    lat/lon verildiginde ve GAEZ eslemesinde bulunursa GAEZ_AGIRLIK ile
+    ecocrop skoru harmanlanir; verilmezse yalnizca EcoCrop kullanilir.
+    Her oge: urun, ad, grup, skor, uygunluk_gaez, ekim_ayi, hasat_ayi,
+             faktorler, uyari (varsa), cok_yillik, notlar
     """
     kb = bilgi_tabani()
     sonuc: list[dict] = []
+    # Bolgenin GAEZ median'i: eslemeyle GAEZ verisi olmayan urunlere prior olarak
+    # uygulanir. Bkz gaez_bolge_prior. lat/lon yoksa None kalir.
+    bolge_prior = gaez_bolge_prior(lat, lon) if (lat is not None and lon is not None) else None
 
     for anahtar, urun in kb.items():
         cok_yillik = bool(urun.get("cok_yillik"))
@@ -431,6 +451,41 @@ def urun_oner(soil: SoilData, iklim: dict, adet: int = 10,
                     f"görünse de çiçeklenme ve verim düzensiz olur."
                 )
 
+        # GAEZ kalibrasyonu: bkz GAEZ_AGIRLIK. Ecocrop skoru elenmediyse
+        # (skor > 0) ve konum uygunsa GAEZ ile harmanla. Skor 0'lar (don,
+        # kis dayaniksizligi eleyicileri) DOKUNULMAZ; kirilan ilkeyi GAEZ
+        # kurtaramaz. GAEZ eslemesi olmayan urunler bolge medianina duser
+        # (asimetriyi kirmak icin, bkz gaez_bolge_prior).
+        uygunluk_gaez: float | None = None
+        gaez_su_rejimi: str | None = None
+        gaez_prior_uygulandi = False
+        if skor > 0 and lat is not None and lon is not None:
+            urun_yagis_bant = urun.get("yagis_mm") or {}
+            g = gaez_verim(
+                lat, lon, anahtar,
+                su_rejimi="otomatik",
+                yagis_mm=iklim.get("yillik_yagis"),
+                urun_opt_min_yagis=urun_yagis_bant.get("opt_min"),
+            )
+            if g is not None:
+                uygunluk_gaez = g["uygunluk_gaez"]
+                gaez_su_rejimi = g["su_rejimi"]
+                skor = GAEZ_AGIRLIK * uygunluk_gaez + (1 - GAEZ_AGIRLIK) * skor
+                if uygunluk_gaez == 0:
+                    uyarilar.append(
+                        "FAO GAEZ bu bölgede bu ürüne uygunluk vermiyor: "
+                        "iklim sınırlarını aşıyor veya bölgesel olarak yetişmiyor."
+                    )
+                elif gaez_su_rejimi == "irrigated":
+                    uyarilar.append(
+                        "GAEZ uygunluğu sulu tarım varsayımıyla hesaplandı; "
+                        "yağışa dayalı yetiştiricilikte puan daha düşük olur."
+                    )
+            elif bolge_prior is not None:
+                # GAEZ'de bu urun yok; bolge medianini prior olarak uygula.
+                skor = GAEZ_AGIRLIK * bolge_prior + (1 - GAEZ_AGIRLIK) * skor
+                gaez_prior_uygulandi = True
+
         if skor <= 0 and not elenenleri_dahil_et:
             continue
 
@@ -440,6 +495,7 @@ def urun_oner(soil: SoilData, iklim: dict, adet: int = 10,
             "bilimsel_ad": urun.get("bilimsel_ad", ""),
             "grup": urun.get("grup", ""),
             "skor": round(skor, 1),
+            "uygunluk_gaez": round(uygunluk_gaez, 1) if uygunluk_gaez is not None else None,
             # Skorun anlami degismesin diye ayri alan; sadece siralama icin.
             "merkezlik": round(merkez, 3),
             "su_acigi_mm": round(su_acigi),
@@ -460,13 +516,14 @@ def urun_oner(soil: SoilData, iklim: dict, adet: int = 10,
     return sonuc[:adet]
 
 
-def gruba_gore(soil: SoilData, iklim: dict, grup_basina: int = 3) -> dict[str, list[dict]]:
+def gruba_gore(soil: SoilData, iklim: dict, grup_basina: int = 3,
+               lat: float | None = None, lon: float | None = None) -> dict[str, list[dict]]:
     """Her urun grubundan en iyi N urun. Arayuzde cesitlilik icin.
 
     Sadece tepe listeyi gostermek tek bir gruba bogar (orn. hepsi meyve cikar);
     ciftciye gercek secenek sunmak icin gruplar ayri ayri dondurulur.
     """
-    hepsi = urun_oner(soil, iklim, adet=10_000)
+    hepsi = urun_oner(soil, iklim, adet=10_000, lat=lat, lon=lon)
     gruplar: dict[str, list[dict]] = {}
     for r in hepsi:
         g = r["grup"] or "diğer"

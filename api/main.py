@@ -166,7 +166,7 @@ class OneriYanit(BaseModel):
     ekim_aylari: list[str] = Field(
         default_factory=list,
         description="İklim olarak ekilebilir bulunan TÜM aylar: en iyi ekim "
-                    "ayının puanının %90'ından aşağı düşmeyen aylar. Çok "
+                    "ayının puanının %95'inden aşağı düşmeyen aylar. Çok "
                     "yıllıklarda boştur, çünkü ağaç ekilmez fidan dikilir ve "
                     "dikim zamanı EcoCrop'ta yoktur. Bu bir EKİM TAKVİMİ "
                     "DEĞİLDİR: yalnızca sıcaklık uygunluğudur, vernalizasyon "
@@ -178,6 +178,14 @@ class OneriYanit(BaseModel):
                     "EcoCrop optimum aralığın içini eşit derecede uygun sayar. "
                     "Aynı puanı alan ürünleri ayırt etmek içindir.")
     su_acigi_mm: int = 0
+    uygunluk_gaez: float | None = Field(
+        default=None,
+        description="FAO GAEZ v4 Suitability Index (0-100), bu koordinatta bu "
+                    "ürünün ne kadar iyi yetiştiğinin bölgesel ölçümü. Skor "
+                    "buradan 0.7 ağırlıkla hesaba girer; EcoCrop trapezoidinin "
+                    "sıkıştırdığı 90-100 aralığını bölgesel gerçeklikle açar. "
+                    "None ise GAEZ'de bu ürüne eşleme yok veya konum GAEZ "
+                    "yüksek çözünürlük bölgesi (20-48 E, 33-44 N) dışında.")
     faktorler: list[dict] = Field(default_factory=list)
     uyarilar: list[str] = Field(default_factory=list)
     sezon: str = ""
@@ -394,7 +402,7 @@ def oneri(
     t0 = time.time()
     g = _girdi_topla(lat, lon)
 
-    hepsi = urun_oner(g.toprak, g.iklim, adet=10_000)
+    hepsi = urun_oner(g.toprak, g.iklim, adet=10_000, lat=lat, lon=lon)
     secili = [r for r in hepsi if r["grup"] == grup] if grup else hepsi
 
     return OneriKumesi(
@@ -421,7 +429,7 @@ def oneri_gruplar(
     """
     t0 = time.time()
     g = _girdi_topla(lat, lon)
-    gruplar = gruba_gore(g.toprak, g.iklim, grup_basina=grup_basina)
+    gruplar = gruba_gore(g.toprak, g.iklim, grup_basina=grup_basina, lat=lat, lon=lon)
     return {
         "lat": lat, "lon": lon, "yer_adi": g.yer_adi, "ulke": g.ulke,
         "toprak_var": g.toprak_var, "toprak_durum": g.toprak_durum,
