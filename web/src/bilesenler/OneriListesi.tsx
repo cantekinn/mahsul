@@ -16,7 +16,7 @@
  *    dikimi soz konusudur ve dikim zamani EcoCrop'ta olmayan bir bilgidir;
  *    uydurmak yerine bolumu ayirip zaman iddiasinda bulunmuyoruz.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { KatmanKabugu } from "./Durum";
 import type { Katman } from "./Durum";
 import type { Oneri, OneriKumesi } from "../api/istemci";
@@ -114,11 +114,17 @@ function AySeridi({ aylar, suAnkiAy }: { aylar: string[]; suAnkiAy: string }) {
  */
 type Faktor = { faktor: string; deger: number | string; birim: string; uyum: number };
 
+/**
+ * Sunucu bu alani list[dict] olarak yaziyor, dolayisiyla uretilen OpenAPI tipi
+ * icerigi bilmiyor. Daraltma TEK YERDE burada yapiliyor; uretilen tipler.ts'i
+ * elle duzeltmek semayi yalanlamak olurdu.
+ */
+function faktorleriAl(o: Oneri): Faktor[] {
+  return (o.faktorler ?? []) as unknown as Faktor[];
+}
+
 function SkorKirilimi({ o }: { o: Oneri }) {
-  // Sunucu bu alani list[dict] olarak yaziyor, dolayisiyla uretilen OpenAPI
-  // tipi icerigi bilmiyor. Daraltma TEK YERDE burada yapiliyor; uretilen
-  // tipler.ts'i elle duzeltmek semayi yalanlamak olurdu.
-  const faktorler = (o.faktorler ?? []) as unknown as Faktor[];
+  const faktorler = faktorleriAl(o);
   if (faktorler.length === 0) return null;
   const enDusuk = Math.min(...faktorler.map((f) => f.uyum));
 
@@ -156,11 +162,42 @@ function SkorKirilimi({ o }: { o: Oneri }) {
   );
 }
 
-function UrunKarti({ o, suAnkiAy }: { o: Oneri; suAnkiAy: string }) {
+/**
+ * Karsilastirma secimi. Uc seviye asagi tasindigi icin tek nesne halinde
+ * geciyor: ayri ayri uc prop, her ara bilesene uc satir eklerdi.
+ */
+type Secim = {
+  secili: string[];
+  degistir: (urun: string) => void;
+};
+
+/* IKI URUN, DAHA FAZLASI DEGIL. Sinir olculdu, tahmin edilmedi: 375 px'lik
+   telefonda kartin ic genisligi 268 px, olcut sutunu 96 px, geriye 172 px
+   kaliyor. Uc sutunda tablo 353 px'e cikip yatay kaydirma uretiyordu
+   (olculdu). Kaydirilan sutun o anda EKRANDA OLMAYAN sutundur ve
+   karsilastirmanin tanimi ayni anda gormektir; kaydirma ozelligi ismen
+   birakip islevini alir.
+
+   Sinir ekran genisligine gore DEGISMIYOR: masaustunde ucuncu sutun sigardi
+   ama ayni dugmenin bir cihazda calisip digerinde calismamasi, kazanilan
+   sutundan daha pahali. */
+const KARSILASTIR_SINIR = 2;
+
+function UrunKarti({
+  o,
+  suAnkiAy,
+  secim,
+}: {
+  o: Oneri;
+  suAnkiAy: string;
+  secim: Secim;
+}) {
   const [acik, setAcik] = useState(false);
   const aylar = ekimAylari(o);
+  const isaretli = secim.secili.includes(o.urun);
+  const dolu = secim.secili.length >= KARSILASTIR_SINIR;
   return (
-    <li className={`urun ${skorRengi(o.skor)}`}>
+    <li className={`urun ${skorRengi(o.skor)}${isaretli ? " secili" : ""}`}>
       <button className="urun-bas" onClick={() => setAcik(!acik)}>
         <span className="urun-ad">{o.ad}</span>
         <span className="urun-skor">{o.skor.toFixed(0)}</span>
@@ -208,11 +245,35 @@ function UrunKarti({ o, suAnkiAy }: { o: Oneri; suAnkiAy: string }) {
           {o.notlar && <p className="alt">{o.notlar}</p>}
         </div>
       )}
+      <label
+        className="urun-sec"
+        title={
+          !isaretli && dolu
+            ? `Aynı anda en çok ${KARSILASTIR_SINIR} ürün karşılaştırılabilir.`
+            : undefined
+        }
+      >
+        <input
+          type="checkbox"
+          checked={isaretli}
+          disabled={!isaretli && dolu}
+          onChange={() => secim.degistir(o.urun)}
+        />
+        <span>Karşılaştır</span>
+      </label>
     </li>
   );
 }
 
-function Gruplu({ liste, suAnkiAy }: { liste: Oneri[]; suAnkiAy: string }) {
+function Gruplu({
+  liste,
+  suAnkiAy,
+  secim,
+}: {
+  liste: Oneri[];
+  suAnkiAy: string;
+  secim: Secim;
+}) {
   const gruplar = useMemo(() => {
     const g = new Map<string, Oneri[]>();
     for (const x of liste) {
@@ -230,7 +291,7 @@ function Gruplu({ liste, suAnkiAy }: { liste: Oneri[]; suAnkiAy: string }) {
           <h3>{grup}</h3>
           <ul className="urunler">
             {l.map((x) => (
-              <UrunKarti key={x.urun} o={x} suAnkiAy={suAnkiAy} />
+              <UrunKarti key={x.urun} o={x} suAnkiAy={suAnkiAy} secim={secim} />
             ))}
           </ul>
         </div>
@@ -245,12 +306,14 @@ function Bolum({
   liste,
   baslangicta_acik,
   suAnkiAy,
+  secim,
 }: {
   baslik: string;
   aciklama: string;
   liste: Oneri[];
   baslangicta_acik: boolean;
   suAnkiAy: string;
+  secim: Secim;
 }) {
   const [acik, setAcik] = useState(baslangicta_acik);
   // Bos bolum hic cizilmez. Bos bir baslik "burada hicbir sey yetismez"
@@ -264,7 +327,7 @@ function Bolum({
         <span className="bolum-ok">{acik ? "−" : "+"}</span>
       </button>
       <p className="bolum-alt">{aciklama}</p>
-      {acik && <Gruplu liste={liste} suAnkiAy={suAnkiAy} />}
+      {acik && <Gruplu liste={liste} suAnkiAy={suAnkiAy} secim={secim} />}
     </section>
   );
 }
@@ -368,8 +431,249 @@ function FiltreCubugu({
   );
 }
 
+/**
+ * Bir satirdaki en iyi degerin sirasi. Esitlikte -1 doner.
+ *
+ * Esitlikte HICBIRI isaretlenmez: iki urun de %100 uyum aliyorsa birine "daha
+ * iyi" demek uydurma olur. Ayni kural kart icindeki kirilimda da gecerli
+ * (SkorKirilimi/zayif), iki yerde ayni cumleyi kuruyoruz.
+ *
+ * yon: 1 buyuk olan iyi (puan, uyum), -1 kucuk olan iyi (su acigi).
+ */
+function enIyiSira(degerler: (number | null)[], yon: 1 | -1): number {
+  const gecerli = degerler.filter((d): d is number => d != null);
+  if (gecerli.length < 2) return -1;
+  const hedef = yon === 1 ? Math.max(...gecerli) : Math.min(...gecerli);
+  const eslesen = degerler.filter((d) => d === hedef);
+  if (eslesen.length !== 1) return -1;
+  return degerler.findIndex((d) => d === hedef);
+}
+
+/**
+ * Yan yana karsilastirma.
+ *
+ * NEDEN GEREKLI: kartlar tek tek dogru bilgiyi veriyordu ama "domates mi
+ * biber mi" sorusu iki karti ayni anda gormeyi gerektiriyor. Kartlar izgarada
+ * yan yana duruyor olsa bile kirilim ancak karti ACINCA gorunuyor ve iki karti
+ * birden acmak satirlarin hizasini bozuyor: bir kartta "Toprak pH" ucuncu
+ * satir, digerinde ikinci olabiliyor (eksik faktor). Tablo hizayi zorlar.
+ *
+ * DEGERLER TEKRAR EDIYOR GIBI GORUNUR, ETMIYOR: pH ve doku konumun ozelligi,
+ * her sutunda ayni sayi cikar. Farkli olan UYUM: ayni 7.4 pH, mercimege %100,
+ * yaban mersinine %0 uyar. Karsilastirmanin butun anlami bu satirda.
+ *
+ * SECIM SUZGECTEN ETKILENMEZ: karsilastirilacak urunler tam listeden
+ * cozuluyor. Kullanici urunu sectikten sonra filtreyi daraltirsa sutunun
+ * sessizce kaybolmasi, kendi seciminin silindigi izlenimi verirdi.
+ */
+function Karsilastirma({
+  liste,
+  temizle,
+  cikar,
+}: {
+  liste: Oneri[];
+  temizle: () => void;
+  cikar: (urun: string) => void;
+}) {
+  const faktorAdlari = useMemo(() => {
+    // Birlesim, ILK urunun sirasi korunarak. Faktor listesi urunden urune
+    // degisebilir (toprak verisi eksikse pH satiri hic uretilmez); kesisim
+    // alsaydik bir sutunun sahip oldugu bilgiyi digeri yuzunden gizlerdik.
+    const adlar: string[] = [];
+    for (const u of liste) {
+      for (const f of faktorleriAl(u)) if (!adlar.includes(f.faktor)) adlar.push(f.faktor);
+    }
+    return adlar;
+  }, [liste]);
+
+  const enIyiPuan = enIyiSira(liste.map((u) => u.skor), 1);
+  const enIyiSu = enIyiSira(liste.map((u) => u.su_acigi_mm), -1);
+  const enIyiGaez = enIyiSira(liste.map((u) => u.uygunluk_gaez ?? null), 1);
+  const gaezVar = liste.some((u) => u.uygunluk_gaez != null);
+
+  return (
+    <section className="karsilastir" aria-label="Ürün karşılaştırması">
+      <div className="karsilastir-bas">
+        <h3>Karşılaştırma</h3>
+        <button className="dugme yalin" onClick={temizle}>
+          Seçimi temizle
+        </button>
+      </div>
+      <div className="karsilastir-sar">
+        <table className="karsilastir-tablo">
+          <thead>
+            <tr>
+              {/* Bos kose hucresi: tablonun sol ust kosesi hicbir sutunu ya da
+                  satiri adlandirmaz, standart yazimi budur. */}
+              <td className="karsilastir-kose" />
+              {liste.map((u) => (
+                <th scope="col" key={u.urun}>
+                  <div className="karsilastir-sutun-bas">
+                    <span className="karsilastir-ad">{u.ad}</span>
+                    <button
+                      className="karsilastir-kaldir"
+                      onClick={() => cikar(u.urun)}
+                      aria-label={`${u.ad} ürününü karşılaştırmadan çıkar`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Puan</th>
+              {liste.map((u, i) => (
+                <td key={u.urun} className={i === enIyiPuan ? "ust" : undefined}>
+                  <span className={`karsilastir-puan ${skorRengi(u.skor)}`}>
+                    {u.skor.toFixed(0)}
+                  </span>
+                </td>
+              ))}
+            </tr>
+
+            {faktorAdlari.map((ad) => {
+              const hucreler = liste.map((u) =>
+                faktorleriAl(u).find((f) => f.faktor === ad) ?? null,
+              );
+              const enIyi = enIyiSira(hucreler.map((f) => (f ? f.uyum : null)), 1);
+              return (
+                <tr key={ad}>
+                  <th scope="row">{ad}</th>
+                  {hucreler.map((f, i) => (
+                    <td key={liste[i].urun} className={i === enIyi ? "ust" : undefined}>
+                      {f == null ? (
+                        /* Cizgi degil kelime: bos hucre "sifir" sanilabilir,
+                           oysa dogrusu "bu urunde bu faktor hic hesaplanmadi". */
+                        <span className="karsilastir-yok">hesaplanmadı</span>
+                      ) : (
+                        <>
+                          <span className="karsilastir-deger">
+                            {f.deger}
+                            {f.birim ? ` ${f.birim}` : ""}
+                          </span>
+                          <span className="karsilastir-uyum">
+                            %{Math.round(f.uyum * 100)}
+                          </span>
+                          <span className="karsilastir-yol">
+                            <span
+                              className={`karsilastir-dolu ${skorRengi(f.uyum * 100)}`}
+                              style={{ width: `${Math.round(f.uyum * 100)}%` }}
+                            />
+                          </span>
+                        </>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+
+            <tr>
+              <th scope="row">Sulama ihtiyacı</th>
+              {liste.map((u, i) => (
+                <td key={u.urun} className={i === enIyiSu ? "ust" : undefined}>
+                  {u.su_acigi_mm > 0 ? (
+                    <span className="karsilastir-deger">
+                      {u.su_acigi_mm.toFixed(0)} mm
+                    </span>
+                  ) : (
+                    <span className="karsilastir-deger">yağış yeterli</span>
+                  )}
+                </td>
+              ))}
+            </tr>
+
+            {gaezVar && (
+              <tr>
+                <th scope="row">FAO GAEZ</th>
+                {liste.map((u, i) => (
+                  <td key={u.urun} className={i === enIyiGaez ? "ust" : undefined}>
+                    {u.uygunluk_gaez == null ? (
+                      <span className="karsilastir-yok">veri yok</span>
+                    ) : (
+                      <span className="karsilastir-deger">
+                        {u.uygunluk_gaez.toFixed(0)}/100
+                      </span>
+                    )}
+                  </td>
+                ))}
+              </tr>
+            )}
+
+            <tr>
+              <th scope="row">Ekim ayları</th>
+              {liste.map((u) => {
+                const aylar = ekimAylari(u);
+                return (
+                  <td key={u.urun}>
+                    <span className="karsilastir-deger">
+                      {u.cok_yillik
+                        ? "çok yıllık, fidan"
+                        : aylar.length > 0
+                          ? aylar.map((a) => a.slice(0, 3)).join(", ")
+                          : "belirlenemedi"}
+                    </span>
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      {/* Isaretin ne oldugu YAZIYOR. Renkli bir hucreyi aciklamasiz birakmak
+          kullaniciyi tahmine zorlar; ustelik esitlikte hicbir hucre
+          isaretlenmedigi icin isaretin YOKLUGU da bir bilgi. */}
+      <p className="karsilastir-not">
+        Koyu zeminli hücre o satırın en iyisidir. Eşitlikte hiçbiri
+        işaretlenmez. Toprak değerleri her üründe aynıdır çünkü aynı yerin
+        toprağıdır; değişen, o değerin ürüne ne kadar uyduğudur.
+      </p>
+    </section>
+  );
+}
+
 function Icerik({ o }: { o: OneriKumesi }) {
   const [filtre, setFiltre] = useState<Filtre>(FILTRE_BOS);
+  const [secili, setSecili] = useState<string[]>([]);
+  const panel = useRef<HTMLDivElement>(null);
+
+  const secim: Secim = useMemo(
+    () => ({
+      secili,
+      degistir: (urun) =>
+        setSecili((s) =>
+          s.includes(urun)
+            ? s.filter((x) => x !== urun)
+            : s.length >= KARSILASTIR_SINIR
+              ? s
+              : [...s, urun],
+        ),
+    }),
+    [secili],
+  );
+
+  // Secilen urunler TAM listeden cozuluyor (suzulmus'ten degil) ve secim
+  // sirasi korunuyor: kullanicinin isaretleme sirasi sutun sirasidir, puan
+  // sirasina gore yeniden dizmek "ben bunu ikinci sectim" beklentisini bozardi.
+  const karsilastirilan = useMemo(
+    () =>
+      secili
+        .map((k) => o.oneriler.find((x) => x.urun === k))
+        .filter((x): x is Oneri => x != null),
+    [secili, o.oneriler],
+  );
+
+  // Ikinci urun isaretlendigi anda tablo ekrana getiriliyor. Panel listenin
+  // USTUNDE duruyor; kullanici asagida secim yapiyor. Kaydirma olmasaydi tablo
+  // olusur ama gorunmezdi ve ozellik "calismiyor" sanilirdi (olculdu: 29
+  // urunluk listede ikinci secim ortalama 900 px asagida yapiliyor).
+  const sayi = karsilastirilan.length;
+  useEffect(() => {
+    if (sayi === 2) panel.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [sayi]);
 
   const gruplar = useMemo(
     () => [...new Set(o.oneriler.map((x) => x.grup))].filter(Boolean).sort(),
@@ -428,6 +732,22 @@ function Icerik({ o }: { o: OneriKumesi }) {
             gosterilen={suzulmus.length}
             toplam={o.oneriler.length}
           />
+          <div ref={panel}>
+            {karsilastirilan.length >= 2 ? (
+              <Karsilastirma
+                liste={karsilastirilan}
+                temizle={() => setSecili([])}
+                cikar={(urun) => setSecili((s) => s.filter((x) => x !== urun))}
+              />
+            ) : (
+              karsilastirilan.length === 1 && (
+                <p className="karsilastir-ipucu">
+                  {karsilastirilan[0].ad} seçildi. Yan yana koymak için bir ürün
+                  daha işaretleyin.
+                </p>
+              )
+            )}
+          </div>
           {/* "Filtreye uyan yok" ile "burada urun yetismez" AYRI cumleler.
               Ikisi de bos liste uretir ama biri kullanicinin secimi, digeri
               toprak ve iklimin sonucu. Ayni metni yazmak, filtreyi acik unutan
@@ -444,6 +764,7 @@ function Icerik({ o }: { o: OneriKumesi }) {
             liste={simdi}
             baslangicta_acik={true}
             suAnkiAy={o.su_anki_ay}
+            secim={secim}
           />
           <Bolum
             baslik="Mevsiminde ekilebilir"
@@ -451,6 +772,7 @@ function Icerik({ o }: { o: OneriKumesi }) {
             liste={sonra}
             baslangicta_acik={false}
             suAnkiAy={o.su_anki_ay}
+            secim={secim}
           />
           <Bolum
             baslik="Çok yıllık · fidan"
@@ -458,6 +780,7 @@ function Icerik({ o }: { o: OneriKumesi }) {
             liste={cokYillik}
             baslangicta_acik={false}
             suAnkiAy={o.su_anki_ay}
+            secim={secim}
           />
           {/* Bu uyari kaldirilmamalidir. Model bugdayi Bursa'da Temmuz ekimi
               icin 98 puanla uygun buluyor; uc aylik pencere gercekten yeterince

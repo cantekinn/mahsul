@@ -10,7 +10,7 @@ NEDEN AYRI DOSYA (classifier.py yaninda):
 
 INPUT: image bytes (PNG/JPG/vb.). OUTPUT: predict() classifier.predict()
 sozlesmesiyle AYNI dict (etiket, guven, seviye, urun, urun_guven, topk,
-margin, sebep, belirsiz).
+margin, sebep, belirsiz) + isi/kirpma (bkz. _cam).
 """
 from __future__ import annotations
 
@@ -28,6 +28,13 @@ from models.disease.classifier import (
 
 _DIR = Path(__file__).resolve().parent
 _ONNX_PATH = _DIR / "efficientnetv2_plant.onnx"
+# CAM icin siniflandirici agirliklari (45x1280). Modelin ICINDE initializer
+# olarak duruyor ama onnxruntime initializer'lari disari vermiyor; sirf bunu
+# okumak icin `onnx` (protobuf) paketini canliya sokmamak adina ayri .npy.
+# Uretici: scripts/model_cam_ciktisi.py
+_CAM_AGIRLIK_PATH = _DIR / "cam_agirlik.npy"
+# Modele scripts/model_cam_ciktisi.py tarafindan eklenen ikinci cikti.
+_OZELLIK_TENSOR = "/bn2/act/Mul_output_0"
 
 # ImageNet normalizasyonu (train.py ile birebir ayni)
 _MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
@@ -77,11 +84,15 @@ def _session():
         providers=["CPUExecutionProvider"],
     )
     girdi_ad = sess.get_inputs()[0].name
-    cikti_ad = sess.get_outputs()[0].name
-    return sess, girdi_ad, cikti_ad
+    ciktilar = [o.name for o in sess.get_outputs()]
+    # Isi haritasi ciktisi YAMALANMAMIS modellerde yok. Varligi burada bir kez
+    # sorulur; her istekte kontrol etmek yerine None tasinir ve teshis isi
+    # haritasi olmadan calismaya devam eder (eski model dosyasiyla da acilir).
+    ozellik_ad = _OZELLIK_TENSOR if _OZELLIK_TENSOR in ciktilar else None
+    return sess, girdi_ad, ciktilar[0], ozellik_ad
 
 
-def _preprocess_bytes(img_bytes: bytes) -> np.ndarray:
+def _preprocess_bytes(img_bytes: bytes) -> tuple[np.ndarray, dict]:
     """Resim baytlarini modelin bekledigi (1,3,224,224) float32 tensore cevirir.
 
     train.py'nin _preprocess() ile birebir: kisa kenari IMG_SIZE'a esitle
@@ -90,6 +101,12 @@ def _preprocess_bytes(img_bytes: bytes) -> np.ndarray:
 
     torchvision.Resize(IMG_SIZE): kisa kenari IMG_SIZE'a esitler (aspect korunur).
     PIL Image.resize aspect korumaz; ayni davranisi elle hesapliyoruz.
+
+    IKINCI DONUS DEGERI kirpma dikdortgeni, ORIJINAL fotografin pikselinde.
+    Model kareyi gorur, kullanici tam fotografi gorur; isi haritasini tam
+    fotografin uzerine cizmek isiyi yanlis yere dusururdu. Hesabin burada
+    yapilmasi onemli: kirpmanin kurali bu fonksiyonun kendisi, ikinci bir
+    yerde tekrarlanirsa iki taraf sessizce ayrisir.
     """
     img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     w, h = img.size
@@ -97,14 +114,57 @@ def _preprocess_bytes(img_bytes: bytes) -> np.ndarray:
         yw, yh = IMG_SIZE, int(round(h * IMG_SIZE / w))
     else:
         yw, yh = int(round(w * IMG_SIZE / h)), IMG_SIZE
+    olcek = yw / w  # yh / h ile ayni (aspect korundu)
     img = img.resize((yw, yh), Image.BILINEAR)
     l = (yw - IMG_SIZE) // 2
     t = (yh - IMG_SIZE) // 2
     img = img.crop((l, t, l + IMG_SIZE, t + IMG_SIZE))
+    kirpma = {
+        "x": round(l / olcek, 1),
+        "y": round(t / olcek, 1),
+        "boyut": round(IMG_SIZE / olcek, 1),
+        "genislik": w,
+        "yukseklik": h,
+    }
     arr = np.asarray(img, dtype=np.float32) / 255.0
     arr = (arr - _MEAN) / _STD
     arr = arr.transpose(2, 0, 1)[None, ...]  # HWC -> NCHW
-    return arr.astype(np.float32)
+    return arr.astype(np.float32), kirpma
+
+
+@lru_cache(maxsize=1)
+def _cam_agirlik() -> np.ndarray | None:
+    """Siniflandirici agirlik matrisi (45,1280) ya da dosya yoksa None."""
+    if not _CAM_AGIRLIK_PATH.exists():
+        return None
+    return np.load(_CAM_AGIRLIK_PATH).astype(np.float32)
+
+
+def _cam(ozellik: np.ndarray, sinif: int) -> list[list[float]] | None:
+    """Sinif etkinlik haritasi: modelin karari icin hangi bolgeye baktigi.
+
+    ozellik: (1,1280,7,7) GAP oncesi aktivasyon. sinif: satir indisi.
+
+    MATEMATIK: bas kismi GAP + Linear oldugu icin
+        logit[c] = ortalama_hw( toplam_k W[c,k] * A[k,h,w] ) + b[c]
+    yani asagidaki carpim, logitin mekansal dagilimidir. Grad-CAM ayni sayiyi
+    turevden bulur; bu mimaride turev sabit (W[c,k]/(H*W)) oldugu icin sonuc
+    ayni haritadir, geri yayilim gerekmiyor.
+
+    ReLU: negatif katkilar "bu sinifa KARSI kanit" demek. Onlari da boyamak
+    "model buraya bakti" izlenimi verirdi, oysa tam tersi.
+    """
+    w = _cam_agirlik()
+    if w is None or sinif >= w.shape[0]:
+        return None
+    a = ozellik[0]                              # (1280,H,W)
+    harita = np.tensordot(w[sinif], a, axes=(0, 0))  # (H,W)
+    harita = np.maximum(harita, 0.0)
+    tepe = float(harita.max())
+    if tepe <= 0.0:
+        return None
+    harita /= tepe
+    return [[round(float(v), 3) for v in satir] for satir in harita]
 
 
 def _softmax(x: np.ndarray) -> np.ndarray:
@@ -125,9 +185,11 @@ def predict(image_bytes: bytes, topk: int = 3) -> dict:
     if not is_available():
         raise TeshisModelYok(status())
 
-    sess, girdi_ad, cikti_ad = _session()
-    x = _preprocess_bytes(image_bytes)
-    logits = sess.run([cikti_ad], {girdi_ad: x})[0][0]
+    sess, girdi_ad, cikti_ad, ozellik_ad = _session()
+    x, kirpma = _preprocess_bytes(image_bytes)
+    istenen = [cikti_ad] if ozellik_ad is None else [cikti_ad, ozellik_ad]
+    sonuc = sess.run(istenen, {girdi_ad: x})
+    logits = sonuc[0][0]
     probs = _softmax(logits)
 
     labels = load_labels()
@@ -159,6 +221,11 @@ def predict(image_bytes: bytes, topk: int = 3) -> dict:
     else:
         seviye, sebep = "belirsiz", "guven_dusuk"
 
+    # Isi haritasi TOP-1 sinif icin. Kullanicinin ekranda okudugu teshis o;
+    # baska bir sinifin haritasini gostermek "model buraya bakip bunu dedi"
+    # cumlesini yalanlardi.
+    isi = _cam(sonuc[1], int(idx_sorted[0])) if ozellik_ad is not None else None
+
     return {
         "etiket": top[0]["etiket"],
         "guven": top1,
@@ -169,4 +236,6 @@ def predict(image_bytes: bytes, topk: int = 3) -> dict:
         "urun": urun,
         "urun_guven": urun_guven,
         "topk": top,
+        "isi": isi,
+        "kirpma": kirpma,
     }

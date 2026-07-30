@@ -572,6 +572,35 @@ export interface components {
             /** Aciklama */
             aciklama: string;
         };
+        /**
+         * Kirpma
+         * @description Modelin gercekte gordugu kare, ORIJINAL fotografin pikselinde.
+         *
+         *     Model kisa kenari 224'e olcekleyip merkezden kare kesiyor; kullanici ise
+         *     tam fotografi goruyor. Isi haritasi tam fotografin uzerine cizilseydi
+         *     kenarlardaki kayma yuzunden isi yanlis yaprak parcasina duserdi.
+         */
+        Kirpma: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+            /**
+             * Boyut
+             * @description Kare kenari (piksel).
+             */
+            boyut: number;
+            /**
+             * Genislik
+             * @description Yuklenen fotografin genisligi.
+             */
+            genislik: number;
+            /**
+             * Yukseklik
+             * @description Yuklenen fotografin yuksekligi.
+             */
+            yukseklik: number;
+        };
         /** KisayolYanit */
         KisayolYanit: {
             /**
@@ -994,6 +1023,13 @@ export interface components {
              * @description Seviyeye gore kullaniciya mesaj.
              */
             uyari?: string | null;
+            /**
+             * Isi
+             * @description Sinif etkinlik haritasi (CAM), 7x7, 0-1 arasi normalize. Top-1 sinifin logitinin mekansal ayrisimi: kareler toplandiginda modelin o sinifa verdigi puani yeniden kurar. Model dosyasi yamalanmamissa null.
+             */
+            isi?: number[][] | null;
+            /** @description Isi haritasinin oturdugu kare. */
+            kirpma?: components["schemas"]["Kirpma"] | null;
         };
         /** TkgmParsel */
         TkgmParsel: {

@@ -120,6 +120,11 @@ COPY --chown=kullanici models/disease/classifier_onnx.py             models/dise
 COPY --chown=kullanici models/disease/tedavi.py                      models/disease/tedavi.py
 COPY --chown=kullanici models/disease/labels.txt                     models/disease/labels.txt
 COPY --chown=kullanici models/disease/efficientnetv2_plant.onnx      models/disease/efficientnetv2_plant.onnx
+# Isi haritasi (CAM) agirliklari, 231 KB. Ayni sayilar modelin ICINDE
+# initializer olarak duruyor ama onnxruntime initializer'lari disari vermiyor;
+# okumak icin `onnx` (protobuf) paketini imaja sokmak gerekirdi. Eksik olursa
+# teshis calisir, sadece "model nereye bakti" haritasi null doner.
+COPY --chown=kullanici models/disease/cam_agirlik.npy                models/disease/cam_agirlik.npy
 
 # ONBELLEK IMAJIN ICINE GIRIYOR (155 dosya / 463 KB). Ucretsiz barindirmada
 # disk kalici degil: Space uykudan kalkinca calisma anindaki onbellek silinir.
@@ -177,7 +182,7 @@ COPY --from=arayuz --chown=kullanici /kaynak/dist  web/dist
 # Asagisi ayni sorulari dis paket olmadan yanitliyor.
 RUN python -c "\
 from api.main import app, kisayollar, tkgm_parselleri; \
-from models.disease.classifier_onnx import is_available as teshis_hazir, _session; \
+from models.disease.classifier_onnx import is_available as teshis_hazir, _session, _cam_agirlik; \
 from knowledge import kapsam, karbon; \
 from agents.router import route; \
 yollar = {r.path for r in app.routes}; \
@@ -196,6 +201,11 @@ assert any(getattr(r, 'name', '') == 'arayuz' for r in app.routes), \
        'arayuz mount edilmemis: web/dist imaja girmemis'; \
 assert teshis_hazir(), 'teshis modeli hazir degil (onnxruntime veya .onnx eksik)'; \
 _session(); \
+w = _cam_agirlik(); \
+assert w is not None and w.shape == (45, 1280), \
+       f'cam_agirlik.npy imaja girmemis ya da sekli bozuk: {None if w is None else w.shape}'; \
+assert (__import__('pathlib').Path('web/dist/sw.js')).exists(), \
+       'sw.js web/dist icinde yok: derleme public/ klasorunu kopyalamamis'; \
 p = tkgm_parselleri(); \
 assert len(p) >= 40, f'tapu parselleri imaja girmemis: {len(p)} kayit'; \
 assert all(x.dekar > 0 for x in p), 'parsel alani sifir: geometri okunamamis'; \

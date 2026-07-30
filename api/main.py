@@ -584,6 +584,20 @@ class TedaviKaydi(BaseModel):
     korunma: str = ""
 
 
+class Kirpma(BaseModel):
+    """Modelin gercekte gordugu kare, ORIJINAL fotografin pikselinde.
+
+    Model kisa kenari 224'e olcekleyip merkezden kare kesiyor; kullanici ise
+    tam fotografi goruyor. Isi haritasi tam fotografin uzerine cizilseydi
+    kenarlardaki kayma yuzunden isi yanlis yaprak parcasina duserdi.
+    """
+    x: float
+    y: float
+    boyut: float = Field(..., description="Kare kenari (piksel).")
+    genislik: int = Field(..., description="Yuklenen fotografin genisligi.")
+    yukseklik: int = Field(..., description="Yuklenen fotografin yuksekligi.")
+
+
 class TeshisYanit(BaseModel):
     """Yaprak fotografindan hastalik teshis sonucu.
 
@@ -606,6 +620,13 @@ class TeshisYanit(BaseModel):
     topk: list[TopKMadde]
     tedavi: TedaviKaydi | None = Field(None, description="treatments.yaml kaydi. Saglikli/tanimsiz icin null.")
     uyari: str | None = Field(None, description="Seviyeye gore kullaniciya mesaj.")
+    isi: list[list[float]] | None = Field(
+        None,
+        description="Sinif etkinlik haritasi (CAM), 7x7, 0-1 arasi normalize. "
+                    "Top-1 sinifin logitinin mekansal ayrisimi: kareler "
+                    "toplandiginda modelin o sinifa verdigi puani yeniden "
+                    "kurar. Model dosyasi yamalanmamissa null.")
+    kirpma: Kirpma | None = Field(None, description="Isi haritasinin oturdugu kare.")
 
 
 def _uyari_metni(seviye: str, sebep: str | None) -> str | None:
@@ -681,6 +702,8 @@ async def teshis(dosya: UploadFile = File(..., description="Yaprak fotoğrafı (
         ],
         tedavi=TedaviKaydi(**tedavi_dict) if tedavi_dict else None,
         uyari=_uyari_metni(sonuc["seviye"], sonuc["sebep"]),
+        isi=sonuc.get("isi"),
+        kirpma=Kirpma(**sonuc["kirpma"]) if sonuc.get("kirpma") else None,
     )
 
 

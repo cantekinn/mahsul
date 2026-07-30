@@ -15,6 +15,9 @@
  * - Tedavi bilgisi accordeon degil dogrudan acik: 4 alan (belirti, dogal,
  *   kimyasal, korunma) hem az yer tutar hem de tikla-ac adimini ortadan
  *   kaldirir. Ciftci tarlada iken hizli okumali.
+ * - Isi haritasi ONIZLEMENIN UZERINDE, sonuc kartinda degil: "model neye
+ *   bakti" sorusunun cevabi fotografin kendisi. Ikinci bir kucuk resim
+ *   koysaydik kullanici iki gorseli zihninde hizalamak zorunda kalirdi.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiHatasi } from "../api/istemci";
@@ -61,9 +64,118 @@ function seviyeYazi(seviye: string): string {
   }
 }
 
+/**
+ * Isi haritasini onizleme fotografinin uzerine cizer.
+ *
+ * IKI KOORDINAT DONUSUMU VAR, ikisi de atlanirsa isi yanlis yere duser:
+ *  1) Model tam fotografi degil, MERKEZDEN KESILMIS KAREYI gordu. Sunucu bu
+ *     karenin yerini orijinal piksellerde bildiriyor (kirpma).
+ *  2) <img> `object-fit: contain` ile cizildigi icin eleman kutusu ile
+ *     fotografin cizildigi alan ayni degil; kenarlarda bos serit kaliyor.
+ *     Bu seridi hesaba katmazsak isi kaymis gorunur.
+ *
+ * 7x7'lik izgara canvas'in kendi bilinear olceklemesiyle yumusatiliyor;
+ * elle interpolasyon yazmak ayni sonucu daha uzun yoldan verirdi.
+ */
+function IsiBindirme({
+  isi,
+  kirpma,
+  gorsel,
+}: {
+  isi: number[][];
+  kirpma: NonNullable<Teshis["kirpma"]>;
+  gorsel: React.RefObject<HTMLImageElement | null>;
+}) {
+  const tuval = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const ciz = () => {
+      const img = gorsel.current;
+      const c = tuval.current;
+      if (!img || !c || !img.naturalWidth) return;
+
+      const kw = img.clientWidth;
+      const kh = img.clientHeight;
+      const dpr = window.devicePixelRatio || 1;
+      c.width = Math.round(kw * dpr);
+      c.height = Math.round(kh * dpr);
+      c.style.width = `${kw}px`;
+      c.style.height = `${kh}px`;
+
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, kw, kh);
+
+      // object-fit: contain -> fotograf kutuya sigacak sekilde olceklenir.
+      const olcek = Math.min(kw / img.naturalWidth, kh / img.naturalHeight);
+      const cizW = img.naturalWidth * olcek;
+      const cizH = img.naturalHeight * olcek;
+      const bosX = (kw - cizW) / 2;
+      const bosY = (kh - cizH) / 2;
+
+      const satir = isi.length;
+      const sutun = isi[0]?.length ?? 0;
+      if (!satir || !sutun) return;
+
+      // Kucuk tuval: her hucre 1 piksel. Buyuturken tarayicinin bilinear
+      // filtresi izgarayi yumusatiyor.
+      const kucuk = document.createElement("canvas");
+      kucuk.width = sutun;
+      kucuk.height = satir;
+      const kctx = kucuk.getContext("2d");
+      if (!kctx) return;
+      const veri = kctx.createImageData(sutun, satir);
+      for (let y = 0; y < satir; y++) {
+        for (let x = 0; x < sutun; x++) {
+          const v = Math.min(1, Math.max(0, isi[y][x]));
+          const i = (y * sutun + x) * 4;
+          // Sari -> kirmizi rampasi. Dusuk deger neredeyse seffaf: sifira
+          // yakin bolgelere de renk vermek "her yere bakti" izlenimi verirdi.
+          veri.data[i] = Math.round(247 + (217 - 247) * v);
+          veri.data[i + 1] = Math.round(209 + (79 - 209) * v);
+          veri.data[i + 2] = Math.round(84 + (61 - 84) * v);
+          veri.data[i + 3] = Math.round(v * v * 210);
+        }
+      }
+      kctx.putImageData(veri, 0, 0);
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(
+        kucuk,
+        bosX + kirpma.x * olcek,
+        bosY + kirpma.y * olcek,
+        kirpma.boyut * olcek,
+        kirpma.boyut * olcek,
+      );
+    };
+
+    ciz();
+    const img = gorsel.current;
+    // Fotograf henuz cozulmemis olabilir; kutu boyutu da sekme/pencere
+    // degisiminde kayar. Ikisini de dinlemezsek harita bir kez yanlis
+    // olcekte cizilip oyle kalir.
+    img?.addEventListener("load", ciz);
+    const gozcu = new ResizeObserver(ciz);
+    if (img) gozcu.observe(img);
+    return () => {
+      img?.removeEventListener("load", ciz);
+      gozcu.disconnect();
+    };
+  }, [isi, kirpma, gorsel]);
+
+  return <canvas ref={tuval} className="teshis-isi" aria-hidden="true" />;
+}
+
 export default function TeshisPaneli() {
   const [durum, setDurum] = useState<Durum>({ tur: "bos" });
+  // Isi haritasi varsayilan olarak ACIK: kullanicinin sormadan once merak
+  // ettigi sey "neye bakti". Kapatma secenegi lekenin kendisini gormek
+  // isteyen icin duruyor.
+  const [isiAcik, setIsiAcik] = useState(true);
   const dosyaGirdisi = useRef<HTMLInputElement>(null);
+  const onizlemeGorsel = useRef<HTMLImageElement>(null);
 
   // Onizleme URL'ini component unmount olurken serbest birak. Aksi halde
   // blob URL'leri bellekte kalir ve /teshis sekmesinden cikip donen kullanici
@@ -178,7 +290,20 @@ export default function TeshisPaneli() {
         {durum.tur !== "bos" && durum.tur !== "hazirlaniyor" && (
           <>
             <div className="teshis-onizleme">
-              <img src={durum.onizlemeUrl} alt="Seçilen yaprak" />
+              <div className="teshis-gorsel">
+                <img
+                  ref={onizlemeGorsel}
+                  src={durum.onizlemeUrl}
+                  alt="Seçilen yaprak"
+                />
+                {isiAcik && durum.tur === "sonuc" && durum.teshis.isi && durum.teshis.kirpma && (
+                  <IsiBindirme
+                    isi={durum.teshis.isi}
+                    kirpma={durum.teshis.kirpma}
+                    gorsel={onizlemeGorsel}
+                  />
+                )}
+              </div>
               <div className="teshis-onizleme-alt">
                 <span className="dosya-ad">{durum.dosya.name}</span>
                 <span className="dosya-boyut">
@@ -186,6 +311,27 @@ export default function TeshisPaneli() {
                 </span>
               </div>
             </div>
+            {durum.tur === "sonuc" && durum.teshis.isi && (
+              <div className="teshis-isi-satir">
+                <button
+                  type="button"
+                  className="dugme yalin"
+                  aria-pressed={isiAcik}
+                  onClick={() => setIsiAcik((a) => !a)}
+                >
+                  {isiAcik ? "Isı haritasını gizle" : "Modelin baktığı yeri göster"}
+                </button>
+                {isiAcik && (
+                  <p className="teshis-isi-not">
+                    Kırmızı bölge, modelin bu teşhise en çok bu noktalardan
+                    karar verdiği yer. Çözünürlük 7x7, yani yaklaşık 32
+                    piksellik kareler: bölgeyi gösterir, lekenin kendisini
+                    değil. Fotoğrafın kenarları modele hiç gitmedi, ortadan
+                    kare kesiliyor.
+                  </p>
+                )}
+              </div>
+            )}
             {/* Kucultme sessizce yapilmaz, kullaniciya SOYLENIR. Ciftci
                 fotografinin degistirildigini bilmeli ve ayrinti kaybi olmadigini
                 gorebilmeli. */}

@@ -828,6 +828,251 @@ body {
   }
 }
 
+/* ---------------------------------------------------------------------------
+   KARSILASTIRMA
+--------------------------------------------------------------------------- */
+
+/* Kart icindeki secim kutusu. Kartin EN ALTINDA ve ust cizgiyle ayrilmis:
+   yukarisi urunun kendi bilgisi, burasi kullanicinin isi. Basliga bitisik
+   olsaydi puanin bir parcasi gibi okunurdu. */
+.urun-sec {
+  display: flex;
+  align-items: center;
+  gap: var(--bos-2);
+  margin-top: var(--bos-3);
+  padding-top: var(--bos-2);
+  border-top: 1px solid var(--cizgi);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.urun-sec input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--yesil);
+  cursor: pointer;
+}
+
+/* Sinira gelindiginde kutu SILINMIYOR, sonuyor. Kaybolan kutu "bu urun
+   karsilastirilamaz" izlenimi verirdi; oysa dogrusu "once birini birak". */
+.urun-sec:has(input:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.urun-sec input:disabled {
+  cursor: not-allowed;
+}
+
+/* Secili kartin kendisi de isaretli: tablo yukarida, kart asagida. Isaret
+   olmasa kullanici hangi ucunu sectigini bulmak icin listeyi tarardi. */
+.urun.secili {
+  border-color: var(--yesil);
+  box-shadow: 0 0 0 1px var(--yesil);
+}
+
+.karsilastir-ipucu {
+  margin: var(--bos-3) 0 0;
+  padding: var(--bos-2) var(--bos-3);
+  border-radius: var(--yuvarlak-m);
+  background: var(--basari-zemin);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--yesil-koyu);
+}
+
+.karsilastir {
+  margin-top: var(--bos-3);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-l);
+  background: var(--kart);
+  padding: var(--bos-3);
+  box-shadow: var(--golge-1);
+}
+
+.karsilastir-bas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  margin-bottom: var(--bos-2);
+}
+
+.karsilastir-bas h3 {
+  margin: 0;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+}
+
+/* Iki sutun en dar telefonda bile sigiyor (olculdu), yani bu kaydirma normal
+   kullanimda hic tetiklenmez. Yine de duruyor: cok uzun bir urun adi tabloyu
+   tasirirsa hucre kirilmak yerine kaysin. */
+.karsilastir-sar {
+  overflow-x: auto;
+}
+
+/* table-layout: fixed. Otomatik yerlesimde sutun genisligini ICERIK belirliyor
+   ve "893 mm" gibi bolunemez bir hucre tabloyu kabin disina itiyordu (olculdu:
+   375 px telefonda 268 px'lik kutuya 271 px'lik tablo). Sabit yerlesimde
+   genislikler asagidaki yuzdelerden okunur, icerik sarilir. */
+.karsilastir-tablo {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  overflow-wrap: break-word;
+}
+
+.karsilastir-tablo th,
+.karsilastir-tablo td {
+  border: 1px solid var(--cizgi);
+  padding: var(--bos-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Olcut sutununun genisligi BURADA duruyor, tbody th'de degil: sabit
+   yerlesimde tarayici sutun genisliklerini yalnizca ILK satirdan okur. */
+.karsilastir-kose {
+  width: 32%;
+  border: 0 !important;
+  background: none;
+}
+
+.karsilastir-tablo tbody th {
+  font-weight: 600;
+  color: var(--soluk);
+  background: var(--zemin);
+}
+
+.karsilastir-tablo thead th {
+  background: var(--zemin);
+}
+
+/* Baslik hucresinin ICINDE flex. th'nin kendisine display:flex verilemez:
+   hucre tablo yerlesiminden cikar ve sutun genislikleri hesaplanmaz olur. */
+.karsilastir-sutun-bas {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--bos-1);
+}
+
+.karsilastir-ad {
+  font-weight: 700;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--metin);
+}
+
+.karsilastir-kaldir {
+  flex: none;
+  background: none;
+  border: 0;
+  padding: 0 var(--bos-1);
+  font: inherit;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-s-satir);
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.karsilastir-kaldir:hover {
+  color: var(--hata);
+}
+
+.karsilastir-puan {
+  font-weight: 700;
+  font-size: var(--yazi-l);
+  line-height: var(--yazi-l-satir);
+}
+.karsilastir-puan.cok-iyi {
+  color: var(--skor-cok-iyi);
+}
+.karsilastir-puan.iyi {
+  color: var(--skor-iyi);
+}
+.karsilastir-puan.orta {
+  color: var(--skor-orta);
+}
+.karsilastir-puan.zayif {
+  color: var(--skor-zayif);
+}
+
+.karsilastir-deger {
+  display: block;
+  color: var(--metin);
+}
+
+.karsilastir-uyum {
+  display: block;
+  margin-top: var(--bos-1);
+  color: var(--soluk);
+  font-variant-numeric: tabular-nums;
+}
+
+.karsilastir-yok {
+  color: var(--soluk);
+  font-style: italic;
+}
+
+.karsilastir-yol {
+  display: block;
+  height: 4px;
+  margin-top: var(--bos-1);
+  border-radius: var(--yuvarlak-s);
+  background: var(--cizgi);
+  overflow: hidden;
+}
+
+.karsilastir-dolu {
+  display: block;
+  height: 100%;
+  border-radius: var(--yuvarlak-s);
+}
+.karsilastir-dolu.cok-iyi {
+  background: var(--skor-cok-iyi);
+}
+.karsilastir-dolu.iyi {
+  background: var(--skor-iyi);
+}
+.karsilastir-dolu.orta {
+  background: var(--skor-orta);
+}
+.karsilastir-dolu.zayif {
+  background: var(--skor-zayif);
+}
+
+/* Satirin en iyisi. Renk TEK BASINA tasiyici degil: hucrenin sol kenarinda
+   ayrica bir kalinlik var, boylece renk goremeyen kullanici da hangi hucrenin
+   isaretli oldugunu gorur. */
+.karsilastir-tablo td.ust {
+  background: var(--basari-zemin);
+  border-left: 3px solid var(--yesil);
+}
+
+.karsilastir-not {
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+}
+
+@media (pointer: coarse) {
+  .urun-sec {
+    min-height: 44px;
+  }
+  .urun-sec input {
+    width: 22px;
+    height: 22px;
+  }
+  .karsilastir-kaldir {
+    padding: var(--bos-2);
+  }
+}
+
 .oneri-bolum {
   margin-top: var(--bos-5);
   border-top: 1px solid var(--cizgi);
@@ -1027,12 +1272,40 @@ body {
   background: var(--zemin);
 }
 
+/* Kanvasin fotografa gore konumlanabilmesi icin sarmalayici. Kanvasi
+   dogrudan .teshis-onizleme'ye baglasaydik alt bilgi seridi de referans
+   kutuya girer ve isi asagi kayardi. */
+.teshis-gorsel {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
 .teshis-onizleme img {
   display: block;
   width: 100%;
   max-height: 320px;
   object-fit: contain;
   background: #000;
+}
+
+/* Fotografin uzerinde duruyor ama tiklamayi yutmuyor: kullanici resme uzun
+   basip kaydetmek isteyebilir. */
+.teshis-isi {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.teshis-isi-satir {
+  margin-top: var(--bos-3);
+}
+
+.teshis-isi-not {
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--soluk);
 }
 
 .teshis-onizleme-alt {
