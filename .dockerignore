@@ -21,10 +21,17 @@ data/Crop_recommendation.csv
 web/node_modules/
 web/dist/
 
-# Streamlit arayuzu, ajanlar ve egitim scriptleri servise dahil degil.
+# Streamlit arayuzu ve egitim scriptleri servise dahil degil.
 app/
-agents/
 paylasim/
+
+# agents/ TUMUYLE haric TUTULAMAZ: sulama/iklim/zararli ajanlari artik
+# /sulama, /iklim-riski ve /zararli uc noktalarindan cagriliyor, yani
+# Dockerfile onlari COPY ediyor. Blanket "agents/" satiri yuzunden bu COPY
+# "not found" ile kuruluma coktu. Servise girmeyen uc modul tek tek elenir:
+agents/orchestrator.py
+agents/diagnosis_agent.py
+agents/advisor_agent.py
 docs/
 memory/
 aksu/
