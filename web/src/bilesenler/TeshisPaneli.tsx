@@ -19,16 +19,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiHatasi } from "../api/istemci";
 import { teshisEt, type Teshis } from "../api/teshis";
+import { kucult } from "../gorsel";
 import { Kart } from "./Durum";
 
 type Durum =
   | { tur: "bos" }
-  | { tur: "secildi"; dosya: File; onizlemeUrl: string }
-  | { tur: "yukleniyor"; dosya: File; onizlemeUrl: string }
-  | { tur: "sonuc"; dosya: File; onizlemeUrl: string; teshis: Teshis }
-  | { tur: "hata"; dosya: File; onizlemeUrl: string; mesaj: string };
+  | { tur: "hazirlaniyor" }
+  | { tur: "secildi"; dosya: File; onizlemeUrl: string; kazanc: string | null }
+  | { tur: "yukleniyor"; dosya: File; onizlemeUrl: string; kazanc: string | null }
+  | { tur: "sonuc"; dosya: File; onizlemeUrl: string; kazanc: string | null; teshis: Teshis }
+  | { tur: "hata"; dosya: File; onizlemeUrl: string; kazanc: string | null; mesaj: string };
 
 const MAX_MB = 6;
+
+/** "3.8 MB -> 0.3 MB" gibi bir ozet; kucultme olmadiysa null. */
+function kazancMetni(oncesi: number, sonrasi: number): string | null {
+  if (sonrasi >= oncesi * 0.95) return null;
+  const mb = (b: number) => (b / 1024 / 1024).toFixed(1);
+  return `${mb(oncesi)} MB fotoğraf ${mb(sonrasi)} MB'a küçültüldü (model 224 piksel kullanıyor, ayrıntı kaybı yok)`;
+}
 
 function seviyeRenk(seviye: string): "kesin" | "olasi" | "belirsiz" | "tanimsiz" {
   if (seviye === "kesin" || seviye === "olasi" || seviye === "belirsiz" || seviye === "tanimsiz") {
@@ -61,55 +70,70 @@ export default function TeshisPaneli() {
   // gorunmeyen kopyalari birakir.
   useEffect(() => {
     return () => {
-      if (durum.tur !== "bos") {
+      if (durum.tur !== "bos" && durum.tur !== "hazirlaniyor") {
         URL.revokeObjectURL(durum.onizlemeUrl);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const dosyaSec = useCallback((yeni: File) => {
+  const dosyaSec = useCallback(async (secilen: File) => {
+    // ONCE KUCULT, SONRA BOYUT KONTROLU. Sirasi onemli: telefon kamerasinin
+    // 4 MB'lik ciktisi kucultmeden once 6 MB tavaninin altinda olsa bile
+    // kirsal baglantida yavas yuklenir. Kucultme ayrica EXIF donusunu de
+    // duzeltir (bkz gorsel.ts).
+    setDurum((eski) => {
+      if (eski.tur !== "bos" && eski.tur !== "hazirlaniyor") {
+        URL.revokeObjectURL(eski.onizlemeUrl);
+      }
+      return { tur: "hazirlaniyor" };
+    });
+
+    const yeni = await kucult(secilen);
+    const kazanc = kazancMetni(secilen.size, yeni.size);
+    const onizlemeUrl = URL.createObjectURL(yeni);
+
+    // Kucultmeye ragmen tavani asiyorsa (cok buyuk panorama vb.) reddet.
     if (yeni.size > MAX_MB * 1024 * 1024) {
-      // Sunucu tarafinda da kontrol var ama istegi hic gondermeden burada
-      // reddetmek 6 MB'lik yuk transferinden kurtarir.
       setDurum({
         tur: "hata",
         dosya: yeni,
-        onizlemeUrl: URL.createObjectURL(yeni),
+        onizlemeUrl,
+        kazanc,
         mesaj: `Dosya çok büyük: ${(yeni.size / 1024 / 1024).toFixed(1)} MB (üst sınır ${MAX_MB} MB)`,
       });
       return;
     }
-    setDurum((eski) => {
-      if (eski.tur !== "bos") URL.revokeObjectURL(eski.onizlemeUrl);
-      return { tur: "secildi", dosya: yeni, onizlemeUrl: URL.createObjectURL(yeni) };
-    });
+    setDurum({ tur: "secildi", dosya: yeni, onizlemeUrl, kazanc });
   }, []);
 
   const dosyaDegisti = (e: React.ChangeEvent<HTMLInputElement>) => {
     const d = e.target.files?.[0];
-    if (d) dosyaSec(d);
+    if (d) void dosyaSec(d);
   };
 
   const analizEt = async () => {
     if (durum.tur !== "secildi" && durum.tur !== "hata" && durum.tur !== "sonuc") return;
-    const { dosya, onizlemeUrl } = durum;
-    setDurum({ tur: "yukleniyor", dosya, onizlemeUrl });
+    const { dosya, onizlemeUrl, kazanc } = durum;
+    setDurum({ tur: "yukleniyor", dosya, onizlemeUrl, kazanc });
     try {
       const t = await teshisEt(dosya);
-      setDurum({ tur: "sonuc", dosya, onizlemeUrl, teshis: t });
+      setDurum({ tur: "sonuc", dosya, onizlemeUrl, kazanc, teshis: t });
     } catch (e) {
       setDurum({
         tur: "hata",
         dosya,
         onizlemeUrl,
+        kazanc,
         mesaj: e instanceof ApiHatasi ? e.message : "Sunucuya ulaşılamadı",
       });
     }
   };
 
   const temizle = () => {
-    if (durum.tur !== "bos") URL.revokeObjectURL(durum.onizlemeUrl);
+    if (durum.tur !== "bos" && durum.tur !== "hazirlaniyor") {
+      URL.revokeObjectURL(durum.onizlemeUrl);
+    }
     setDurum({ tur: "bos" });
     if (dosyaGirdisi.current) dosyaGirdisi.current.value = "";
   };
@@ -140,23 +164,33 @@ export default function TeshisPaneli() {
           <label htmlFor="teshis-dosya" className="dugme teshis-sec-dugme">
             {durum.tur === "bos" ? "Fotoğraf seç / çek" : "Başka fotoğraf"}
           </label>
-          {durum.tur !== "bos" && (
+          {durum.tur !== "bos" && durum.tur !== "hazirlaniyor" && (
             <button className="dugme yalin" onClick={temizle} type="button">
               Temizle
             </button>
           )}
         </div>
 
-        {durum.tur !== "bos" && (
-          <div className="teshis-onizleme">
-            <img src={durum.onizlemeUrl} alt="Seçilen yaprak" />
-            <div className="teshis-onizleme-alt">
-              <span className="dosya-ad">{durum.dosya.name}</span>
-              <span className="dosya-boyut">
-                {(durum.dosya.size / 1024).toFixed(0)} KB
-              </span>
+        {durum.tur === "hazirlaniyor" && (
+          <p className="bekleyen">Fotoğraf hazırlanıyor...</p>
+        )}
+
+        {durum.tur !== "bos" && durum.tur !== "hazirlaniyor" && (
+          <>
+            <div className="teshis-onizleme">
+              <img src={durum.onizlemeUrl} alt="Seçilen yaprak" />
+              <div className="teshis-onizleme-alt">
+                <span className="dosya-ad">{durum.dosya.name}</span>
+                <span className="dosya-boyut">
+                  {(durum.dosya.size / 1024).toFixed(0)} KB
+                </span>
+              </div>
             </div>
-          </div>
+            {/* Kucultme sessizce yapilmaz, kullaniciya SOYLENIR. Ciftci
+                fotografinin degistirildigini bilmeli ve ayrinti kaybi olmadigini
+                gorebilmeli. */}
+            {durum.kazanc && <p className="teshis-kazanc">{durum.kazanc}</p>}
+          </>
         )}
 
         {(durum.tur === "secildi" || durum.tur === "hata") && (
@@ -252,7 +286,7 @@ function SonucKarti({ teshis }: { teshis: Teshis }) {
           <ol>
             {teshis.topk.slice(1).map((m) => (
               <li key={m.etiket}>
-                <span>{m.etiket.replace(/_/g, " ")}</span>
+                <span>{m.etiket_tr}</span>
                 <span className="alt-guven">%{Math.round(m.guven * 100)}</span>
               </li>
             ))}

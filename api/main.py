@@ -557,6 +557,12 @@ MAX_TESHIS_BYTES = 6 * 1024 * 1024  # 6 MB. Mobil kamera JPEG'i 2-4 MB, yer var.
 
 class TopKMadde(BaseModel):
     etiket: str = Field(..., description="Model etiketi, ornek 'domates_erken_yaniklik'.")
+    # Alt tahminler de arayuzde OKUNUR metin olarak cikiyor. Ham etiketin alt
+    # cizgilerini bosluga cevirmek yetmiyordu: "patates erken yaniklik" gibi
+    # Turkce karakteri olmayan bir metin uretiyordu. Ceviri ana etiketle AYNI
+    # kaynaktan (label_display) geliyor ki ayni hastalik iki yerde iki farkli
+    # adla gorunmesin.
+    etiket_tr: str = Field(..., description="Okunabilir Turkce ad.")
     guven: float = Field(..., ge=0.0, le=1.0)
 
 
@@ -660,7 +666,10 @@ async def teshis(dosya: UploadFile = File(..., description="Yaprak fotoğrafı (
         urun=sonuc["urun"],
         urun_tr=CROP_TR.get(sonuc["urun"]) if sonuc["urun"] else None,
         urun_guven=sonuc["urun_guven"],
-        topk=[TopKMadde(**m) for m in sonuc["topk"]],
+        topk=[
+            TopKMadde(etiket=m["etiket"], etiket_tr=label_display(m["etiket"]), guven=m["guven"])
+            for m in sonuc["topk"]
+        ],
         tedavi=TedaviKaydi(**tedavi_dict) if tedavi_dict else None,
         uyari=_uyari_metni(sonuc["seviye"], sonuc["sebep"]),
     )

@@ -572,6 +572,14 @@ body {
 
 /* Rozet: seviye renkleri semantik. kesin=yesil (var(--yesil)), olasi=sari,
    belirsiz=turuncu, tanimsiz=gri. Guven cubugu ile ayni palet. */
+/* Kucultme bildirimi: bilgi tonunda, uyari degil. Yapilan islem gizlenmiyor. */
+.teshis-kazanc {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--soluk);
+  line-height: 1.45;
+}
+
 .teshis-rozet {
   display: inline-block;
   padding: 4px 10px;

@@ -614,6 +614,11 @@ export interface components {
              * @description Model etiketi, ornek 'domates_erken_yaniklik'.
              */
             etiket: string;
+            /**
+             * Etiket Tr
+             * @description Okunabilir Turkce ad.
+             */
+            etiket_tr: string;
             /** Guven */
             guven: number;
         };
