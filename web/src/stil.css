@@ -748,3 +748,211 @@ body {
   color: var(--soluk);
   font-variant-numeric: tabular-nums;
 }
+
+/* --------------------------------------------------------------------------
+   Tarla takvimi (sulama / iklim riski / zararli)
+   -------------------------------------------------------------------------- */
+
+.tarla-govde {
+  display: block;
+}
+
+.tarla-panel {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.tarla-secim {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.tarla-secim label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--soluk);
+}
+
+.tarla-secim select,
+.tarla-secim input {
+  font: inherit;
+  font-size: 15px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--metin);
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: 8px;
+  /* 44 px dokunma hedefi: bu ekran tarlada telefonla aciliyor. */
+  min-height: 44px;
+  padding: 8px 10px;
+}
+
+.tarla-secim input {
+  width: 150px;
+}
+
+/* Uc kart yan yana; dar ekranda alt alta. Kartlar bagimsiz yuklendigi icin
+   biri beklerken digeri okunabilir kaliyor. */
+.tarla-kartlar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.tarla-olcum {
+  padding: 6px 0 10px;
+  border-bottom: 1px solid var(--cizgi);
+  margin-bottom: 10px;
+}
+
+.tarla-buyuk {
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--yesil-koyu);
+}
+
+.tarla-birim {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--soluk);
+  margin-left: 6px;
+}
+
+.tarla-alt {
+  font-size: 14px;
+  color: var(--soluk);
+  margin-top: 4px;
+}
+
+.tarla-satirlar {
+  margin: 0;
+  font-size: 14px;
+}
+
+.tarla-satirlar > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.tarla-satirlar dt {
+  color: var(--soluk);
+}
+
+.tarla-satirlar dd {
+  margin: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tarla-uyari {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--cizgi);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--soluk);
+}
+
+.tarla-temiz {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--soluk);
+}
+
+.risk-liste {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.risk {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--cizgi);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.risk:last-child {
+  border-bottom: none;
+}
+
+.risk-rozet {
+  flex: none;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 20px;
+  padding: 3px 9px;
+  margin-top: 1px;
+}
+
+/* Seviye rengi METINLE BIRLIKTE gider, tek basina anlam tasimaz: renk korligi
+   olan kullanici seviyeyi aciklamadan okur. */
+.risk-yuksek .risk-rozet {
+  background: #fbe6e2;
+  color: var(--hata);
+}
+
+.risk-orta .risk-rozet {
+  background: #fdf1d8;
+  color: var(--uyari);
+}
+
+.risk-dusuk .risk-rozet {
+  background: var(--zemin);
+  color: var(--soluk);
+}
+
+.zararli-liste {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.zararli-liste > li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.zararli-liste > li:last-child {
+  border-bottom: none;
+}
+
+.zararli-bas {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.zararli-gdd {
+  font-size: 13px;
+  color: var(--soluk);
+  margin-top: 3px;
+}
+
+.zararli-not {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+}

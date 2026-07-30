@@ -41,6 +41,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from agents.climate_risk_agent import TahminYok, iklim_riski
+from agents.irrigation_agent import ET0Yok, sulama_plani
+from agents.pest_agent import SicaklikSerisiYok, zararli_durumu
+from core.config import settings
 from core.schemas import ClimateData, SoilData
 from data.global_location import (
     SOILGRIDS_HIZLI_BUTCE_S,
@@ -672,6 +676,247 @@ async def teshis(dosya: UploadFile = File(..., description="Yaprak fotoğrafı (
         ],
         tedavi=TedaviKaydi(**tedavi_dict) if tedavi_dict else None,
         uyari=_uyari_metni(sonuc["seviye"], sonuc["sebep"]),
+    )
+
+
+# --------------------------------------------------------------------------
+# Tarla takvimi: sulama, iklim riski, zararli (Sprint 2 ajanlari)
+# --------------------------------------------------------------------------
+# Hesap agents/ altindaki saf fonksiyonlarda; buradaki katman yalnizca girdi
+# dogrulamasi, Turkce adlandirma ve HATA SEMANTIGI ekler.
+#
+# NEDEN LANGGRAPH KAPTA YOK: uc ajanin hesabi bagimsiz. Orkestrator yalnizca
+# serbest metinden niyet cikarmak icin var; burada niyeti kullanici zaten
+# sekme secerek soyluyor. langgraph + langchain-core'u 512 MB'lik ucretsiz
+# katmana (icinde 77 MB ONNX modeli var) sirf kullanilmayacak bir yonlendirici
+# icin sokmak, olculmus bir fayda olmadan bellek riski almak olurdu.
+#
+# NEDEN AYRI UC UC NOKTA: ucu de Open-Meteo'ya AYRI sorgu atiyor (7 gunluk
+# ET0, 16 gunluk tahmin, 1 Mart'tan bugune arsiv). Tek uc noktada birlestirmek
+# en yavas olani beklemek demekti; ayri olunca tarayici ucunu paralel cekip
+# hangisi geldiyse onu gosteriyor.
+
+_ASAMA_TR = {"ini": "başlangıç", "mid": "gelişme", "end": "hasat"}
+
+# Risk turu anahtarlari ASCII (knowledge/climate_risk.py). Arayuzde rozet
+# olarak GORUNUYORLAR, bu yuzden okunur karsiliklari burada. Kaynak tabloya
+# yeni bir tur eklenirse burada karsiligi yoksa anahtarin kendisi yazilir;
+# sessizce bos rozet cikmasindansa ham anahtar gorunsun.
+_RISK_TUR_TR = {
+    "don": "don",
+    "soguk": "soğuk",
+    "sicak": "sıcak",
+    "yagis": "yağış",
+    "kuraklik": "kuraklık",
+    "uygunluk": "uygunluk",
+    "genel": "genel",
+}
+
+URUN_Q = Query(
+    None,
+    description="Ürün anahtarı. Boş bırakılırsa bölge hedef ürünleri "
+                "(" + ", ".join(settings.target_crops) + ") kullanılır.",
+)
+
+
+def _urunleri_coz(urun: str | None) -> tuple[str, ...]:
+    """Tek urun adini dogrular; bos ise bolge hedef urunlerini doner.
+
+    Desteklenmeyen urunde 422 atilir. Sessizce hedef urunlere dusmek, kullanici
+    'zeytin' isteyip domates plani almasina yol acardi.
+    """
+    if urun is None:
+        return tuple(settings.target_crops)
+    if urun not in settings.agent_crops:
+        raise HTTPException(
+            422,
+            f"Desteklenmeyen ürün: {urun}. Desteklenenler: "
+            f"{', '.join(settings.agent_crops)}.",
+        )
+    return (urun,)
+
+
+def _hava_503(exc: Exception, ne: str) -> HTTPException:
+    """Open-Meteo susunca 503 + SUNUCUNUN KENDI GEREKCESI (bkz _girdi_topla)."""
+    return HTTPException(503, f"{ne} ({str(exc) or type(exc).__name__}).")
+
+
+class SulamaPlani(BaseModel):
+    urun: str
+    urun_tr: str
+    stage: str
+    kc: float = Field(..., description="FAO-56 bitki katsayısı.")
+    et0_mm_gun: float
+    etc_mm_gun: float = Field(..., description="Bitki su tüketimi ET0 x Kc.")
+    net_mm_gun: float = Field(..., description="Etkili yağış düşülmüş net sulama.")
+    litre_gun: float | None = Field(None, description="Parsel alanı verildiyse L/gün.")
+
+
+class SulamaYanit(BaseModel):
+    lat: float
+    lon: float
+    et0_mm_gun: float
+    yagis_mm_donem: float
+    gun: int
+    asama: str
+    asama_tr: str
+    planlar: list[SulamaPlani]
+    uyari: str
+
+
+class RiskMaddesi(BaseModel):
+    tur: str = Field(..., description="don | soguk | sicak | yagis | kuraklik")
+    tur_tr: str = Field(..., description="Arayüzde gösterilen okunur ad.")
+    seviye: str = Field(..., description="yuksek | orta | dusuk")
+    aciklama: str
+
+
+class UrunRiski(BaseModel):
+    urun: str
+    urun_tr: str
+    riskler: list[RiskMaddesi]
+
+
+class IklimRiskYanit(BaseModel):
+    lat: float
+    lon: float
+    gun: int = Field(..., description="Değerlendirilen tahmin günü sayısı.")
+    urunler: list[UrunRiski]
+    uyari: str
+
+
+class ZararliDurumu(BaseModel):
+    zararli: str
+    toplam_gdd: float
+    nesil: int
+    evre: str
+    sonraki_evre_ad: str | None = None
+    sonraki_evre_gdd: float | None = None
+    aciklama: str
+
+
+class ZararliYanit(BaseModel):
+    lat: float
+    lon: float
+    gun: int
+    biofix: str = Field(..., description="Derece-gün birikiminin başladığı tarih.")
+    durumlar: list[ZararliDurumu]
+    uyari: str
+
+
+@app.get("/sulama", response_model=SulamaYanit, tags=["tarla"],
+         summary="FAO-56 günlük sulama planı")
+def sulama(
+    lat: float = LAT,
+    lon: float = LON,
+    urun: str | None = URUN_Q,
+    asama: str = Query("mid", pattern="^(ini|mid|end)$",
+                       description="ini=başlangıç, mid=gelişme, end=hasat"),
+    alan_m2: float | None = Query(None, gt=0, le=1e8,
+                                  description="Parsel alanı. Verilirse L/gün hesaplanır."),
+) -> SulamaYanit:
+    """Önümüzdeki 7 günün ET0 ve yağış tahmininden net sulama ihtiyacı.
+
+    Net sulama = ETc - etkili yağış. Sonuç bir üst sınır değil ihtiyaçtır:
+    toprak nemi, sulama yönteminin verimi ve tuzluluk yıkama payı bu hesapta
+    yoktur.
+    """
+    urunler = _urunleri_coz(urun)
+    try:
+        sonuc = sulama_plani(lat, lon, urunler, asama, alan_m2)
+    except ET0Yok as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except Exception as exc:
+        raise _hava_503(exc, "Sulama planı için hava verisi alınamadı") from exc
+
+    return SulamaYanit(
+        lat=lat, lon=lon,
+        et0_mm_gun=sonuc["et0_mm_gun"],
+        yagis_mm_donem=sonuc["yagis_mm_donem"],
+        gun=sonuc["gun"],
+        asama=asama,
+        asama_tr=_ASAMA_TR[asama],
+        planlar=[
+            SulamaPlani(urun_tr=CROP_TR.get(p["urun"], p["urun"].capitalize()), **p)
+            for p in sonuc["planlar"]
+        ],
+        uyari="Net sulama ihtiyacıdır. Damla sulamada verim payı, toprak nemi "
+              "ve tuzluluk yıkaması bu hesapta yok; yerel tarım müdürlüğünün "
+              "önerisiyle birlikte değerlendirin.",
+    )
+
+
+@app.get("/iklim-riski", response_model=IklimRiskYanit, tags=["tarla"],
+         summary="16 günlük tahminden ürüne özel risk")
+def iklim_risk(
+    lat: float = LAT,
+    lon: float = LON,
+    urun: str | None = URUN_Q,
+) -> IklimRiskYanit:
+    """Don, soğuk, sıcak, aşırı yağış ve kuraklık riskleri.
+
+    Eşikler ürünün EcoCrop sıcaklık trapezinden gelir, genel bir hava uyarısı
+    değildir: aynı 5 °C gece domates için riskli, zeytin için değildir.
+    """
+    urunler = _urunleri_coz(urun)
+    try:
+        sonuc = iklim_riski(lat, lon, urunler)
+    except TahminYok as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except Exception as exc:
+        raise _hava_503(exc, "İklim riski için hava tahmini alınamadı") from exc
+
+    return IklimRiskYanit(
+        lat=lat, lon=lon, gun=sonuc["gun"],
+        urunler=[
+            UrunRiski(
+                urun=k, urun_tr=CROP_TR.get(k, k.capitalize()),
+                riskler=[
+                    RiskMaddesi(tur_tr=_RISK_TUR_TR.get(r["tur"], r["tur"]), **r)
+                    for r in v
+                ],
+            )
+            for k, v in sonuc["riskler"].items()
+        ],
+        uyari="Risk listesi boşsa 'önümüzdeki 16 günde bu ürün için eşik "
+              "aşımı yok' demektir; 'hiç risk yok' demek değildir.",
+    )
+
+
+@app.get("/zararli", response_model=ZararliYanit, tags=["tarla"],
+         summary="Derece-gün ile zararlı nesil/evre tahmini")
+def zararli(
+    lat: float = LAT,
+    lon: float = LON,
+    urun: str | None = URUN_Q,
+) -> ZararliYanit:
+    """1 Mart'tan bugüne biriken derece-gün ile zararlının hangi evrede olduğu.
+
+    Mücadele zamanlaması için izleme penceresi verir, ilaçlama reçetesi değildir.
+    Ürünün tabloda kaydı yoksa liste boş döner; bu hata değildir.
+    """
+    urunler = _urunleri_coz(urun)
+    try:
+        sonuc = zararli_durumu(lat, lon, urunler)
+    except SicaklikSerisiYok as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except Exception as exc:
+        raise _hava_503(exc, "Zararlı tahmini için sıcaklık serisi alınamadı") from exc
+
+    return ZararliYanit(
+        lat=lat, lon=lon, gun=sonuc["gun"], biofix=sonuc["biofix"],
+        durumlar=[
+            ZararliDurumu(
+                zararli=d["zararli"], toplam_gdd=d["toplam_gdd"],
+                nesil=d["nesil"], evre=d["evre"],
+                sonraki_evre_ad=d["sonraki_evre"][0] if d["sonraki_evre"] else None,
+                sonraki_evre_gdd=d["sonraki_evre"][1] if d["sonraki_evre"] else None,
+                aciklama=d["not"],
+            )
+            for d in sonuc["durumlar"]
+        ],
+        uyari="Derece-gün modeli sıcaklığa dayanır. Tuzak sayımıyla "
+              "doğrulanmadan ilaçlama kararı vermeyin.",
     )
 
 

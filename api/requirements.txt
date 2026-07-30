@@ -31,3 +31,13 @@ pyproj==3.7.2
 # noktasindaki UploadFile icin gerekli (FastAPI multipart dep).
 onnxruntime==1.19.2
 python-multipart==0.0.9
+
+# Tarla takvimi ajanlari (/sulama, /iklim-riski, /zararli) core.config'i
+# import ediyor, o da .env okumak icin dotenv istiyor. Kapta .env dosyasi yok;
+# load_dotenv() sessizce hicbir sey yapar, paket yine de import edilebilir
+# olmali.
+#
+# LANGGRAPH BU LISTEDE YOK ve bu bilincli: orkestrator kaba girmiyor
+# (gerekce Dockerfile'daki agents/ COPY blogunda). Uc ajan da langgraph'a
+# dokunmuyor, yalnizca knowledge/ ve data/open_meteo kullaniyor.
+python-dotenv==1.0.1

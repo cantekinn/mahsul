@@ -238,6 +238,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sulama": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * FAO-56 günlük sulama planı
+         * @description Önümüzdeki 7 günün ET0 ve yağış tahmininden net sulama ihtiyacı.
+         *
+         *     Net sulama = ETc - etkili yağış. Sonuç bir üst sınır değil ihtiyaçtır:
+         *     toprak nemi, sulama yönteminin verimi ve tuzluluk yıkama payı bu hesapta
+         *     yoktur.
+         */
+        get: operations["sulama_sulama_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/iklim-riski": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 16 günlük tahminden ürüne özel risk
+         * @description Don, soğuk, sıcak, aşırı yağış ve kuraklık riskleri.
+         *
+         *     Eşikler ürünün EcoCrop sıcaklık trapezinden gelir, genel bir hava uyarısı
+         *     değildir: aynı 5 °C gece domates için riskli, zeytin için değildir.
+         */
+        get: operations["iklim_risk_iklim_riski_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/zararli": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Derece-gün ile zararlı nesil/evre tahmini
+         * @description 1 Mart'tan bugüne biriken derece-gün ile zararlının hangi evrede olduğu.
+         *
+         *     Mücadele zamanlaması için izleme penceresi verir, ilaçlama reçetesi değildir.
+         *     Ürünün tabloda kaydı yoksa liste boş döner; bu hata değildir.
+         */
+        get: operations["zararli_zararli_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -286,6 +356,22 @@ export interface components {
             ay_sicaklik?: (number | null)[];
             /** Ay Yagis */
             ay_yagis?: (number | null)[];
+        };
+        /** IklimRiskYanit */
+        IklimRiskYanit: {
+            /** Lat */
+            lat: number;
+            /** Lon */
+            lon: number;
+            /**
+             * Gun
+             * @description Değerlendirilen tahmin günü sayısı.
+             */
+            gun: number;
+            /** Urunler */
+            urunler: components["schemas"]["UrunRiski"][];
+            /** Uyari */
+            uyari: string;
         };
         /** KisayolYanit */
         KisayolYanit: {
@@ -500,6 +586,26 @@ export interface components {
             /** Sure S */
             sure_s: number;
         };
+        /** RiskMaddesi */
+        RiskMaddesi: {
+            /**
+             * Tur
+             * @description don | soguk | sicak | yagis | kuraklik
+             */
+            tur: string;
+            /**
+             * Tur Tr
+             * @description Arayüzde gösterilen okunur ad.
+             */
+            tur_tr: string;
+            /**
+             * Seviye
+             * @description yuksek | orta | dusuk
+             */
+            seviye: string;
+            /** Aciklama */
+            aciklama: string;
+        };
         /**
          * SoilData
          * @description SoilGrids'ten gelen toprak ozellikleri (koordinattan).
@@ -517,6 +623,58 @@ export interface components {
             silt?: number | null;
             /** Organic Carbon */
             organic_carbon?: number | null;
+        };
+        /** SulamaPlani */
+        SulamaPlani: {
+            /** Urun */
+            urun: string;
+            /** Urun Tr */
+            urun_tr: string;
+            /** Stage */
+            stage: string;
+            /**
+             * Kc
+             * @description FAO-56 bitki katsayısı.
+             */
+            kc: number;
+            /** Et0 Mm Gun */
+            et0_mm_gun: number;
+            /**
+             * Etc Mm Gun
+             * @description Bitki su tüketimi ET0 x Kc.
+             */
+            etc_mm_gun: number;
+            /**
+             * Net Mm Gun
+             * @description Etkili yağış düşülmüş net sulama.
+             */
+            net_mm_gun: number;
+            /**
+             * Litre Gun
+             * @description Parsel alanı verildiyse L/gün.
+             */
+            litre_gun?: number | null;
+        };
+        /** SulamaYanit */
+        SulamaYanit: {
+            /** Lat */
+            lat: number;
+            /** Lon */
+            lon: number;
+            /** Et0 Mm Gun */
+            et0_mm_gun: number;
+            /** Yagis Mm Donem */
+            yagis_mm_donem: number;
+            /** Gun */
+            gun: number;
+            /** Asama */
+            asama: string;
+            /** Asama Tr */
+            asama_tr: string;
+            /** Planlar */
+            planlar: components["schemas"]["SulamaPlani"][];
+            /** Uyari */
+            uyari: string;
         };
         /** TedaviKaydi */
         TedaviKaydi: {
@@ -646,6 +804,15 @@ export interface components {
             /** Sure S */
             sure_s: number;
         };
+        /** UrunRiski */
+        UrunRiski: {
+            /** Urun */
+            urun: string;
+            /** Urun Tr */
+            urun_tr: string;
+            /** Riskler */
+            riskler: components["schemas"]["RiskMaddesi"][];
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -658,6 +825,41 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** ZararliDurumu */
+        ZararliDurumu: {
+            /** Zararli */
+            zararli: string;
+            /** Toplam Gdd */
+            toplam_gdd: number;
+            /** Nesil */
+            nesil: number;
+            /** Evre */
+            evre: string;
+            /** Sonraki Evre Ad */
+            sonraki_evre_ad?: string | null;
+            /** Sonraki Evre Gdd */
+            sonraki_evre_gdd?: number | null;
+            /** Aciklama */
+            aciklama: string;
+        };
+        /** ZararliYanit */
+        ZararliYanit: {
+            /** Lat */
+            lat: number;
+            /** Lon */
+            lon: number;
+            /** Gun */
+            gun: number;
+            /**
+             * Biofix
+             * @description Derece-gün birikiminin başladığı tarih.
+             */
+            biofix: string;
+            /** Durumlar */
+            durumlar: components["schemas"]["ZararliDurumu"][];
+            /** Uyari */
+            uyari: string;
         };
     };
     responses: never;
@@ -965,6 +1167,118 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeshisYanit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sulama_sulama_get: {
+        parameters: {
+            query: {
+                /** @description Enlem */
+                lat: number;
+                /** @description Boylam */
+                lon: number;
+                /** @description Ürün anahtarı. Boş bırakılırsa bölge hedef ürünleri (domates, biber, patates) kullanılır. */
+                urun?: string | null;
+                /** @description ini=başlangıç, mid=gelişme, end=hasat */
+                asama?: string;
+                /** @description Parsel alanı. Verilirse L/gün hesaplanır. */
+                alan_m2?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SulamaYanit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    iklim_risk_iklim_riski_get: {
+        parameters: {
+            query: {
+                /** @description Enlem */
+                lat: number;
+                /** @description Boylam */
+                lon: number;
+                /** @description Ürün anahtarı. Boş bırakılırsa bölge hedef ürünleri (domates, biber, patates) kullanılır. */
+                urun?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IklimRiskYanit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    zararli_zararli_get: {
+        parameters: {
+            query: {
+                /** @description Enlem */
+                lat: number;
+                /** @description Boylam */
+                lon: number;
+                /** @description Ürün anahtarı. Boş bırakılırsa bölge hedef ürünleri (domates, biber, patates) kullanılır. */
+                urun?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZararliYanit"];
                 };
             };
             /** @description Validation Error */

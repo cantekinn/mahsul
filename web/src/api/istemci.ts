@@ -16,6 +16,9 @@ export type Parsel = components["schemas"]["ParselYanit"];
 export type OneriKumesi = components["schemas"]["OneriKumesi"];
 export type Oneri = components["schemas"]["OneriYanit"];
 export type Kisayol = components["schemas"]["KisayolYanit"];
+export type Sulama = components["schemas"]["SulamaYanit"];
+export type IklimRisk = components["schemas"]["IklimRiskYanit"];
+export type Zararli = components["schemas"]["ZararliYanit"];
 
 /**
  * API'nin koku.
@@ -81,4 +84,12 @@ export const api = {
     al<OneriKumesi>("/oneri", { lat, lon, adet }),
   rastgele: () => al<Konum>("/rastgele"),
   kisayollar: () => al<Kisayol[]>("/kisayollar"),
+  // Tarla takvimi. Uc uc nokta ayri cunku ucu de Open-Meteo'ya farkli sorgu
+  // atiyor; ayri tutulunca hangisi once gelirse o once ekrana yaziliyor.
+  sulama: (lat: number, lon: number, urun: string, asama: string, alan_m2?: number) =>
+    al<Sulama>("/sulama", { lat, lon, urun, asama, alan_m2 }),
+  iklimRisk: (lat: number, lon: number, urun: string) =>
+    al<IklimRisk>("/iklim-riski", { lat, lon, urun }),
+  zararli: (lat: number, lon: number, urun: string) =>
+    al<Zararli>("/zararli", { lat, lon, urun }),
 };

@@ -119,6 +119,23 @@ COPY --chown=kullanici models/disease/efficientnetv2_plant.onnx      models/dise
 # sonraki uykuya kadar yasar; bu kabul edilen bir sinir, gizlenmiyor.
 COPY --chown=kullanici data/_onbellek/  data/_onbellek/
 
+# Tarla takvimi ajanlari (Sprint 2): /sulama, /iklim-riski, /zararli.
+# YALNIZCA hesap yapan dosyalar geliyor.
+#
+# orchestrator.py BILEREK YOK: tek isi serbest metinden niyet cikarip dogru
+# ajana yonlendirmek ve bunun icin langgraph + langchain-core gerekiyor.
+# Web arayuzunde niyeti kullanici sekme secerek soyluyor, yani yonlendirici
+# calismayacak. Kullanilmayacak bir bagimliligi 512 MB'lik kademede (icinde
+# 77 MB ONNX var) tasimanin olculmus bir faydasi yok.
+#
+# diagnosis_agent.py de YOK: models.disease.classifier uzerinden torch+timm
+# istiyor; teshis zaten /teshis uc noktasindan ONNX ile calisiyor.
+COPY --chown=kullanici agents/__init__.py            agents/__init__.py
+COPY --chown=kullanici agents/state.py               agents/state.py
+COPY --chown=kullanici agents/irrigation_agent.py    agents/irrigation_agent.py
+COPY --chown=kullanici agents/climate_risk_agent.py  agents/climate_risk_agent.py
+COPY --chown=kullanici agents/pest_agent.py          agents/pest_agent.py
+
 # Asama 1'in ciktisi. api/main.py bu dizini gorurse arayuzu "/" altinda sunar.
 COPY --from=arayuz --chown=kullanici /kaynak/dist  web/dist
 
@@ -138,7 +155,8 @@ from api.main import app, kisayollar; \
 from models.disease.classifier_onnx import is_available as teshis_hazir, _session; \
 yollar = {r.path for r in app.routes}; \
 [__import__('sys').exit(f'uc nokta eksik: {y}') for y in \
- ('/saglik', '/konum', '/toprak', '/parseller', '/oneri', '/kisayollar', '/teshis') \
+ ('/saglik', '/konum', '/toprak', '/parseller', '/oneri', '/kisayollar', '/teshis', \
+  '/sulama', '/iklim-riski', '/zararli') \
  if y not in yollar]; \
 k = kisayollar(); \
 assert len(k) == 37, f'kisayol sayisi beklenen 37 degil: {len(k)}'; \

@@ -15,18 +15,37 @@ import ParselKarti from "./bilesenler/ParselKarti";
 import OneriListesi from "./bilesenler/OneriListesi";
 import Kisayollar from "./bilesenler/Kisayollar";
 import TeshisPaneli from "./bilesenler/TeshisPaneli";
+import TarlaPaneli from "./bilesenler/TarlaPaneli";
 import { api, ApiHatasi } from "./api/istemci";
 import type { Konum, OneriKumesi, Parseller, Toprak } from "./api/istemci";
 import type { Katman } from "./bilesenler/Durum";
 import "./stil.css";
 
 type Nokta = { lat: number; lon: number };
-type Gorunum = "harita" | "teshis";
+type Gorunum = "harita" | "teshis" | "tarla";
 
-/** Adresteki ?g=teshis varsa teshis sekmesi acilir. */
+const SEKMELER: { anahtar: Gorunum; ad: string; alt: string }[] = [
+  {
+    anahtar: "harita",
+    ad: "Ürün önerisi",
+    alt: "Dünyanın herhangi bir noktasında ne yetişir. Haritaya tıklayın veya rastgele bir tarım noktası seçin.",
+  },
+  {
+    anahtar: "tarla",
+    ad: "Tarla takvimi",
+    alt: "Seçili nokta için sulama, iklim riski ve zararlı takvimi.",
+  },
+  {
+    anahtar: "teshis",
+    ad: "Hastalık teşhisi",
+    alt: "Yaprak fotoğrafından hastalık teşhisi. 45 hastalık, 16 ürün.",
+  },
+];
+
+/** Adresteki ?g= degeri sekmeyi acar. Taninmayan deger haritaya duser. */
 function adrestenGorunum(): Gorunum {
-  const p = new URLSearchParams(window.location.search);
-  return p.get("g") === "teshis" ? "teshis" : "harita";
+  const g = new URLSearchParams(window.location.search).get("g");
+  return SEKMELER.some((s) => s.anahtar === g) ? (g as Gorunum) : "harita";
 }
 
 /** Bir uc noktayi cagirip sonucunu katman durumuna cevirir. */
@@ -92,10 +111,10 @@ export default function App() {
       url.searchParams.delete("lat");
       url.searchParams.delete("lon");
     }
-    if (gorunum === "teshis") {
-      url.searchParams.set("g", "teshis");
-    } else {
+    if (gorunum === "harita") {
       url.searchParams.delete("g");
+    } else {
+      url.searchParams.set("g", gorunum);
     }
     window.history.replaceState(null, "", url);
   }, [nokta, gorunum]);
@@ -132,11 +151,7 @@ export default function App() {
       <header className="baslik">
         <div>
           <h1>Tarım Asistanı</h1>
-          <p className="alt">
-            {gorunum === "harita"
-              ? "Dünyanın herhangi bir noktasında ne yetişir. Haritaya tıklayın veya rastgele bir tarım noktası seçin."
-              : "Yaprak fotoğrafından hastalık teşhisi. 45 hastalık, 16 ürün."}
-          </p>
+          <p className="alt">{SEKMELER.find((s) => s.anahtar === gorunum)?.alt}</p>
         </div>
         {gorunum === "harita" && (
           <button className="dugme" onClick={rastgeleSec} disabled={rastgeleYukleniyor}>
@@ -148,27 +163,21 @@ export default function App() {
       {/* Sekme cubugu: iki gorunum arasindaki tek anahtar. URL'ye yaziliyor,
           paylasilabilir ve yenilemeye dayanikli. */}
       <nav className="sekme-cubugu" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={gorunum === "harita"}
-          className={`sekme ${gorunum === "harita" ? "aktif" : ""}`}
-          onClick={() => setGorunum("harita")}
-        >
-          Ürün önerisi
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={gorunum === "teshis"}
-          className={`sekme ${gorunum === "teshis" ? "aktif" : ""}`}
-          onClick={() => setGorunum("teshis")}
-        >
-          Hastalık teşhisi
-        </button>
+        {SEKMELER.map((s) => (
+          <button
+            key={s.anahtar}
+            type="button"
+            role="tab"
+            aria-selected={gorunum === s.anahtar}
+            className={`sekme ${gorunum === s.anahtar ? "aktif" : ""}`}
+            onClick={() => setGorunum(s.anahtar)}
+          >
+            {s.ad}
+          </button>
+        ))}
       </nav>
 
-      {gorunum === "harita" ? (
+      {gorunum === "harita" && (
         <>
           <Kisayollar onSec={(lat, lon) => setNokta({ lat, lon })} secili={nokta} />
 
@@ -202,7 +211,15 @@ export default function App() {
             </section>
           )}
         </>
-      ) : (
+      )}
+
+      {gorunum === "tarla" && (
+        <main className="govde tarla-govde">
+          <TarlaPaneli nokta={nokta} onHaritayaGit={() => setGorunum("harita")} />
+        </main>
+      )}
+
+      {gorunum === "teshis" && (
         <main className="govde teshis-govde">
           <TeshisPaneli />
         </main>

@@ -26,5 +26,18 @@ class Settings:
     region: str = "Antalya"
     target_crops: tuple[str, ...] = ("domates", "biber", "patates")
 
+    # Sulama/iklim/zararli ajanlarinin ve HTTP uc noktalarinin isleyebildigi
+    # urunler. Uc ajan bu listeyi kendi icinde ayri ayri tutuyordu; dordunculer
+    # (HTTP uc noktalari) eklenince liste dort yerde ayni kalmak zorunda
+    # kalacakti. Tek yer: burasi.
+    #
+    # Sinir NEREDEN GELIYOR: Kc katsayilari (fao56.KC_TABLE) ve zararli
+    # tablosu (degree_day.PEST_TABLE) yalnizca bu urunler icin tanimli.
+    # Liste uzatilirsa o iki tablo da genisletilmeli, yoksa Kc sessizce 1.0
+    # (referans cim) olur ve sulama miktari yanlis cikar.
+    agent_crops: tuple[str, ...] = (
+        "domates", "biber", "patates", "narenciye", "zeytin", "muz",
+    )
+
 
 settings = Settings()

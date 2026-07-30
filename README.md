@@ -3,6 +3,15 @@
 Dünyanın herhangi bir koordinatı için toprak, iklim, tarım parselleri ve
 ürün önerisi. Haritada bir noktaya tıklayın.
 
+Üç sekme var:
+
+- **Ürün önerisi**: seçili noktada ne yetişir (FAO EcoCrop + SoilGrids + iklim
+  normali).
+- **Tarla takvimi**: aynı nokta için FAO-56 sulama ihtiyacı, 16 günlük iklim
+  riski ve derece-gün ile zararlı evresi.
+- **Hastalık teşhisi**: yaprak fotoğrafından 45 sınıflı teşhis ve tedavi
+  önerisi (sunucuda ONNX, PyTorch yok).
+
 ## Çalıştırma
 
 Tek imaj, hem API'yi hem arayüzü aynı adresten sunar.
@@ -24,6 +33,8 @@ Hepsi ücretsiz, hepsi anahtarsız, hiçbiri ödemeli katmana geçmiyor.
 | Yer adı, yükselti | OpenStreetMap Nominatim, Open-Meteo | |
 | Parsel | OpenStreetMap Overpass | |
 | Ürün eşikleri | FAO EcoCrop | 91 ürün |
+| Sulama | FAO-56 Penman-Monteith | Open-Meteo ET0 + 7 günlük yağış tahmini |
+| Zararlı fenolojisi | Derece-gün (GDD) | Literatür eşikleri, 5 zararlı |
 
 ## Bilinen sınırlar
 
@@ -47,6 +58,13 @@ güvenebileceğini bilmesi gerekiyor.
   liste döndürmek "burada hiçbir ürün yetişmez" anlamına gelirdi.
 - **Dış servis sessizliği "veri yok" sayılmaz.** Toprak veya parsel katmanı
   alınamazsa arayüz "yok" değil "bilinmiyor" yazar.
+- **Sulama sayısı net ihtiyaçtır, uygulanacak su değildir.** Toprak nemi,
+  sulama yönteminin verimi ve tuzluluk yıkama payı FAO-56'nın bu adımında
+  yoktur.
+- **İklim riski listesi boşsa "eşik aşımı yok" demektir**, "risk yok"
+  demek değildir. Eşikler ürünün EcoCrop sıcaklık aralığından gelir.
+- **Zararlı takvimi bir ilaçlama reçetesi değildir.** Derece-gün yalnızca
+  sıcaklığa bakar; karar tuzak sayımıyla doğrulanmalıdır.
 
 ## Uç noktalar
 
