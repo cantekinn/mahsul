@@ -25,19 +25,17 @@ web/dist/
 app/
 paylasim/
 
-# agents/ TUMUYLE haric TUTULAMAZ: sulama/iklim/zararli ajanlari artik
-# /sulama, /iklim-riski ve /zararli uc noktalarindan cagriliyor, yani
-# Dockerfile onlari COPY ediyor. Blanket "agents/" satiri yuzunden bu COPY
-# "not found" ile kuruluma coktu. Servise girmeyen uc modul tek tek elenir:
+# agents/ TUMUYLE haric TUTULAMAZ: sulama/iklim/zararli/karbon/danisman
+# ajanlari artik uc noktalardan cagriliyor, yani Dockerfile onlari COPY
+# ediyor. Blanket "agents/" satiri yuzunden bu COPY "not found" ile kuruluma
+# coktu. Servise girmeyen IKI modul tek tek elenir:
+#   orchestrator.py  -> langgraph istiyor; niyet yonlendirmesi agents/router.py'ye
+#                       tasindi, o bagimliliksiz.
+#   diagnosis_agent.py -> torch+timm istiyor; teshis /teshis'te ONNX ile yapiliyor.
 agents/orchestrator.py
 agents/diagnosis_agent.py
-agents/advisor_agent.py
 docs/
 memory/
-aksu/
-alanya_turkler/
-gazipasa_beyobasi/
-serik_bogazkent/
 
 __pycache__/
 *.py[cod]

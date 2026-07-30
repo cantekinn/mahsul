@@ -98,6 +98,15 @@ COPY --chown=kullanici data/open_meteo.py       data/open_meteo.py
 COPY --chown=kullanici data/soilgrids_wcs.py    data/soilgrids_wcs.py
 COPY --chown=kullanici data/one_cikan.py        data/one_cikan.py
 COPY --chown=kullanici data/gaez_lookup.py      data/gaez_lookup.py
+# Kayitli tapu parselleri (/parseller/tkgm). parcel_files.py dosyalari okur,
+# megsis.py agirlik merkezini ve alani hesaplar.
+#
+# CANLI TKGM SERVISI KULLANILMIYOR, sebebi olculdu: cbsapi.tkgm.gov.tr parsel
+# sorgusu 302 doruyor ve yonlendirme 47 KB'lik bir HTML GIRIS SAYFASINA
+# gidiyor, yani kurumsal erisim istiyor. megsis.py'nin HTTP yolu bu yuzden
+# calisma aninda cagrilmiyor; buradan yalnizca geometri fonksiyonu geliyor.
+COPY --chown=kullanici data/megsis.py           data/megsis.py
+COPY --chown=kullanici data/parcel_files.py     data/parcel_files.py
 
 # Hastalik teshis (ONNX cikarim). Torch KANITLI OLARAK YOK: onnxruntime (~50 MB)
 # ile FP32 model dosyasi (77 MB) beraber calisir. classifier.py'yi de aliyoruz
@@ -119,22 +128,38 @@ COPY --chown=kullanici models/disease/efficientnetv2_plant.onnx      models/dise
 # sonraki uykuya kadar yasar; bu kabul edilen bir sinir, gizlenmiyor.
 COPY --chown=kullanici data/_onbellek/  data/_onbellek/
 
-# Tarla takvimi ajanlari (Sprint 2): /sulama, /iklim-riski, /zararli.
+# TKGM parsel sorgu sonuclari (49 dosya / 217 KB). parcel_files.py bunlari
+# KOK ALTINDAKI bolge klasorlerinde ariyor ("*/tkgm-parsel-sorgu-sonuc-*.json"),
+# o yuzden klasor adlari aynen korunuyor. Kucukler; onbellek gibi imaja gomulu
+# olmalari kalici disk gerektirmedikleri anlamina geliyor.
+COPY --chown=kullanici aksu/              aksu/
+COPY --chown=kullanici alanya_turkler/    alanya_turkler/
+COPY --chown=kullanici gazipasa_beyobasi/ gazipasa_beyobasi/
+COPY --chown=kullanici serik_bogazkent/   serik_bogazkent/
+
+# Ajanlar: /sulama, /iklim-riski, /zararli, /karbon ve /sor.
 # YALNIZCA hesap yapan dosyalar geliyor.
 #
 # orchestrator.py BILEREK YOK: tek isi serbest metinden niyet cikarip dogru
-# ajana yonlendirmek ve bunun icin langgraph + langchain-core gerekiyor.
-# Web arayuzunde niyeti kullanici sekme secerek soyluyor, yani yonlendirici
-# calismayacak. Kullanilmayacak bir bagimliligi 512 MB'lik kademede (icinde
-# 77 MB ONNX var) tasimanin olculmus bir faydasi yok.
+# ajana yonlendirmekti ve bunun icin langgraph + langchain-core gerekiyordu
+# (13 MB tekerlek, ~40 MB kurulu, ustune langsmith telemetrisi). NIYETI BULMA
+# ISI PURO DIZI ISI oldugu icin agents/router.py'ye ayrildi ve /sor onu
+# kullaniyor: kullaniciya gorunen fayda (serbest metin -> dogru uzman) aynen
+# duruyor, grafik cercevesi tasinmiyor.
 #
 # diagnosis_agent.py de YOK: models.disease.classifier uzerinden torch+timm
 # istiyor; teshis zaten /teshis uc noktasindan ONNX ile calisiyor.
 COPY --chown=kullanici agents/__init__.py            agents/__init__.py
 COPY --chown=kullanici agents/state.py               agents/state.py
+COPY --chown=kullanici agents/router.py              agents/router.py
 COPY --chown=kullanici agents/irrigation_agent.py    agents/irrigation_agent.py
 COPY --chown=kullanici agents/climate_risk_agent.py  agents/climate_risk_agent.py
 COPY --chown=kullanici agents/pest_agent.py          agents/pest_agent.py
+COPY --chown=kullanici agents/carbon_agent.py        agents/carbon_agent.py
+# advisor_agent.py yalnizca knowledge/treatments.yaml okuyor (yaml zaten
+# kurulu). /sor'da niyet hicbir uzmana oturmadiginda son duraktir; olmasaydi
+# tanimadigimiz soru sessizce cevapsiz kalirdi.
+COPY --chown=kullanici agents/advisor_agent.py       agents/advisor_agent.py
 
 # Asama 1'in ciktisi. api/main.py bu dizini gorurse arayuzu "/" altinda sunar.
 COPY --from=arayuz --chown=kullanici /kaynak/dist  web/dist
@@ -151,13 +176,15 @@ COPY --from=arayuz --chown=kullanici /kaynak/dist  web/dist
 # kurulum testi ugruna calisma zamani bagimliligina eklemek istemiyorum.
 # Asagisi ayni sorulari dis paket olmadan yanitliyor.
 RUN python -c "\
-from api.main import app, kisayollar; \
+from api.main import app, kisayollar, tkgm_parselleri; \
 from models.disease.classifier_onnx import is_available as teshis_hazir, _session; \
-from knowledge import kapsam; \
+from knowledge import kapsam, karbon; \
+from agents.router import route; \
 yollar = {r.path for r in app.routes}; \
 [__import__('sys').exit(f'uc nokta eksik: {y}') for y in \
  ('/saglik', '/konum', '/toprak', '/parseller', '/oneri', '/kisayollar', '/teshis', \
-  '/sulama', '/iklim-riski', '/zararli', '/kapsam') \
+  '/sulama', '/iklim-riski', '/zararli', '/kapsam', '/karbon', '/sor', \
+  '/parseller/tkgm') \
  if y not in yollar]; \
 iklim = len(kapsam.kapsam('iklim')); \
 assert iklim >= 100, f'iklim kapsami {iklim} urun: crop_params_global.yaml imaja girmemis'; \
@@ -169,7 +196,14 @@ assert any(getattr(r, 'name', '') == 'arayuz' for r in app.routes), \
        'arayuz mount edilmemis: web/dist imaja girmemis'; \
 assert teshis_hazir(), 'teshis modeli hazir degil (onnxruntime veya .onnx eksik)'; \
 _session(); \
-print(f'duman testi tamam: {len(k)} kisayol, {h} tam hazir, teshis modeli yuklu')"
+p = tkgm_parselleri(); \
+assert len(p) >= 40, f'tapu parselleri imaja girmemis: {len(p)} kayit'; \
+assert all(x.dekar > 0 for x in p), 'parsel alani sifir: geometri okunamamis'; \
+assert route('domatese kac litre su vermeliyim') == 'irrigation'; \
+assert route('karbon ayak izim ne kadar') == 'carbon'; \
+c = karbon.ayak_izi(1000.0)['toplam_kg_co2e']; \
+assert c > 0, 'karbon envanteri sifir dondu'; \
+print(f'duman testi tamam: {len(k)} kisayol, {h} tam hazir, {len(p)} tapu parseli, teshis modeli yuklu')"
 
 EXPOSE 7860
 

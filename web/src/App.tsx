@@ -16,6 +16,7 @@ import OneriListesi from "./bilesenler/OneriListesi";
 import Kisayollar from "./bilesenler/Kisayollar";
 import TeshisPaneli from "./bilesenler/TeshisPaneli";
 import TarlaPaneli from "./bilesenler/TarlaPaneli";
+import SoruKutusu from "./bilesenler/SoruKutusu";
 import { api, ApiHatasi } from "./api/istemci";
 import type { Konum, OneriKumesi, Parseller, Toprak } from "./api/istemci";
 import type { Katman } from "./bilesenler/Durum";
@@ -101,6 +102,18 @@ export default function App() {
   const [nokta, setNokta] = useState<Nokta | null>(adrestenNokta);
   const [gorunum, setGorunum] = useState<Gorunum>(adrestenGorunum);
   const [rastgeleYukleniyor, setRastgeleYukleniyor] = useState(false);
+  // Parsel alani BURADA duruyor, Tarla panelinde degil. Iki yerde birden
+  // gerekiyor: karbon karti (Tarla sekmesi) ve soru kutusu (her sekme).
+  // Panelin icinde kalsaydi kullanici alani girdikten sonra "karbon ayak izim
+  // ne kadar" diye sordugunda sunucu yine "once alanini girin" derdi; yani
+  // kullanici bilgiyi vermis olmasina ragmen ayni sey tekrar istenirdi.
+  const [dekar, setDekar] = useState("");
+
+  // Ciftci dekar konusur, API metrekare bekler. Cevrim TEK YERDE, burada.
+  const alanM2 = (() => {
+    const d = Number(dekar.replace(",", "."));
+    return dekar.trim() !== "" && Number.isFinite(d) && d > 0 ? d * 1000 : undefined;
+  })();
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -177,6 +190,15 @@ export default function App() {
         ))}
       </nav>
 
+      {/* Soru kutusu SEKMELERIN ALTINDA ve her sekmede duruyor: kullanicinin
+          sorusu hangi sekmede aklina gelirse gelsin ayni yerde sorulabilsin.
+          Sunucu niyeti bulup ya cevabi yazar ya da dogru sekmeye gonderir. */}
+      <SoruKutusu
+        nokta={nokta}
+        alanM2={alanM2}
+        onSekme={(s) => setGorunum(s as Gorunum)}
+      />
+
       {gorunum === "harita" && (
         <>
           <Kisayollar onSec={(lat, lon) => setNokta({ lat, lon })} secili={nokta} />
@@ -222,7 +244,11 @@ export default function App() {
           <TarlaPaneli
             nokta={nokta}
             oneri={oneri}
+            dekar={dekar}
+            alanM2={alanM2}
+            onDekar={setDekar}
             onHaritayaGit={() => setGorunum("harita")}
+            onNoktaSec={(lat, lon) => setNokta({ lat, lon })}
           />
         </main>
       )}

@@ -1,0 +1,37 @@
+tarim-asistani/
+  app/                    # arayüz katmanı
+    ui/                   # Streamlit (hızlı MVP) veya Next.js
+    whatsapp/             # WhatsApp webhook
+  agents/                 # LangGraph orkestrasyon
+    orchestrator.py       # router + state graph
+    soil_crop_agent.py
+    diagnosis_agent.py
+    climate_risk_agent.py
+    irrigation_agent.py
+    pest_agent.py
+    advisor_agent.py      # RAG tedavi (doğal+kimyasal)
+    carbon_agent.py
+  models/                 # ML eğitim + çıkarım
+    crop_reco/            # GBDT (XGBoost/LightGBM)
+    disease/              # CNN eğitim + Grad-CAM
+    climate_risk/         # LightGBM
+    weed/                 # YOLO (faz 2)
+  data/                   # dış veri istemcileri
+    megsis.py             # parsel -> geojson
+    soilgrids.py
+    open_meteo.py
+    nasa_power.py
+  knowledge/              # bilgi tabanları
+    crop_params.yaml      # ürün: pH/sıcaklık/GDD/Kc/don/zararlı
+    fao56.py              # sulama formülleri
+    degree_day.py         # zararlı eşikleri
+    rag_docs/             # tarım kaynakları (tedavi)
+  memory/                 # hafıza katmanı
+    farm_profile_db.py    # SQLite/Postgres
+    vector_store.py       # Chroma (sezon günlüğü)
+  core/                   # config, şemalar, ortak yardımcılar
+    schemas.py
+    config.py
+  tests/
+  README.md
+  requirements.txt

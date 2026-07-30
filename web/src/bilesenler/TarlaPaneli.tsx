@@ -24,7 +24,15 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiHatasi } from "../api/istemci";
-import type { IklimRisk, Kapsam, OneriKumesi, Sulama, Zararli } from "../api/istemci";
+import type {
+  IklimRisk,
+  Kapsam,
+  Karbon,
+  OneriKumesi,
+  Sulama,
+  TkgmParsel,
+  Zararli,
+} from "../api/istemci";
 import { Kart, KatmanKabugu } from "./Durum";
 import type { Katman } from "./Durum";
 
@@ -36,6 +44,12 @@ const ASAMALAR = [
   { anahtar: "ini", ad: "Fide / ekim" },
   { anahtar: "mid", ad: "Gelişme" },
   { anahtar: "end", ad: "Hasat" },
+];
+
+const SULAMA_YONTEMLERI = [
+  { anahtar: "damla", ad: "Damla" },
+  { anahtar: "yagmurlama", ad: "Yağmurlama" },
+  { anahtar: "salma", ad: "Salma" },
 ];
 
 /** Bir istegi katman durumuna cevirir. App.tsx'teki useKatman ile ayni desen,
@@ -94,6 +108,88 @@ function useKapsam(): Record<Yetenek, Kapsam> | null {
     };
   }, []);
   return k;
+}
+
+/** Kullanicinin kendi tarlalari. TARAYICIDA tutulur.
+ *
+ *  NEDEN SUNUCUDA DEGIL: uygulama ucretsiz barindirma katmaninda calisiyor ve
+ *  oradaki dosya sistemi KALICI DEGIL (kalici disk ucretli). Sunucuya yazilan
+ *  bir tarla listesi her yayinda ve her uyku sonrasi silinirdi; kullanici
+ *  acisindan bu "kaydettim ama kayboldu" yani bir HATA gibi gorunur. Tarayici
+ *  deposu silinmez ve kimin hangi tarlaya sahip oldugu bilgisi hic sunucuya
+ *  gitmez.
+ *
+ *  KABUL EDILEN SINIR: kayitlar baska cihazda gorunmez. Bu, sessizce
+ *  kaybolan bir listeden iyidir; degistirmek icin hesap sistemi gerekir. */
+type Tarla = {
+  ad: string;
+  lat: number;
+  lon: number;
+  urun: string;
+  asama: string;
+  dekar: string;
+  yontem: string;
+};
+
+const TARLA_ANAHTAR = "tarim.tarlalar";
+
+function useTarlalarim() {
+  const [liste, ayarla] = useState<Tarla[]>(() => {
+    try {
+      const ham = localStorage.getItem(TARLA_ANAHTAR);
+      const v: unknown = ham ? JSON.parse(ham) : [];
+      return Array.isArray(v) ? (v as Tarla[]) : [];
+    } catch {
+      // Bozuk ya da erisilemez depo acilisi ENGELLEMEMELI: kayitli tarla
+      // yardimci bir ozellik, uygulamanin calisma sarti degil.
+      return [];
+    }
+  });
+
+  const yaz = (yeni: Tarla[]) => {
+    ayarla(yeni);
+    try {
+      localStorage.setItem(TARLA_ANAHTAR, JSON.stringify(yeni));
+    } catch {
+      /* kota dolu ya da depo kapali: liste yalnizca bu oturumda yasar */
+    }
+  };
+
+  return {
+    liste,
+    // Ayni ad UZERINE YAZAR: kullanici "Aksu tarlasi"ni tekrar kaydettiginde
+    // beklentisi guncelleme, ayni adla ikinci bir kayit degil.
+    kaydet: (t: Tarla) => yaz([...liste.filter((x) => x.ad !== t.ad), t]),
+    sil: (ad: string) => yaz(liste.filter((x) => x.ad !== ad)),
+  };
+}
+
+/** Kayitli TKGM parselleri (tapu sorgu sonuclari).
+ *
+ *  NEDEN CANLI MEGSIS DEGIL: TKGM'nin parsel sorgu API'si kurumsal erisim
+ *  istiyor, istek HTML giris sayfasina yonleniyor (olculdu). Bu yuzden sorgu
+ *  sonuclari dosya olarak duruyor ve sunucu onlari okuyor.
+ *
+ *  Liste bir kez cekilir, koordinata bagli degil. Cekilemezse bos kalir ve
+ *  secici HIC gorunmez: bos bir acilir liste, kullaniciya kendi parselinin
+ *  kayitli olmadigini dusundururdu. */
+function useTkgmParselleri(): TkgmParsel[] {
+  const [liste, ayarla] = useState<TkgmParsel[]>([]);
+  useEffect(() => {
+    let iptal = false;
+    api
+      .tkgmParselleri()
+      .then((v) => {
+        if (!iptal) ayarla(v);
+      })
+      .catch(() => {
+        /* liste yoksa secici gizlenir */
+      });
+    return () => {
+      iptal = true;
+    };
+  }, []);
+  return liste;
 }
 
 /** Kapsam disi urunde istegi HIC ATMADAN sebebi yazan kart.
@@ -234,19 +330,174 @@ function ZararliKarti({ katman }: { katman: Katman<Zararli> }) {
   );
 }
 
+/** Karbon ayak izi karti.
+ *
+ *  ALAN ZORUNLU, ve bu bilerek boyle: envanterin her kalemi dekar basina
+ *  girdiyle carpiliyor, alan olmadan uretilecek tek sey "dekar basina" sayisi
+ *  olurdu ve o da ciftcinin tarlasi hakkinda hicbir sey soylemez. Alan
+ *  girilmemisse istek atilmaz, ne istendigi yazilir.
+ *
+ *  KALEM CUBUKLARI toplama gore oransal. Rakam listesi de olurdu ama karbon
+ *  hesabinda tek karar sorusu "en buyuk kalem hangisi"; onu bir bakista
+ *  gosteren sey uzunluk.
+ */
+function KarbonKarti({
+  katman,
+  alanVar,
+}: {
+  katman: Katman<Karbon>;
+  alanVar: boolean;
+}) {
+  if (!alanVar) {
+    return (
+      <Kart baslik="Karbon ayak izi" etiket={<span className="rozet yalin">alan gerekli</span>}>
+        <p className="tarla-kapsam">
+          Sera gazı envanteri parselin alanıyla hesaplanır. Yukarıdaki
+          &quot;Alan (dekar)&quot; kutusunu doldurun.
+        </p>
+      </Kart>
+    );
+  }
+  return (
+    <KatmanKabugu baslik="Karbon ayak izi" katman={katman} bekleyen="Envanter çıkarılıyor...">
+      {(v) => {
+        const enBuyuk = Math.max(...v.kalemler.map((k) => k.kg_co2e), 1);
+        return (
+          <Kart
+            baslik="Karbon ayak izi"
+            etiket={
+              <span className={`rozet ${v.gosterge ? "yalin" : ""}`}>
+                {v.gosterge ? "gösterge" : "IPCC 2019"}
+              </span>
+            }
+          >
+            <div className="tarla-olcum">
+              <div className="tarla-buyuk">
+                {v.dekar_basina_kg_co2e.toLocaleString("tr-TR")}
+                <span className="tarla-birim">kg CO2e/dekar</span>
+              </div>
+              <div className="tarla-alt">
+                {v.urun_tr} · {v.dekar} dekar · {v.sezon_gun} günlük sezon · toplam{" "}
+                {Math.round(v.toplam_kg_co2e).toLocaleString("tr-TR")} kg CO2e
+              </div>
+            </div>
+
+            <ul className="karbon-kalemler">
+              {v.kalemler.map((k) => (
+                <li key={k.ad}>
+                  <div className="karbon-kalem-bas">
+                    <span>{k.ad}</span>
+                    <strong>{Math.round(k.kg_co2e).toLocaleString("tr-TR")}</strong>
+                  </div>
+                  {/* Genislik yuzde olarak satir ici veriliyor: deger calisma
+                      aninda hesaplaniyor, CSS sinifiyla anlatilamaz. */}
+                  <div className="karbon-cubuk">
+                    <span style={{ width: `${(k.kg_co2e / enBuyuk) * 100}%` }} />
+                  </div>
+                  <div className="karbon-kaynak">{k.kaynak}</div>
+                </li>
+              ))}
+            </ul>
+
+            {v.azaltim.length > 0 && (
+              <>
+                <h4 className="karbon-baslik">Azaltım karşılıkları</h4>
+                <ul className="karbon-azaltim">
+                  {v.azaltim.map((a) => (
+                    <li key={a.baslik}>
+                      <div className="karbon-kalem-bas">
+                        <span>{a.baslik}</span>
+                        {/* Eksi isareti bilincli: bu sayi salima EKLENMIYOR,
+                            salimdan dusuyor. */}
+                        <strong className="karbon-kazanc">
+                          -{Math.round(a.kazanc_kg_co2e).toLocaleString("tr-TR")}
+                        </strong>
+                      </div>
+                      <p className="karbon-kaynak">{a.aciklama}</p>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            <details className="karbon-detay">
+              <summary>Hesabın sınırları</summary>
+              <p className="tarla-uyari">{v.su_senaryosu}</p>
+              <p className="tarla-uyari">Kapsam dışı: {v.kapsam_disi.join("; ")}.</p>
+            </details>
+            <p className="tarla-uyari">{v.aciklama}</p>
+          </Kart>
+        );
+      }}
+    </KatmanKabugu>
+  );
+}
+
 export default function TarlaPaneli({
   nokta,
   oneri,
+  dekar,
+  alanM2,
+  onDekar,
   onHaritayaGit,
+  onNoktaSec,
 }: {
   nokta: Nokta | null;
   oneri: Katman<OneriKumesi>;
+  // Alan App.tsx'te duruyor, burada degil: soru kutusu her sekmede acik ve o
+  // da ayni degeri kullaniyor. Iki ayri kopya tutsaydik kullanicinin girdigi
+  // alan, sorduğu soruya ulasmazdi.
+  dekar: string;
+  alanM2: number | undefined;
+  onDekar: (v: string) => void;
   onHaritayaGit: () => void;
+  onNoktaSec: (lat: number, lon: number) => void;
 }) {
   const [urun, setUrun] = useState("domates");
   const [asama, setAsama] = useState("mid");
-  const [dekar, setDekar] = useState("");
+  // Sulama yontemi SADECE karbon hesabini etkiler (pompalanan su hacmi
+  // uygulama verimine bolunuyor). /sulama net bitki su ihtiyacini verir,
+  // yontemden bagimsizdir; bu yuzden secim degisince o kart yeniden
+  // cekilmez.
+  const [yontem, setYontem] = useState("damla");
   const kapsam = useKapsam();
+  const tkgm = useTkgmParselleri();
+  const tarlalarim = useTarlalarim();
+
+  /** Kayitli tarla TUM secimi geri kurar, sadece noktayi degil.
+   *
+   *  Tarla kimligi "koordinat" degil "koordinat + ne ektigim + ne kadar alan +
+   *  nasil suladigim". Yalniz nokta geri gelseydi kullanici her acilista ayni
+   *  dort kutuyu tekrar doldururdu ve kaydin anlami kalmazdi. */
+  const tarlaYukle = (t: Tarla) => {
+    onNoktaSec(t.lat, t.lon);
+    setUrun(t.urun);
+    setAsama(t.asama);
+    onDekar(t.dekar);
+    setYontem(t.yontem);
+  };
+
+  const tarlaKaydet = () => {
+    if (!nokta) return;
+    const ad = window.prompt(
+      "Tarlaya bir ad verin",
+      `Tarla ${tarlalarim.liste.length + 1}`,
+    );
+    if (!ad?.trim()) return;
+    tarlalarim.kaydet({ ad: ad.trim(), ...nokta, urun, asama, dekar, yontem });
+  };
+
+  /** Kayitli parsel secimi: noktayi VE alani ayni anda kurar.
+   *
+   *  Ikisini birden yazmasi onemli. Ciftci parselini secince alani elle
+   *  girmesi gerekseydi tapudaki degeri hatirlamasi ya da bakmasi gerekirdi;
+   *  oysa deger zaten sorgu sonucunda var ve karbon karti onsuz calismiyor. */
+  const parselSec = (etiket: string) => {
+    const p = tkgm.find((x) => x.etiket === etiket);
+    if (!p) return;
+    onNoktaSec(p.lat, p.lon);
+    onDekar(String(p.dekar));
+  };
 
   // Secili tarlaya onerilen urunler + kalan tum urunler.
   //
@@ -287,12 +538,6 @@ export default function TarlaPaneli({
   const iklimDisi = disi("iklim");
   const zararliDisi = disi("zararli");
 
-  // Ciftci dekar konusur; API metrekare bekliyor. Cevrim TEK YERDE.
-  const alanM2 = (() => {
-    const d = Number(dekar.replace(",", "."));
-    return dekar.trim() !== "" && Number.isFinite(d) && d > 0 ? d * 1000 : undefined;
-  })();
-
   // Kapsam disi ise cagri null: istek HIC atilmaz. Atip 422 yakalamak da
   // olurdu ama o zaman kullaniciya kirmizi bir hata gorunurdu; oysa bu bir
   // hata degil, bilginin sinirlari.
@@ -309,6 +554,16 @@ export default function TarlaPaneli({
     () => (nokta ? api.zararli(nokta.lat, nokta.lon, urun) : Promise.reject()),
     [nokta, urun],
   );
+  // Karbon sulama kapsamina bagli: envanterin pompa kalemi FAO-56 planindan
+  // turuyor, Kc yoksa o kalem uydurulamaz. Bu yuzden ayri bir "karbon
+  // kapsami" yok, sulama kapsami kullaniliyor.
+  const karbonCagri = useCallback(
+    () =>
+      nokta && alanM2
+        ? api.karbon(nokta.lat, nokta.lon, urun, alanM2, { sulama_yontemi: yontem })
+        : Promise.reject(),
+    [nokta, urun, alanM2, yontem],
+  );
 
   // Kapsam disi ise cagri null: istek HIC atilmaz. Atip 422 yakalamak da
   // olurdu ama o zaman kullaniciya kirmizi bir hata gorunurdu; oysa bu bir
@@ -316,14 +571,60 @@ export default function TarlaPaneli({
   const sulama = useIstek<Sulama>(nokta && !sulamaDisi ? sulamaCagri : null);
   const risk = useIstek<IklimRisk>(nokta && !iklimDisi ? riskCagri : null);
   const zararli = useIstek<Zararli>(nokta && !zararliDisi ? zararliCagri : null);
+  const karbon = useIstek<Karbon>(nokta && !sulamaDisi && alanM2 ? karbonCagri : null);
+
+  // Secici iki yerde de ayni: nokta yokken baslangic yolu, nokta varken
+  // parsel degistirme yolu. Tek tanim, iki kullanim.
+  const parselSecici = tkgm.length > 0 && (
+    <label className="genis">
+      Kayıtlı parsel
+      <select value="" onChange={(e) => parselSec(e.target.value)}>
+        <option value="">{tkgm.length} tapu kaydı</option>
+        {tkgm.map((p) => (
+          <option key={p.etiket} value={p.etiket}>
+            {p.etiket} · {p.dekar} da
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
+  // Serit iki yerde de ayni. Nokta yokken kayitli tarlalar TEK BASINA
+  // gorunur (kaydetme dugmesi olmadan): kaydedecek bir secim henuz yok.
+  const tarlaSeridi = (tarlalarim.liste.length > 0 || nokta) && (
+    <div className="tarlalarim">
+      {tarlalarim.liste.map((t) => (
+        <span key={t.ad} className="tarlam">
+          <button type="button" className="tarlam-ad" onClick={() => tarlaYukle(t)}>
+            {t.ad}
+          </button>
+          <button
+            type="button"
+            className="tarlam-sil"
+            onClick={() => tarlalarim.sil(t.ad)}
+            aria-label={`${t.ad} kaydını sil`}
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      {nokta && (
+        <button type="button" className="dugme yalin" onClick={tarlaKaydet}>
+          Bu tarlayı kaydet
+        </button>
+      )}
+    </div>
+  );
 
   if (!nokta) {
     return (
       <div className="kart bos-mesaj">
         <p>
-          Tarla takvimi seçili noktanın hava verisiyle çalışır. Önce ürün önerisi
-          sekmesinden haritada bir nokta seçin.
+          Tarla takvimi seçili noktanın hava verisiyle çalışır. Haritadan bir
+          nokta seçin ya da kayıtlı bir tapu parseli seçin.
         </p>
+        {tarlaSeridi}
+        {parselSecici && <form className="tarla-secim">{parselSecici}</form>}
         <button type="button" className="dugme birincil" onClick={onHaritayaGit}>
           Haritaya git
         </button>
@@ -333,8 +634,10 @@ export default function TarlaPaneli({
 
   return (
     <div className="tarla-panel">
+      {tarlaSeridi}
       <form className="tarla-secim" onSubmit={(e) => e.preventDefault()}>
-        <label>
+        {parselSecici}
+        <label className="genis">
           Ürün
           <select value={urun} onChange={(e) => setUrun(e.target.value)}>
             {!listedeVar && <option value={urun}>{urun.replace(/_/g, " ")}</option>}
@@ -375,10 +678,20 @@ export default function TarlaPaneli({
             min="0"
             step="0.1"
             inputMode="decimal"
-            placeholder="isteğe bağlı"
+            placeholder="karbon için gerekli"
             value={dekar}
-            onChange={(e) => setDekar(e.target.value)}
+            onChange={(e) => onDekar(e.target.value)}
           />
+        </label>
+        <label>
+          Sulama yöntemi
+          <select value={yontem} onChange={(e) => setYontem(e.target.value)}>
+            {SULAMA_YONTEMLERI.map((y) => (
+              <option key={y.anahtar} value={y.anahtar}>
+                {y.ad}
+              </option>
+            ))}
+          </select>
         </label>
       </form>
 
@@ -397,6 +710,11 @@ export default function TarlaPaneli({
           <KapsamDisiKarti baslik="Zararlı takvimi" gerekce={zararliDisi} />
         ) : (
           <ZararliKarti katman={zararli} />
+        )}
+        {sulamaDisi ? (
+          <KapsamDisiKarti baslik="Karbon ayak izi" gerekce={sulamaDisi} />
+        ) : (
+          <KarbonKarti katman={karbon} alanVar={Boolean(alanM2)} />
         )}
       </div>
     </div>

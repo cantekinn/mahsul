@@ -331,6 +331,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/karbon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * IPCC 2019 Tier 1 sezonluk sera gazı envanteri
+         * @description Parselin bir sezonluk sera gazı salımı ve azaltım karşılıkları.
+         *
+         *     Beş kalem: gübreden doğrudan/dolaylı N2O, gübre üretimi, dizel, sulama
+         *     pompası elektriği. Sulama kalemi uydurulmaz, tarlanın kendi FAO-56
+         *     planından gelir; bu yüzden ürünün Kc katsayısı zorunludur.
+         *
+         *     Toprak karbon stoku, üre hidrolizi ve kireçleme kapsam dışıdır ve yanıtta
+         *     'kapsam_disi' olarak listelenir; sessizce sıfır sayılmaz.
+         */
+        get: operations["karbon_ayak_izi_karbon_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Serbest metin sorusunu doğru uzmana yönlendirir
+         * @description Çiftçinin kendi cümlesini hangi hesabın cevaplayacağını bulur.
+         *
+         *     Anahtar kelime eşleşmesi Türkçe karakterden bağımsızdır ('böcek' ve
+         *     'bocek' aynı yere gider). Hiçbir eşleşme olmazsa genel danışmana düşer;
+         *     'anlamadım' denmez.
+         */
+        get: operations["sor_sor_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parseller/tkgm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Repodaki TKGM parsel sorgu sonuçları
+         * @description Kayıtlı gerçek parseller: merkez koordinat ve resmi alan.
+         *
+         *     Canlı MEGSIS servisine gitmez. TKGM'nin parsel sorgu API'si kurumsal
+         *     erişim ister (istek HTML giriş sayfasına yönleniyor), bu yüzden sorgu
+         *     sonuçları dosya olarak tutuluyor. Kullanıcı haritada elle nokta aramak
+         *     yerine kendi parselini listeden seçer; alan da elle girilmez, tapudaki
+         *     değer gelir.
+         */
+        get: operations["tkgm_parselleri_parseller_tkgm_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -420,6 +497,80 @@ export interface components {
              * @description Kapsam dışı üründe gösterilecek sebep.
              */
             gerekce: string;
+        };
+        /** KarbonAzaltim */
+        KarbonAzaltim: {
+            /** Baslik */
+            baslik: string;
+            /** Aciklama */
+            aciklama: string;
+            /**
+             * Kazanc Kg Co2E
+             * @description Bu adımın bu tarladaki karşılığı.
+             */
+            kazanc_kg_co2e: number;
+        };
+        /** KarbonKalemi */
+        KarbonKalemi: {
+            /** Ad */
+            ad: string;
+            /** Kg Co2E */
+            kg_co2e: number;
+            /**
+             * Kaynak
+             * @description Kullanılan emisyon faktörü ve kaynağı.
+             */
+            kaynak: string;
+        };
+        /** KarbonYanit */
+        KarbonYanit: {
+            /** Lat */
+            lat: number;
+            /** Lon */
+            lon: number;
+            /** Urun */
+            urun: string;
+            /** Urun Tr */
+            urun_tr: string;
+            /** Dekar */
+            dekar: number;
+            /** Sezon Gun */
+            sezon_gun: number;
+            /**
+             * Gosterge
+             * @description Gübre/yakıt girilmediyse true.
+             */
+            gosterge: boolean;
+            /** Azot Kg Da */
+            azot_kg_da: number;
+            /** Dizel L Da */
+            dizel_l_da: number;
+            /** Sulama Yontemi */
+            sulama_yontemi: string;
+            /** Su Kaynagi */
+            su_kaynagi: string;
+            /** Et0 Mm Gun */
+            et0_mm_gun: number;
+            /** Net Mm Gun */
+            net_mm_gun: number;
+            /** Sulama M3 */
+            sulama_m3: number;
+            /** Sulama Kwh */
+            sulama_kwh: number;
+            /** Su Senaryosu */
+            su_senaryosu: string;
+            /** Kalemler */
+            kalemler: components["schemas"]["KarbonKalemi"][];
+            /** Toplam Kg Co2E */
+            toplam_kg_co2e: number;
+            /** Dekar Basina Kg Co2E */
+            dekar_basina_kg_co2e: number;
+            /** Azaltim */
+            azaltim: components["schemas"]["KarbonAzaltim"][];
+            /** Kapsam Disi */
+            kapsam_disi: string[];
+            /** Aciklama */
+            aciklama: string;
         };
         /** KisayolYanit */
         KisayolYanit: {
@@ -672,6 +823,37 @@ export interface components {
             /** Organic Carbon */
             organic_carbon?: number | null;
         };
+        /** SoruYanit */
+        SoruYanit: {
+            /** Soru */
+            soru: string;
+            /**
+             * Niyet
+             * @description Router'ın seçtiği uzman.
+             */
+            niyet: string;
+            /** Niyet Tr */
+            niyet_tr: string;
+            /**
+             * Sekme
+             * @description Cevabın görüldüğü arayüz sekmesi.
+             */
+            sekme: string;
+            /** Cevap */
+            cevap: string;
+            /**
+             * Veri
+             * @description Uzmanın ham çıktısı.
+             */
+            veri?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Yonlendirme
+             * @description Cevap yerine sekmeye yönlendirildi mi.
+             */
+            yonlendirme: boolean;
+        };
         /** SulamaPlani */
         SulamaPlani: {
             /** Urun */
@@ -812,6 +994,35 @@ export interface components {
              * @description Seviyeye gore kullaniciya mesaj.
              */
             uyari?: string | null;
+        };
+        /** TkgmParsel */
+        TkgmParsel: {
+            /** Bolge */
+            bolge: string;
+            /** Etiket */
+            etiket: string;
+            /** Il */
+            il: string;
+            /** Ilce */
+            ilce: string;
+            /** Mahalle */
+            mahalle: string;
+            /** Ada */
+            ada: string;
+            /** Parsel */
+            parsel: string;
+            /** Mevkii */
+            mevkii?: string | null;
+            /** Nitelik */
+            nitelik?: string | null;
+            /** Lat */
+            lat: number;
+            /** Lon */
+            lon: number;
+            /** Alan M2 */
+            alan_m2: number;
+            /** Dekar */
+            dekar: number;
         };
         /** TopKMadde */
         TopKMadde: {
@@ -1356,6 +1567,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    karbon_ayak_izi_karbon_get: {
+        parameters: {
+            query: {
+                /** @description Enlem */
+                lat: number;
+                /** @description Boylam */
+                lon: number;
+                /** @description Ürün anahtarı (sulama kapsamında olmalı). */
+                urun: string;
+                /** @description Parsel alanı (m2). */
+                alan_m2: number;
+                /** @description Sulama sezonu uzunluğu (gün). */
+                sezon_gun?: number;
+                /** @description Uygulanan saf azot kg/dekar. Boşsa tablo varsayılanı. */
+                azot_kg_da?: number | null;
+                /** @description Yakıt litre/dekar. Boşsa varsayılan. */
+                dizel_l_da?: number | null;
+                sulama_yontemi?: string;
+                su_kaynagi?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KarbonYanit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sor_sor_get: {
+        parameters: {
+            query: {
+                /** @description Örn: 'domatese kaç litre su vermeliyim' */
+                soru: string;
+                lat?: number | null;
+                lon?: number | null;
+                alan_m2?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoruYanit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tkgm_parselleri_parseller_tkgm_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TkgmParsel"][];
                 };
             };
         };

@@ -41,9 +41,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from agents.climate_risk_agent import TahminYok, iklim_riski
-from agents.irrigation_agent import ET0Yok, sulama_plani
-from agents.pest_agent import SicaklikSerisiYok, zararli_durumu
+from agents.advisor_agent import advisor_node
+from agents.carbon_agent import carbon_node, karbon_plani
+from agents.climate_risk_agent import TahminYok, climate_risk_node, iklim_riski
+from agents.irrigation_agent import ET0Yok, irrigation_node, sulama_plani
+from agents.pest_agent import SicaklikSerisiYok, pest_node, zararli_durumu
+from agents.router import INTENT_TR, route
 from core.config import settings
 from core.schemas import ClimateData, SoilData
 from knowledge import fao56, kapsam
@@ -60,6 +63,7 @@ from data.global_location import (
 )
 from data.one_cikan import ONE_CIKANLAR
 from data.open_meteo import get_monthly_climate
+from data.parcel_files import load_parcels
 from models.crop_reco.global_reco import AYLAR, bilgi_tabani, gruba_gore, urun_oner
 from models.crop_reco.recommender import _texture_class
 from models.disease.classifier import CROP_TR, label_display
@@ -978,6 +982,239 @@ def zararli(
         uyari="Derece-gün modeli sıcaklığa dayanır. Tuzak sayımıyla "
               "doğrulanmadan ilaçlama kararı vermeyin.",
     )
+
+
+# --------------------------------------------------------------------------
+# Karbon ayak izi (Sprint 3)
+# --------------------------------------------------------------------------
+
+
+class KarbonKalemi(BaseModel):
+    ad: str
+    kg_co2e: float
+    kaynak: str = Field(..., description="Kullanılan emisyon faktörü ve kaynağı.")
+
+
+class KarbonAzaltim(BaseModel):
+    baslik: str
+    aciklama: str
+    kazanc_kg_co2e: float = Field(..., description="Bu adımın bu tarladaki karşılığı.")
+
+
+class KarbonYanit(BaseModel):
+    lat: float
+    lon: float
+    urun: str
+    urun_tr: str
+    dekar: float
+    sezon_gun: int
+    gosterge: bool = Field(..., description="Gübre/yakıt girilmediyse true.")
+    azot_kg_da: float
+    dizel_l_da: float
+    sulama_yontemi: str
+    su_kaynagi: str
+    et0_mm_gun: float
+    net_mm_gun: float
+    sulama_m3: float
+    sulama_kwh: float
+    su_senaryosu: str
+    kalemler: list[KarbonKalemi]
+    toplam_kg_co2e: float
+    dekar_basina_kg_co2e: float
+    azaltim: list[KarbonAzaltim]
+    kapsam_disi: list[str]
+    aciklama: str
+
+
+@app.get("/karbon", response_model=KarbonYanit, tags=["tarla"],
+         summary="IPCC 2019 Tier 1 sezonluk sera gazı envanteri")
+def karbon_ayak_izi(
+    lat: float = LAT,
+    lon: float = LON,
+    urun: str = Query(..., description="Ürün anahtarı (sulama kapsamında olmalı)."),
+    alan_m2: float = Query(..., gt=0, le=1e8, description="Parsel alanı (m2)."),
+    sezon_gun: int = Query(120, ge=1, le=365,
+                           description="Sulama sezonu uzunluğu (gün)."),
+    azot_kg_da: float | None = Query(None, ge=0, le=100,
+                                     description="Uygulanan saf azot kg/dekar. "
+                                                 "Boşsa tablo varsayılanı."),
+    dizel_l_da: float | None = Query(None, ge=0, le=200,
+                                     description="Yakıt litre/dekar. Boşsa varsayılan."),
+    sulama_yontemi: str = Query("damla", pattern="^(damla|yagmurlama|salma)$"),
+    su_kaynagi: str = Query("kuyu", pattern="^(kuyu|yuzey)$"),
+) -> KarbonYanit:
+    """Parselin bir sezonluk sera gazı salımı ve azaltım karşılıkları.
+
+    Beş kalem: gübreden doğrudan/dolaylı N2O, gübre üretimi, dizel, sulama
+    pompası elektriği. Sulama kalemi uydurulmaz, tarlanın kendi FAO-56
+    planından gelir; bu yüzden ürünün Kc katsayısı zorunludur.
+
+    Toprak karbon stoku, üre hidrolizi ve kireçleme kapsam dışıdır ve yanıtta
+    'kapsam_disi' olarak listelenir; sessizce sıfır sayılmaz.
+    """
+    # Kapsam kontrolu sulama yetenegine gore: sulama suyu olmadan envanterin
+    # besinci kalemi hesaplanamaz, o da toplamin ucte birine kadar cikabiliyor.
+    _urunleri_coz(urun, "sulama")
+    try:
+        s = karbon_plani(
+            lat, lon, urun, alan_m2,
+            sezon_gun=sezon_gun,
+            azot_kg_da=azot_kg_da,
+            dizel_l_da=dizel_l_da,
+            sulama_yontemi=sulama_yontemi,
+            su_kaynagi=su_kaynagi,
+        )
+    except ET0Yok as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except fao56.KcYok as exc:
+        raise HTTPException(422, f"'{exc.args[0]}' bu hesap için kapsam dışında. "
+                                 f"{kapsam.YETENEK_GEREKCE['sulama']}") from exc
+    except Exception as exc:
+        raise _hava_503(exc, "Karbon hesabı için hava verisi alınamadı") from exc
+
+    return KarbonYanit(
+        lat=lat, lon=lon, urun=urun, urun_tr=_urun_tr(urun),
+        dekar=s["dekar"], sezon_gun=s["sezon_gun"], gosterge=s["gosterge"],
+        azot_kg_da=s["azot_kg_da"], dizel_l_da=s["dizel_l_da"],
+        sulama_yontemi=s["sulama_yontemi"], su_kaynagi=s["su_kaynagi"],
+        et0_mm_gun=s["et0_mm_gun"], net_mm_gun=s["net_mm_gun"],
+        sulama_m3=s["sulama_m3"], sulama_kwh=s["sulama_kwh"],
+        su_senaryosu=s["su_senaryosu"],
+        kalemler=[KarbonKalemi(**k) for k in s["kalemler"]],
+        toplam_kg_co2e=s["toplam_kg_co2e"],
+        dekar_basina_kg_co2e=s["dekar_basina_kg_co2e"],
+        azaltim=[KarbonAzaltim(**a) for a in s["azaltim"]],
+        kapsam_disi=s["kapsam_disi"],
+        aciklama=s["not"],
+    )
+
+
+# --------------------------------------------------------------------------
+# Serbest metin yonlendirme (Sprint 1 niyet router'i, langgraph'siz)
+# --------------------------------------------------------------------------
+# Orkestrator grafigi kaba girmiyor (langgraph ~40 MB, gerekce Dockerfile'daki
+# agents/ COPY blogunda). Ama ciftciye deger katan sey grafik degil, "ne
+# yazarsam yazayim dogru cevaba gideyim" davranisi; o da agents/router.py'deki
+# saf yonlendirici + zaten canli olan *_node() adaptorleriyle karsilanir.
+# Orkestrator da ayni router'i kullanir, iki kopya yok.
+
+# Bu dort niyet dogrudan cevaplanir: hepsi tek bir Open-Meteo cagrisiyla biter.
+_NODE = {
+    "irrigation": irrigation_node,
+    "climate_risk": climate_risk_node,
+    "pest": pest_node,
+    "carbon": carbon_node,
+    "advisor": advisor_node,
+}
+
+# Bu ikisi CEVAPLANMAZ, yonlendirilir. Sebep: urun onerisi konum+toprak+iklim+
+# parsel katmanlarinin tamamini ister (25 sn'ye kadar) ve zaten /oneri olarak
+# ekranda duruyor; teshis ise fotograf ister, metinle cevaplanamaz. Burada
+# ikinci bir kopyasini calistirmak ayni tarla icin iki farkli liste uretme
+# riskidir.
+_YONLENDIR = {
+    "crop_reco": "Ürün önerisi haritada seçili nokta için zaten hesaplanıyor.",
+    "diagnosis": "Teşhis için yaprak fotoğrafı gerekiyor.",
+}
+
+
+class SoruYanit(BaseModel):
+    soru: str
+    niyet: str = Field(..., description="Router'ın seçtiği uzman.")
+    niyet_tr: str
+    sekme: str = Field(..., description="Cevabın görüldüğü arayüz sekmesi.")
+    cevap: str
+    veri: dict = Field(default_factory=dict, description="Uzmanın ham çıktısı.")
+    yonlendirme: bool = Field(..., description="Cevap yerine sekmeye yönlendirildi mi.")
+
+
+@app.get("/sor", response_model=SoruYanit, tags=["tarla"],
+         summary="Serbest metin sorusunu doğru uzmana yönlendirir")
+def sor(
+    soru: str = Query(..., min_length=2, max_length=300,
+                      description="Örn: 'domatese kaç litre su vermeliyim'"),
+    lat: float | None = Query(None, ge=-90, le=90),
+    lon: float | None = Query(None, ge=-180, le=180),
+    alan_m2: float | None = Query(None, gt=0, le=1e8),
+) -> SoruYanit:
+    """Çiftçinin kendi cümlesini hangi hesabın cevaplayacağını bulur.
+
+    Anahtar kelime eşleşmesi Türkçe karakterden bağımsızdır ('böcek' ve
+    'bocek' aynı yere gider). Hiçbir eşleşme olmazsa genel danışmana düşer;
+    'anlamadım' denmez.
+    """
+    niyet = route(soru)
+    ad, sekme = INTENT_TR[niyet]
+
+    if niyet in _YONLENDIR:
+        return SoruYanit(soru=soru, niyet=niyet, niyet_tr=ad, sekme=sekme,
+                         cevap=_YONLENDIR[niyet], yonlendirme=True)
+
+    if lat is None or lon is None:
+        return SoruYanit(
+            soru=soru, niyet=niyet, niyet_tr=ad, sekme=sekme,
+            cevap=f"{ad} için önce haritadan bir nokta seçin.",
+            yonlendirme=True,
+        )
+
+    # Node adaptorleri hatayi kendileri yutar ve cumle kurar (graf ortasinda
+    # patlamasinlar diye yazilmislardi); burada da ayni davranis isteniyor,
+    # cunku serbest metin girisinde 503 yerine acikklayici cumle daha iyi.
+    durum = {
+        "query": soru,
+        "farm_profile": {"parcel": {"lat": lat, "lon": lon, "alan_m2": alan_m2}},
+    }
+    sonuc = _NODE[niyet](durum)["result"]
+    return SoruYanit(
+        soru=soru, niyet=niyet, niyet_tr=ad, sekme=sekme,
+        cevap=sonuc["message"], veri=sonuc.get("data") or {}, yonlendirme=False,
+    )
+
+
+# --------------------------------------------------------------------------
+# Kayitli TKGM parselleri (Sprint 1 - yerel parsel dosya yukleyici)
+# --------------------------------------------------------------------------
+
+
+class TkgmParsel(BaseModel):
+    bolge: str
+    etiket: str
+    il: str
+    ilce: str
+    mahalle: str
+    ada: str
+    parsel: str
+    mevkii: str | None = None
+    nitelik: str | None = None
+    lat: float
+    lon: float
+    alan_m2: float
+    dekar: float
+
+
+@app.get("/parseller/tkgm", response_model=list[TkgmParsel], tags=["konum"],
+         summary="Repodaki TKGM parsel sorgu sonuçları")
+def tkgm_parselleri() -> list[TkgmParsel]:
+    """Kayıtlı gerçek parseller: merkez koordinat ve resmi alan.
+
+    Canlı MEGSIS servisine gitmez. TKGM'nin parsel sorgu API'si kurumsal
+    erişim ister (istek HTML giriş sayfasına yönleniyor), bu yüzden sorgu
+    sonuçları dosya olarak tutuluyor. Kullanıcı haritada elle nokta aramak
+    yerine kendi parselini listeden seçer; alan da elle girilmez, tapudaki
+    değer gelir.
+    """
+    return [
+        TkgmParsel(
+            bolge=k["bolge"], etiket=k["etiket"],
+            il=p.il, ilce=p.ilce, mahalle=p.mahalle,
+            ada=p.ada, parsel=p.parsel,
+            mevkii=p.mevkii, nitelik=p.nitelik,
+            lat=p.lat, lon=p.lon, alan_m2=p.alan_m2,
+            dekar=round(p.alan_m2 / 1000.0, 2),
+        )
+        for k in load_parcels()
+        for p in (k["parcel"],)
+    ]
 
 
 # --------------------------------------------------------------------------

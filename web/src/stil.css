@@ -1251,6 +1251,69 @@ body {
   margin: 0 auto;
 }
 
+/* Kayitli tarlalar seridi. Secim kutusunun USTUNDE duruyor cunku sirasi bu:
+   once hangi tarla, sonra o tarlada ne. Alta konsaydi kullanici dort kutuyu
+   doldurduktan sonra "zaten kayitliymis" diye gorurdu. */
+.tarlalarim {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bos-2);
+  margin-bottom: var(--bos-3);
+}
+
+/* Ad ve silme TEK CERCEVE icinde iki ayri dugme: silme ayri bir cerceve
+   olsaydi hangi tarlaya ait oldugu dar ekranda kopabilirdi. */
+.tarlam {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-tam);
+  background: var(--kart);
+  overflow: hidden;
+}
+
+.tarlam-ad,
+.tarlam-sil {
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tarlam-ad {
+  padding: var(--bos-2) var(--bos-3);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--yesil-koyu);
+}
+
+.tarlam-ad:hover {
+  background: var(--basari-zemin);
+}
+
+/* Silme yikici: acik durur ama SOLUK durur. Ad kadar goze carpsaydi yanlis
+   dugmeye basmak kolay olurdu; ustune gelince kirmiziya donup niyetini
+   soyluyor. */
+.tarlam-sil {
+  padding: 0 var(--bos-3);
+  border-left: 1px solid var(--cizgi);
+  font-size: var(--yazi-m);
+  line-height: 1;
+  color: var(--soluk);
+}
+
+.tarlam-sil:hover {
+  background: var(--hata-zemin);
+  color: var(--hata);
+}
+
+.tarlam-ad:focus-visible,
+.tarlam-sil:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: -2px;
+}
+
 .tarla-secim {
   display: flex;
   flex-wrap: wrap;
@@ -1280,9 +1343,12 @@ body {
   min-height: 44px;
 }
 
-/* Urun listesi 116 secenek: dar ekranda tam genislik alsin, uzun urun adlari
-   ("Kanola (kolza)") kesilmesin. */
-.tarla-secim label:first-child {
+/* Urun listesi 116 secenek, tapu etiketi ("Aksu - ada 2422 parsel 2") daha da
+   uzun: bu ikisi dar ekranda tam genislik alsin, adlar kesilmesin.
+   NEDEN :first-child DEGIL: kutunun ilk alani parsel seciciydi, sonra urun
+   oldu, tapu listesi bos donerse yine degisiyor. Konuma bagli bir kural her
+   siralama degisikliginde sessizce yanlis alani genisletirdi. */
+.tarla-secim label.genis {
   flex: 1 1 220px;
   min-width: 0;
 }
@@ -1450,6 +1516,255 @@ body {
   margin: var(--bos-2) 0 0;
   font-size: var(--yazi-s);
   line-height: 1.45;
+}
+
+/* --------------------------------------------------------------------------
+   Karbon ayak izi karti
+
+   Bes kalem var (gubre uretimi, dogrudan N2O, dolayli N2O, yakit, pompa) ve
+   ciftci icin ONEMLI OLAN SAYI DEGIL SIRALAMA: hangi kalem digerlerini
+   ezyiyor. Sadece rakam yazsaydik "429 mi buyuk 550 mi" diye okumak gerekirdi.
+   Cubuk bunu tek bakista veriyor, rakam da yaninda duruyor.
+   -------------------------------------------------------------------------- */
+
+.karbon-kalemler,
+.karbon-azaltim {
+  list-style: none;
+  margin: var(--bos-1) 0 0;
+  padding: 0;
+}
+
+.karbon-kalemler > li {
+  padding: var(--bos-2) 0;
+}
+
+.karbon-azaltim > li {
+  padding: var(--bos-2) 0;
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.karbon-azaltim > li:last-child {
+  border-bottom: none;
+}
+
+.karbon-kalem-bas {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
+.karbon-kalem-bas strong {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Oluk her zaman tam genislikte duruyor, dolan kisim icerideki span.
+   Boylece kalemler AYNI OLCEKTE okunuyor; her cubuk kendi kutusunu
+   doldursaydi en kucuk kalem de en buyugu kadar uzun gorunurdu. */
+.karbon-cubuk {
+  height: 6px;
+  margin-top: var(--bos-1);
+  border-radius: var(--yuvarlak-tam);
+  background: var(--zemin);
+  overflow: hidden;
+}
+
+.karbon-cubuk span {
+  display: block;
+  height: 100%;
+  border-radius: var(--yuvarlak-tam);
+  background: var(--yesil);
+}
+
+.karbon-kaynak {
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+}
+
+.karbon-baslik {
+  margin: var(--bos-4) 0 0;
+  padding-top: var(--bos-3);
+  border-top: 1px solid var(--cizgi);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  font-weight: 600;
+}
+
+/* Azaltim kazanci YESIL degil: yesil "iyi durumdasin" der, oysa bu sayi
+   "su kadarini henuz kazanmadin" demek. Koyu metin, isaret rengi yok. */
+.karbon-kazanc {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--yesil-koyu);
+}
+
+/* Hesabin sinirlari VARSAYILAN KAPALI ama silinmiyor: kapsam disi kalemler
+   (toprak organik karbonu, kirecleme) sonucun dogru okunmasi icin gerekli,
+   fakat karti acan ilk sey olmamali. */
+.karbon-detay {
+  margin-top: var(--bos-3);
+  padding-top: var(--bos-3);
+  border-top: 1px solid var(--cizgi);
+}
+
+.karbon-detay summary {
+  cursor: pointer;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.karbon-detay summary:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+  border-radius: var(--yuvarlak-s);
+}
+
+/* Detay icindeki uyarilar zaten ayrilmis bir bolumun icinde: her birine
+   ayrica ust cizgi cizmek kutuyu cizgi yiginina cevirirdi. */
+.karbon-detay .tarla-uyari {
+  border-top: none;
+  padding-top: 0;
+  margin-top: var(--bos-2);
+}
+
+/* --------------------------------------------------------------------------
+   Soru kutusu (serbest metin -> dogru uzman)
+
+   Sekmelerin HEMEN ALTINDA ve her sekmede duruyor. Bu yuzden gorsel agirligi
+   bilerek dusuk: kartlarla yarisan ikinci bir odak olursa, asil isi (harita,
+   oneri, takvim) golgeler. Cevap geldiginde ise belirginlesiyor.
+   -------------------------------------------------------------------------- */
+
+.soru-kutusu {
+  margin: 0 auto var(--bos-4);
+  max-width: 1100px;
+  width: 100%;
+}
+
+.soru-satir {
+  display: flex;
+  gap: var(--bos-2);
+}
+
+.soru-satir .alan {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+}
+
+.soru-satir .dugme {
+  flex: none;
+}
+
+.soru-ornekler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bos-2);
+  margin-top: var(--bos-2);
+}
+
+/* Ornekler DUGME degil ipucu gorunumunde: tiklanabilir olduklari bellidir ama
+   "Sor" dugmesiyle ayni agirlikta olsalardi asil eylem hangisi belirsizlesirdi. */
+.soru-ornek {
+  border: 1px solid var(--cizgi);
+  background: var(--kart);
+  border-radius: var(--yuvarlak-tam);
+  padding: var(--bos-2) var(--bos-3);
+  font: inherit;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.soru-ornek:hover {
+  border-color: var(--yesil);
+  color: var(--yesil-koyu);
+}
+
+.soru-ornek:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+}
+
+.soru-hata {
+  margin: var(--bos-2) 0 0;
+  padding: var(--bos-3);
+  border-radius: var(--yuvarlak-m);
+  background: var(--hata-zemin);
+  color: var(--hata);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
+.soru-yanit {
+  margin-top: var(--bos-2);
+  padding: var(--bos-4);
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-l);
+  box-shadow: var(--golge-1);
+}
+
+.soru-yanit-bas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  margin-bottom: var(--bos-3);
+}
+
+.soru-kapat {
+  border: none;
+  background: none;
+  padding: var(--bos-1) var(--bos-2);
+  font: inherit;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.soru-kapat:hover {
+  color: var(--metin);
+}
+
+.soru-kapat:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+  border-radius: var(--yuvarlak-s);
+}
+
+/* pre-wrap ZORUNLU: uzmanlarin cevabi satir satir kuruluyor (madde
+   listeleri, "- 3 gun sonra don riski" gibi). Varsayilan katlamada hepsi tek
+   paragrafa yapisir ve maddeler kaybolur. */
+.soru-cevap {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+}
+
+.soru-yanit .dugme {
+  margin-top: var(--bos-3);
+}
+
+@media (pointer: coarse) {
+  .soru-ornek,
+  .soru-kapat,
+  .tarlam-ad,
+  .tarlam-sil {
+    min-height: 44px;
+  }
 }
 
 /* ---------------------------------------------------------------------------

@@ -20,6 +20,9 @@ export type Sulama = components["schemas"]["SulamaYanit"];
 export type IklimRisk = components["schemas"]["IklimRiskYanit"];
 export type Zararli = components["schemas"]["ZararliYanit"];
 export type Kapsam = components["schemas"]["KapsamYanit"];
+export type Karbon = components["schemas"]["KarbonYanit"];
+export type Soru = components["schemas"]["SoruYanit"];
+export type TkgmParsel = components["schemas"]["TkgmParsel"];
 
 /**
  * API'nin koku.
@@ -97,4 +100,26 @@ export const api = {
   // (iklim 116, sulama 84, zararli 5 urun); arayuz kapsam disi urunu
   // gizlemek yerine sebebiyle isaretlesin diye sunucudan cekiliyor.
   kapsam: () => al<Kapsam[]>("/kapsam"),
+  // Karbon ayak izi. Gubre/yakit VERILMEZSE sunucu tablo varsayilanini kullanip
+  // yaniti "gosterge" isaretler; arayuz o bayraga bakip sayiyi kesin bir olcum
+  // gibi sunmaz.
+  karbon: (
+    lat: number,
+    lon: number,
+    urun: string,
+    alan_m2: number,
+    ek: {
+      sezon_gun?: number;
+      azot_kg_da?: number | null;
+      dizel_l_da?: number | null;
+      sulama_yontemi?: string;
+      su_kaynagi?: string;
+    } = {},
+  ) => al<Karbon>("/karbon", { lat, lon, urun, alan_m2, ...ek }),
+  // Serbest metin sorusu. Nokta secili degilse de cagrilabilir: sunucu o zaman
+  // cevap yerine "once nokta secin" yonlendirmesi doner (yonlendirme=true).
+  sor: (soru: string, lat?: number | null, lon?: number | null, alan_m2?: number) =>
+    al<Soru>("/sor", { soru, lat, lon, alan_m2 }),
+  // Kayitli TKGM parselleri. Tek seferlik, konumdan bagimsiz liste.
+  tkgmParselleri: () => al<TkgmParsel[]>("/parseller/tkgm"),
 };

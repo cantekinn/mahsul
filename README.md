@@ -8,9 +8,12 @@ Dünyanın herhangi bir koordinatı için toprak, iklim, tarım parselleri ve
 - **Ürün önerisi**: seçili noktada ne yetişir (FAO EcoCrop + SoilGrids + iklim
   normali).
 - **Tarla takvimi**: aynı nokta için FAO-56 sulama ihtiyacı, 16 günlük iklim
-  riski ve derece-gün ile zararlı evresi.
+  riski, derece-gün ile zararlı evresi ve IPCC 2019 karbon ayak izi.
 - **Hastalık teşhisi**: yaprak fotoğrafından 45 sınıflı teşhis ve tedavi
   önerisi (sunucuda ONNX, PyTorch yok).
+
+Her sekmenin üstünde bir soru kutusu var: serbest metin yazınca sunucu niyeti
+bulup ilgili uzmanın hesabını çalıştırır ya da doğru sekmeye yönlendirir.
 
 ## Çalıştırma
 
@@ -35,6 +38,8 @@ Hepsi ücretsiz, hepsi anahtarsız, hiçbiri ödemeli katmana geçmiyor.
 | Ürün eşikleri | FAO EcoCrop | 91 ürün |
 | Sulama | FAO-56 Penman-Monteith | Open-Meteo ET0 + 7 günlük yağış tahmini |
 | Zararlı fenolojisi | Derece-gün (GDD) | Literatür eşikleri, 5 zararlı |
+| Sera gazı | IPCC 2019 Refinement Tier 1 | EF1/EF4/EF5, AR6 GWP100 = 273 |
+| Parsel (tapu) | TKGM parsel sorgu sonuçları | 49 dosya, canlı servis kurumsal erişim istiyor |
 
 ## Bilinen sınırlar
 
@@ -65,6 +70,16 @@ güvenebileceğini bilmesi gerekiyor.
   demek değildir. Eşikler ürünün EcoCrop sıcaklık aralığından gelir.
 - **Zararlı takvimi bir ilaçlama reçetesi değildir.** Derece-gün yalnızca
   sıcaklığa bakar; karar tuzak sayımıyla doğrulanmalıdır.
+- **Karbon sayısı gübre ve yakıt girilmediğinde "gösterge"dir.** O durumda
+  tablo varsayılanı kullanılır ve yanıt bunu açıkça işaretler. Toprak organik
+  karbonu, kireçleme, üre hidrolizi ve makine imalatı kapsam dışıdır; kart
+  bunları "Hesabın sınırları" başlığı altında sayar.
+- **Kayıtlı tarlalar tarayıcıda durur.** Ücretsiz barındırmada disk kalıcı
+  olmadığı için sunucuya yazılan bir liste her yayında silinirdi. Bunun
+  bedeli: kayıtlar başka cihazda görünmez.
+- **Tapu parselleri kayıtlı sorgu sonuçlarıdır, canlı TKGM sorgusu değildir.**
+  TKGM'nin parsel API'si kurumsal erişim ister; istek HTML giriş sayfasına
+  yönleniyor (ölçüldü).
 
 ## Uç noktalar
 
