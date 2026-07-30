@@ -345,6 +345,37 @@ body {
   color: var(--soluk);
 }
 
+/* Harita sekmesindeki tapu secici. Kisayollarla AYNI ISI yapiyor (noktayi
+   secmek) ve hemen altinda duruyor; ayri bir yere koysaydik kullanicinin
+   "nokta nasil secilir" sorusunun cevabi ekranin iki ucuna dagilirdi.
+   Aciklama satiri secicinin YANINDA, altinda degil: kutu tek satir yuksekligi
+   ve iki satira cikmasi haritayi asagi iterdi. */
+.parsel-satir {
+  align-items: flex-end;
+  gap: var(--bos-3);
+}
+
+.parsel-satir label.parsel-alan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-2);
+  flex: 0 1 320px;
+  min-width: 0;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--soluk);
+}
+
+.parsel-alt {
+  flex: 1 1 220px;
+  padding-bottom: var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+}
+
 .govde {
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
@@ -1911,15 +1942,116 @@ body {
 /* --------------------------------------------------------------------------
    Soru kutusu (serbest metin -> dogru uzman)
 
-   Sekmelerin HEMEN ALTINDA ve her sekmede duruyor. Bu yuzden gorsel agirligi
-   bilerek dusuk: kartlarla yarisan ikinci bir odak olursa, asil isi (harita,
-   oneri, takvim) golgeler. Cevap geldiginde ise belirginlesiyor.
+   SAG ALT KOSEDE, KAPALI DURUYOR. Once sekme cubugunun altinda her zaman acik
+   duruyordu; orada uc sekmenin de ustunden dikey alan yiyordu ve akla sonradan
+   gelen bir sorunun kutusu, ekrandaki ilk sey olmamali.
+
+   position: fixed SECILDI cunku kutu bir SAYFA OGESI degil, uygulama boyunca
+   ayni yerde duran bir arac. Akisa yerlestirseydik her sekmede farkli bir
+   yukseklige duser, kullanicinin "nerede olduğunu" her seferinde yeniden
+   ogrenmesi gerekirdi.
+
+   z-index HARITADAN YUKSEK olmali: Leaflet kendi katmanlarina 400'e kadar
+   deger veriyor, denetimlere 1000. 1100 ikisinin de ustunde.
    -------------------------------------------------------------------------- */
 
+/* Kapali hal: tek dugme. Ikon + yazi birlikte; yalniz "?" isareti, her gun
+   yazilim kullanmayan bir kullanicidan tahmin beklemek olurdu. */
+.soru-acici {
+  position: fixed;
+  right: var(--bos-4);
+  bottom: var(--bos-4);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: var(--bos-2);
+  min-height: 44px;
+  padding: var(--bos-2) var(--bos-4);
+  border: 1px solid var(--yesil-koyu);
+  border-radius: var(--yuvarlak-tam);
+  background: var(--yesil);
+  color: #fff;
+  font: inherit;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--golge-2);
+}
+
+.soru-acici:hover {
+  background: var(--yesil-koyu);
+}
+
+.soru-acici:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+}
+
 .soru-kutusu {
-  margin: 0 auto var(--bos-4);
-  max-width: 1100px;
-  width: 100%;
+  position: fixed;
+  right: var(--bos-4);
+  bottom: var(--bos-4);
+  z-index: 1100;
+  width: min(420px, calc(100vw - var(--bos-4) * 2));
+  /* Cevap uzun olabiliyor (sulama karti madde madde yaziyor). Tavan ekran
+     yuksekligine bagli: sabit bir piksel degeri, alcak ekranlarda paneli
+     tarayici cubugunun altina sokardi. */
+  max-height: min(560px, calc(100vh - var(--bos-4) * 2));
+  overflow-y: auto;
+  padding: var(--bos-4);
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-l);
+  box-shadow: var(--golge-2);
+}
+
+.soru-bas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  margin-bottom: var(--bos-3);
+}
+
+.soru-baslik {
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  font-weight: 600;
+}
+
+.soru-kapat {
+  border: none;
+  background: none;
+  padding: var(--bos-1) var(--bos-2);
+  font: inherit;
+  font-size: var(--yazi-l);
+  line-height: 1;
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.soru-kapat:hover {
+  color: var(--metin);
+}
+
+.soru-kapat:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+  border-radius: var(--yuvarlak-s);
+}
+
+/* DAR EKRANDA DA YAZI DURUYOR. Once burada yaziyi gizleyip dugmeyi 44 px'lik
+   bir "?" dairesine indirmistim; olculdu, sigiyordu. Ama sigmasi dogru
+   oldugu anlamina gelmiyor: bu uygulama tarlada, yazilimla arasi olmayan bir
+   kullanicinin telefonunda aciliyor ve kosedeki cikplak soru isaretinin ne
+   yaptigini tahmin etmesini beklemek, kazanilan 66 px'ten pahali. */
+/* Kose boslugu panelle AYNI kaliyor: dugmeye basildiginda panel dugmenin
+   yerinde aciliyor, bir yana kaymiyor. */
+@media (max-width: 480px) {
+  .soru-acici {
+    padding: var(--bos-2) var(--bos-3);
+  }
 }
 
 .soru-satir {
@@ -1995,7 +2127,10 @@ body {
   margin-bottom: var(--bos-3);
 }
 
-.soru-kapat {
+/* Cevabi kapatmak PANELI kapatmak degildir: kullanici cevabi okuyup ikinci
+   bir soru sormak isteyebilir. Bu yuzden ayri bir dugme ve ayri bir gorunum
+   (yazi, koşedeki × degil). */
+.soru-yanit-kapat {
   border: none;
   background: none;
   padding: var(--bos-1) var(--bos-2);
@@ -2007,11 +2142,11 @@ body {
   text-decoration: underline;
 }
 
-.soru-kapat:hover {
+.soru-yanit-kapat:hover {
   color: var(--metin);
 }
 
-.soru-kapat:focus-visible {
+.soru-yanit-kapat:focus-visible {
   outline: 2px solid var(--odak);
   outline-offset: 2px;
   border-radius: var(--yuvarlak-s);
@@ -2034,6 +2169,7 @@ body {
 @media (pointer: coarse) {
   .soru-ornek,
   .soru-kapat,
+  .soru-yanit-kapat,
   .tarlam-ad,
   .tarlam-sil {
     min-height: 44px;

@@ -35,6 +35,7 @@ import type {
 } from "../api/istemci";
 import { Kart, KatmanKabugu } from "./Durum";
 import type { Katman } from "./Durum";
+import ParselSecici from "./ParselSecici";
 
 type Nokta = { lat: number; lon: number };
 type Yetenek = "sulama" | "iklim" | "zararli";
@@ -162,34 +163,6 @@ function useTarlalarim() {
     kaydet: (t: Tarla) => yaz([...liste.filter((x) => x.ad !== t.ad), t]),
     sil: (ad: string) => yaz(liste.filter((x) => x.ad !== ad)),
   };
-}
-
-/** Kayitli TKGM parselleri (tapu sorgu sonuclari).
- *
- *  NEDEN CANLI MEGSIS DEGIL: TKGM'nin parsel sorgu API'si kurumsal erisim
- *  istiyor, istek HTML giris sayfasina yonleniyor (olculdu). Bu yuzden sorgu
- *  sonuclari dosya olarak duruyor ve sunucu onlari okuyor.
- *
- *  Liste bir kez cekilir, koordinata bagli degil. Cekilemezse bos kalir ve
- *  secici HIC gorunmez: bos bir acilir liste, kullaniciya kendi parselinin
- *  kayitli olmadigini dusundururdu. */
-function useTkgmParselleri(): TkgmParsel[] {
-  const [liste, ayarla] = useState<TkgmParsel[]>([]);
-  useEffect(() => {
-    let iptal = false;
-    api
-      .tkgmParselleri()
-      .then((v) => {
-        if (!iptal) ayarla(v);
-      })
-      .catch(() => {
-        /* liste yoksa secici gizlenir */
-      });
-    return () => {
-      iptal = true;
-    };
-  }, []);
-  return liste;
 }
 
 /** Kapsam disi urunde istegi HIC ATMADAN sebebi yazan kart.
@@ -438,6 +411,7 @@ export default function TarlaPaneli({
   oneri,
   dekar,
   alanM2,
+  tkgm,
   onDekar,
   onHaritayaGit,
   onNoktaSec,
@@ -449,6 +423,9 @@ export default function TarlaPaneli({
   // alan, sorduğu soruya ulasmazdi.
   dekar: string;
   alanM2: number | undefined;
+  // Parsel listesi de App.tsx'te: ayni secici artik harita sekmesinde de var
+  // ve iki ayri cagri, ayni dosyayi iki kez indirmek demekti.
+  tkgm: TkgmParsel[];
   onDekar: (v: string) => void;
   onHaritayaGit: () => void;
   onNoktaSec: (lat: number, lon: number) => void;
@@ -461,7 +438,6 @@ export default function TarlaPaneli({
   // cekilmez.
   const [yontem, setYontem] = useState("damla");
   const kapsam = useKapsam();
-  const tkgm = useTkgmParselleri();
   const tarlalarim = useTarlalarim();
 
   /** Kayitli tarla TUM secimi geri kurar, sadece noktayi degil.
@@ -487,16 +463,9 @@ export default function TarlaPaneli({
     tarlalarim.kaydet({ ad: ad.trim(), ...nokta, urun, asama, dekar, yontem });
   };
 
-  /** Kayitli parsel secimi: noktayi VE alani ayni anda kurar.
-   *
-   *  Ikisini birden yazmasi onemli. Ciftci parselini secince alani elle
-   *  girmesi gerekseydi tapudaki degeri hatirlamasi ya da bakmasi gerekirdi;
-   *  oysa deger zaten sorgu sonucunda var ve karbon karti onsuz calismiyor. */
-  const parselSec = (etiket: string) => {
-    const p = tkgm.find((x) => x.etiket === etiket);
-    if (!p) return;
-    onNoktaSec(p.lat, p.lon);
-    onDekar(String(p.dekar));
+  const parselSec = (lat: number, lon: number, dekar: number) => {
+    onNoktaSec(lat, lon);
+    onDekar(String(dekar));
   };
 
   // Secili tarlaya onerilen urunler + kalan tum urunler.
@@ -576,17 +545,7 @@ export default function TarlaPaneli({
   // Secici iki yerde de ayni: nokta yokken baslangic yolu, nokta varken
   // parsel degistirme yolu. Tek tanim, iki kullanim.
   const parselSecici = tkgm.length > 0 && (
-    <label className="genis">
-      Kayıtlı parsel
-      <select value="" onChange={(e) => parselSec(e.target.value)}>
-        <option value="">{tkgm.length} tapu kaydı</option>
-        {tkgm.map((p) => (
-          <option key={p.etiket} value={p.etiket}>
-            {p.etiket} · {p.dekar} da
-          </option>
-        ))}
-      </select>
-    </label>
+    <ParselSecici liste={tkgm} onSec={parselSec} />
   );
 
   // Serit iki yerde de ayni. Nokta yokken kayitli tarlalar TEK BASINA

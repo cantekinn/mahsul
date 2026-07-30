@@ -17,6 +17,7 @@ import Kisayollar from "./bilesenler/Kisayollar";
 import TeshisPaneli from "./bilesenler/TeshisPaneli";
 import TarlaPaneli from "./bilesenler/TarlaPaneli";
 import SoruKutusu from "./bilesenler/SoruKutusu";
+import ParselSecici, { useTkgmParselleri } from "./bilesenler/ParselSecici";
 import { api, ApiHatasi } from "./api/istemci";
 import type { Konum, OneriKumesi, Parseller, Toprak } from "./api/istemci";
 import type { Katman } from "./bilesenler/Durum";
@@ -108,6 +109,20 @@ export default function App() {
   // ne kadar" diye sordugunda sunucu yine "once alanini girin" derdi; yani
   // kullanici bilgiyi vermis olmasina ragmen ayni sey tekrar istenirdi.
   const [dekar, setDekar] = useState("");
+  // Tapu parselleri de BURADA: secici artik iki sekmede birden duruyor ve
+  // listeyi her sekmenin ayri cekmesi, ayni dosyayi sekme degistikce yeniden
+  // indirmek olurdu.
+  const tkgm = useTkgmParselleri();
+
+  /** Parsel secimi noktayi VE alani birden kurar.
+   *
+   *  Ikisini birden yazmasi onemli: alan elle istenseydi ciftcinin tapudaki
+   *  degeri hatirlamasi gerekirdi, oysa deger zaten sorgu sonucunda var ve
+   *  karbon karti onsuz calismiyor. */
+  const parselSec = (lat: number, lon: number, d: number) => {
+    setNokta({ lat, lon });
+    setDekar(String(d));
+  };
 
   // Ciftci dekar konusur, API metrekare bekler. Cevrim TEK YERDE, burada.
   const alanM2 = (() => {
@@ -203,6 +218,26 @@ export default function App() {
         <>
           <Kisayollar onSec={(lat, lon) => setNokta({ lat, lon })} secili={nokta} />
 
+          {/* Parsel secici KISAYOLLARIN YANINDA: ikisi de "noktayi nasil
+              secerim" sorusunun cevabi. Haritada gozle tarla aramak yerine
+              tapu kaydini secen kullanici, dort katmanin dordunu de (konum,
+              toprak, parsel, oneri) hicbir sey daha yapmadan alir.
+
+              tarla-secim sinifi BILEREK yeniden kullaniliyor: bu, oradaki
+              kutunun aynisi. Ayni gorunum icin ikinci bir kural kumesi
+              yazmak, ilerde birini guncelleyip digerini unutmak demekti. */}
+          {tkgm.length > 0 && (
+            <form
+              className="tarla-secim parsel-satir"
+              onSubmit={(e) => e.preventDefault()}
+            >
+              <ParselSecici liste={tkgm} onSec={parselSec} sinif="parsel-alan" />
+              <span className="parsel-alt">
+                Tapu kaydını seçtiğinizde nokta ve alan birlikte kurulur.
+              </span>
+            </form>
+          )}
+
           <main className="govde">
             <section className="harita-alan">
               <Harita
@@ -246,6 +281,7 @@ export default function App() {
             oneri={oneri}
             dekar={dekar}
             alanM2={alanM2}
+            tkgm={tkgm}
             onDekar={setDekar}
             onHaritayaGit={() => setGorunum("harita")}
             onNoktaSec={(lat, lon) => setNokta({ lat, lon })}

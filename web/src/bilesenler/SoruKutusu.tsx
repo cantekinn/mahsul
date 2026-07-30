@@ -15,8 +15,16 @@
  *                        henuz nokta secilmemis. Bu durumda dugme cikar ve
  *                        kullaniciyi oraya goturur.
  * Iki durumu ayni gostermek, "cevap verildi" sanip beklemeye yol acardi.
+ *
+ * NEDEN SAG ALT KOSEDE, SEKME CUBUGUNUN ALTINDA DEGIL
+ * Once sekmelerle icerigin arasinda, her zaman acik duruyordu. Orada iki sey
+ * yanlisti: (1) ucu de kendi ekranini hak eden uc sekmenin ustunden dikey
+ * alan yiyordu, (2) her acilista "once buraya yaz" diye kendini one koyuyordu
+ * ama bu kutu bir baslangic noktasi degil, akla SONRADAN gelen sorunun yeri.
+ * Simdi kapali duruyor, dugmeye basilinca aciliyor. Kapali haldeki maliyeti
+ * bir dugme; acikken ekranin ustunu degil, kendi kosesini kapliyor.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, ApiHatasi } from "../api/istemci";
 import type { Soru } from "../api/istemci";
 
@@ -40,10 +48,29 @@ export default function SoruKutusu({
   alanM2: number | undefined;
   onSekme: (sekme: string) => void;
 }) {
+  const [acik, setAcik] = useState(false);
   const [metin, setMetin] = useState("");
   const [yanit, setYanit] = useState<Soru | null>(null);
   const [hata, setHata] = useState<string | null>(null);
   const [bekliyor, setBekliyor] = useState(false);
+  const alan = useRef<HTMLInputElement>(null);
+
+  // Acilinca imlec kutuya gidiyor: kullanici dugmeye zaten "yazacagim" diye
+  // basti, ikinci bir tiklama istemek o niyeti bosa cikarir.
+  useEffect(() => {
+    if (acik) alan.current?.focus();
+  }, [acik]);
+
+  // Escape kapatir. Ekranin ustune binen her seyin klavyeyle kapanabilmesi
+  // gerekiyor; fare kullanmayan biri icin tek cikis yolu bu.
+  useEffect(() => {
+    if (!acik) return;
+    const bas = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAcik(false);
+    };
+    window.addEventListener("keydown", bas);
+    return () => window.removeEventListener("keydown", bas);
+  }, [acik]);
 
   const gonder = async (soru: string) => {
     const s = soru.trim();
@@ -60,8 +87,37 @@ export default function SoruKutusu({
     }
   };
 
+  if (!acik) {
+    return (
+      <button
+        type="button"
+        className="soru-acici"
+        onClick={() => setAcik(true)}
+        aria-expanded={false}
+      >
+        {/* Ikon TEK BASINA birakilmadi. Bu uygulamanin kullanicisi her gun
+            yazilim kullanan biri degil; kosede duran soru isaretinin ne
+            yaptigini tahmin etmesini beklemek yerine yaziyi da koyuyoruz. */}
+        <span aria-hidden="true">?</span>
+        <span className="soru-acici-yazi">Soru sor</span>
+      </button>
+    );
+  }
+
   return (
-    <section className="soru-kutusu">
+    <section className="soru-kutusu" role="dialog" aria-label="Tarla sorusu">
+      <div className="soru-bas">
+        <span className="soru-baslik">Tarlanızla ilgili sorun</span>
+        <button
+          type="button"
+          className="soru-kapat"
+          onClick={() => setAcik(false)}
+          aria-label="Soru kutusunu kapat"
+        >
+          ×
+        </button>
+      </div>
+
       <form
         className="soru-satir"
         onSubmit={(e) => {
@@ -70,6 +126,7 @@ export default function SoruKutusu({
         }}
       >
         <input
+          ref={alan}
           type="search"
           className="alan"
           placeholder="Tarlanızla ilgili bir şey sorun"
@@ -111,7 +168,7 @@ export default function SoruKutusu({
             <span className="rozet">{yanit.niyet_tr}</span>
             <button
               type="button"
-              className="soru-kapat"
+              className="soru-yanit-kapat"
               onClick={() => setYanit(null)}
               aria-label="Cevabı kapat"
             >
@@ -125,7 +182,13 @@ export default function SoruKutusu({
             <button
               type="button"
               className="dugme"
-              onClick={() => onSekme(yanit.sekme)}
+              onClick={() => {
+                onSekme(yanit.sekme);
+                // Panel de kapaniyor: kullaniciyi bir sekmeye gonderip
+                // gonderdigimiz seyin ustune bir kutu birakmak, tarif
+                // edilen yeri gormesini engellerdi.
+                setAcik(false);
+              }}
             >
               {yanit.niyet_tr} sekmesine git
             </button>
