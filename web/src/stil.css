@@ -897,8 +897,14 @@ body {
 /* --------------------------------------------------------------------------
    Sekme cubugu (harita / teshis arasi anahtar)
    -------------------------------------------------------------------------- */
+/* SARMA ACIK: uc sekme yan yana en az 263 px ister. 320 px'lik telefonda
+   govdenin kenar bosluklari dusunce 288 px kaliyor, yani su an siginiyor ama
+   payi kucuk. Sarma kapali olsaydi bir sekme adi uzadigi anda cubuk TUM sayfayi
+   yana kaydirirdi; olcup gorduk, 300 px'te oluyordu. Sarma ile en kotu ihtimal
+   sekmenin alt satira inmesi. */
 .sekme-cubugu {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--bos-1);
   border-bottom: 2px solid var(--cizgi);
   margin-bottom: var(--bos-4);
@@ -907,7 +913,14 @@ body {
 .sekme {
   background: transparent;
   border: 0;
-  padding: var(--bos-3) var(--bos-5);
+  /* Yatay bosluk --bos-5 (24 px) idi: uc sekmeyi 311 px'e cikariyor ve dar
+     telefonda cubuk sigmiyordu. Metin ayni, yalnizca nefes payi kisildi. */
+  padding: var(--bos-3) var(--bos-4);
+  /* Etiket ORTASINDAN bolunmesin. Bu satir olmadan telefonda sekmeler tek
+     satirda kaliyor ama iceride "Ürün / önerisi" diye ikiye kiriliyordu; iki
+     kelimeyi alt alta okumak sekme adini bir anda taramayi zorlastiriyor.
+     Simdi sigmayan sekmenin KENDISI alt satira iniyor (cubukta flex-wrap). */
+  white-space: nowrap;
   font-size: var(--yazi-m);
   line-height: var(--yazi-m-satir);
   font-weight: 600;
@@ -925,6 +938,20 @@ body {
 .sekme.aktif {
   color: var(--yesil-koyu);
   border-bottom-color: var(--yesil);
+}
+
+/* Telefonda uc sekme dogal olcusuyle 392 px ister, 375 px ekranda 343 px yer
+   var. Sarma acik oldugu icin sayfa yana kaymiyor ama ucuncu sekme tek basina
+   alt satira dusuyordu; ana gezinmenin oksuz bir ikinci satiri oluyordu.
+   Yaziyi bir kademe kucultup nefes payini daraltinca uculu 306 px'e iniyor ve
+   tek satirda kaliyor. Dikey bosluk buyutuldu: dokunma hedefi 44 px'in altina
+   dusmesin (13 px yazi + 2x16 px = 50 px). */
+@media (max-width: 480px) {
+  .sekme {
+    font-size: var(--yazi-s);
+    line-height: var(--yazi-s-satir);
+    padding: var(--bos-4) var(--bos-2);
+  }
 }
 
 /* --------------------------------------------------------------------------
