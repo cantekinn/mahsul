@@ -16,13 +16,16 @@ from agents.state import AgentState
 from core.config import settings
 from data.open_meteo import get_forecast_series
 from knowledge import climate_risk
-from models.crop_reco.recommender import load_knowledge_base
+from knowledge.kapsam import iklim_bilgi_tabani, iklim_urunleri
 
-_CROPS = settings.agent_crops
+# Sorguda urun tespiti icin: iklim riski hesaplanabilen HER urun. Once 6
+# urunluk ortak liste kullaniliyordu, oysa sicaklik trapezi 116 urunde var
+# (bkz knowledge/kapsam.py).
+_CROPS = iklim_urunleri
 
 
 def _detect_crops(query: str) -> tuple[str, ...]:
-    found = tuple(c for c in _CROPS if c in query)
+    found = tuple(sorted(c for c in _CROPS() if c in query))
     return found or tuple(settings.target_crops)
 
 
@@ -36,7 +39,7 @@ def iklim_riski(lat: float, lon: float, urunler: tuple[str, ...]) -> dict:
     if fc["gun"] == 0:
         raise TahminYok("Bu konum için tahmin verisi alınamadı.")
 
-    kb = load_knowledge_base()
+    kb = iklim_bilgi_tabani()
     return {
         "gun": fc["gun"],
         "riskler": {

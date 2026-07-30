@@ -49,7 +49,20 @@ export function KatmanKabugu<T>({
   if (katman.durum === "yukleniyor") {
     return (
       <Kart baslik={baslik}>
-        <p className="bekleyen">{bekleyen}</p>
+        {/* Iskelet, bekleme METNININ YERINE DEGIL YANINDA duruyor. Metin
+            "Parseller aranıyor (OpenStreetMap)" gibi HANGI SERVISIN
+            beklendigini soyler; bu proje dis servis sessizligini gizlememek
+            uzerine kurulu, dolayisiyla o cumle kaybolamaz. Iskeletin isi
+            baska: kartin kaplayacagi yeri onceden ayirip veri gelince
+            sayfanin ziplamasini onlemek. */}
+        <div className="iskelet" aria-hidden="true">
+          <span className="iskelet-satir" />
+          <span className="iskelet-satir kisa" />
+          <span className="iskelet-satir" />
+        </div>
+        <p className="bekleyen" role="status">
+          {bekleyen}
+        </p>
       </Kart>
     );
   }

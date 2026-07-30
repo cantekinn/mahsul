@@ -215,7 +215,15 @@ export default function App() {
 
       {gorunum === "tarla" && (
         <main className="govde tarla-govde">
-          <TarlaPaneli nokta={nokta} onHaritayaGit={() => setGorunum("harita")} />
+          {/* Oneri katmani harita sekmesi icin zaten cekiliyor; ayni sonucu
+              burada urun listesini siralamak icin kullaniyoruz. Ikinci bir
+              istek atmak ayni noktanin iki farkli oneri listesini
+              uretebilirdi. */}
+          <TarlaPaneli
+            nokta={nokta}
+            oneri={oneri}
+            onHaritayaGit={() => setGorunum("harita")}
+          />
         </main>
       )}
 

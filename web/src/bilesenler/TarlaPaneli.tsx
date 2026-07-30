@@ -10,25 +10,27 @@
  * Nokta HARITA SEKMESINDEN gelir. Burada ikinci bir harita gostermiyoruz:
  * ayni secimi iki yerde tutmak, iki yerin ayrisip farkli koordinat gostermesi
  * demekti.
+ *
+ * URUN LISTESI SECILI TARLADAN GELIR. Once burada 6 urunluk sabit bir dizi
+ * vardi; kullanici Bursa'da bir tarla secip cavdar onerisi aldiktan sonra bu
+ * sekmede cavdari bulamiyordu. Artik liste iki bolume ayrilir: once o noktaya
+ * ONERILEN urunler (puanlariyla), sonra kalan tum urunler. Oneri henuz
+ * gelmediyse liste yine dolu kalir, sadece siralamasi genel olur.
+ *
+ * KAPSAM DISI URUN GIZLENMEZ. Uc hesabin siniri ayni degil (iklim 116 urun,
+ * sulama 84, zararli 5). Urunu listeden cikarmak kullaniciya "bu urun yok"
+ * dedirtirdi; oysa dogru cumle "bu hesabi bu urun icin yapamiyoruz, sebebi
+ * su". O yuzden kart, istegi hic atmadan sebebi yazar.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiHatasi } from "../api/istemci";
-import type { IklimRisk, Sulama, Zararli } from "../api/istemci";
+import type { IklimRisk, Kapsam, OneriKumesi, Sulama, Zararli } from "../api/istemci";
 import { Kart, KatmanKabugu } from "./Durum";
 import type { Katman } from "./Durum";
 
 type Nokta = { lat: number; lon: number };
-
-/** API'nin desteklediginin AYNISI (core/config.py agent_crops). Buradaki liste
- *  uzarsa sunucu 422 doner, sessiz bir yanlis sonuc uretmez. */
-const URUNLER = [
-  { anahtar: "domates", ad: "Domates" },
-  { anahtar: "biber", ad: "Biber" },
-  { anahtar: "patates", ad: "Patates" },
-  { anahtar: "narenciye", ad: "Narenciye" },
-  { anahtar: "zeytin", ad: "Zeytin" },
-  { anahtar: "muz", ad: "Muz" },
-];
+type Yetenek = "sulama" | "iklim" | "zararli";
+type UrunSecenek = { anahtar: string; ad: string; skor?: number };
 
 const ASAMALAR = [
   { anahtar: "ini", ad: "Fide / ekim" },
@@ -64,6 +66,47 @@ function useIstek<T>(cagir: (() => Promise<T>) | null): Katman<T> {
     };
   }, [cagir]);
   return k;
+}
+
+/** Kapsam tablosu: hangi hesap hangi urunu cevaplayabiliyor.
+ *
+ *  Bir kez cekilir ve noktadan bagimsizdir; tablo koordinata gore degismez.
+ *  Cekilemezse null kalir ve KISITLAMA UYGULANMAZ: kapsam bilgisi olmadan
+ *  urunu engellemek, sunucu 422 dondurse bile daha az bilgi vermek olurdu.
+ *  O durumda istek atilir ve sunucunun kendi gerekcesi hata olarak gorunur. */
+function useKapsam(): Record<Yetenek, Kapsam> | null {
+  const [k, ayarla] = useState<Record<Yetenek, Kapsam> | null>(null);
+  useEffect(() => {
+    let iptal = false;
+    api
+      .kapsam()
+      .then((liste) => {
+        if (iptal) return;
+        const m = {} as Record<Yetenek, Kapsam>;
+        for (const y of liste) m[y.yetenek as Yetenek] = y;
+        ayarla(m);
+      })
+      .catch(() => {
+        /* kapsam bilinmiyor: kisitlama yok, sunucu karar versin */
+      });
+    return () => {
+      iptal = true;
+    };
+  }, []);
+  return k;
+}
+
+/** Kapsam disi urunde istegi HIC ATMADAN sebebi yazan kart.
+ *
+ *  Bos bir kart veya "veri yok" yazisi degil: kullanicinin ogrenmesi gereken
+ *  sey verinin gelmedigi degil, bu hesabin bu urun icin yapilamayacagi ve
+ *  nedeni. */
+function KapsamDisiKarti({ baslik, gerekce }: { baslik: string; gerekce: string }) {
+  return (
+    <Kart baslik={baslik} etiket={<span className="rozet yalin">kapsam dışı</span>}>
+      <p className="tarla-kapsam">{gerekce}</p>
+    </Kart>
+  );
 }
 
 function SulamaKarti({ katman }: { katman: Katman<Sulama> }) {
@@ -193,14 +236,56 @@ function ZararliKarti({ katman }: { katman: Katman<Zararli> }) {
 
 export default function TarlaPaneli({
   nokta,
+  oneri,
   onHaritayaGit,
 }: {
   nokta: Nokta | null;
+  oneri: Katman<OneriKumesi>;
   onHaritayaGit: () => void;
 }) {
   const [urun, setUrun] = useState("domates");
   const [asama, setAsama] = useState("mid");
   const [dekar, setDekar] = useState("");
+  const kapsam = useKapsam();
+
+  // Secili tarlaya onerilen urunler + kalan tum urunler.
+  //
+  // TUM URUNLERIN KAYNAGI uc kapsam kumesinin BIRLESIMI, kesisimi degil:
+  // kesisim 5 urune inerdi (zararli tablosu en dar olan), oysa iklim riski
+  // 116 urun cevapliyor. Birlesimde bir urun bazi kartlarda kapsam disi
+  // cikar; o kart sebebini kendisi yazar.
+  const { onerilen, digerleri } = useMemo(() => {
+    const onerilenler: UrunSecenek[] =
+      oneri.durum === "ok"
+        ? oneri.veri.oneriler.map((o) => ({ anahtar: o.urun, ad: o.ad, skor: o.skor }))
+        : [];
+    const secilmis = new Set(onerilenler.map((o) => o.anahtar));
+    const tumu = new Map<string, string>();
+    for (const y of Object.values(kapsam ?? {})) {
+      for (const u of y.urunler) tumu.set(u.anahtar, u.ad);
+    }
+    const kalan: UrunSecenek[] = [...tumu.entries()]
+      .filter(([a]) => !secilmis.has(a))
+      .map(([anahtar, ad]) => ({ anahtar, ad }))
+      .sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
+    return { onerilen: onerilenler, digerleri: kalan };
+  }, [oneri, kapsam]);
+
+  // Secili urun listede hic yoksa (kapsam gelmeden once secilen bir urun
+  // sonradan listeden dusmus olabilir) secenegi yine de goster; aksi halde
+  // <select> sessizce ilk secenege atlar ve kullanici baska bir urunun
+  // sonucuna bakiyor olur.
+  const listedeVar =
+    onerilen.some((o) => o.anahtar === urun) || digerleri.some((o) => o.anahtar === urun);
+
+  const disi = (yetenek: Yetenek): string | null => {
+    const k = kapsam?.[yetenek];
+    if (!k) return null;
+    return k.urunler.some((u) => u.anahtar === urun) ? null : k.gerekce;
+  };
+  const sulamaDisi = disi("sulama");
+  const iklimDisi = disi("iklim");
+  const zararliDisi = disi("zararli");
 
   // Ciftci dekar konusur; API metrekare bekliyor. Cevrim TEK YERDE.
   const alanM2 = (() => {
@@ -208,27 +293,29 @@ export default function TarlaPaneli({
     return dekar.trim() !== "" && Number.isFinite(d) && d > 0 ? d * 1000 : undefined;
   })();
 
-  const sulama = useIstek<Sulama>(
-    useCallback(
-      () =>
-        nokta
-          ? api.sulama(nokta.lat, nokta.lon, urun, asama, alanM2)
-          : Promise.reject(),
-      [nokta, urun, asama, alanM2],
-    ),
+  // Kapsam disi ise cagri null: istek HIC atilmaz. Atip 422 yakalamak da
+  // olurdu ama o zaman kullaniciya kirmizi bir hata gorunurdu; oysa bu bir
+  // hata degil, bilginin sinirlari.
+  const sulamaCagri = useCallback(
+    () =>
+      nokta ? api.sulama(nokta.lat, nokta.lon, urun, asama, alanM2) : Promise.reject(),
+    [nokta, urun, asama, alanM2],
   );
-  const risk = useIstek<IklimRisk>(
-    useCallback(
-      () => (nokta ? api.iklimRisk(nokta.lat, nokta.lon, urun) : Promise.reject()),
-      [nokta, urun],
-    ),
+  const riskCagri = useCallback(
+    () => (nokta ? api.iklimRisk(nokta.lat, nokta.lon, urun) : Promise.reject()),
+    [nokta, urun],
   );
-  const zararli = useIstek<Zararli>(
-    useCallback(
-      () => (nokta ? api.zararli(nokta.lat, nokta.lon, urun) : Promise.reject()),
-      [nokta, urun],
-    ),
+  const zararliCagri = useCallback(
+    () => (nokta ? api.zararli(nokta.lat, nokta.lon, urun) : Promise.reject()),
+    [nokta, urun],
   );
+
+  // Kapsam disi ise cagri null: istek HIC atilmaz. Atip 422 yakalamak da
+  // olurdu ama o zaman kullaniciya kirmizi bir hata gorunurdu; oysa bu bir
+  // hata degil, bilginin sinirlari.
+  const sulama = useIstek<Sulama>(nokta && !sulamaDisi ? sulamaCagri : null);
+  const risk = useIstek<IklimRisk>(nokta && !iklimDisi ? riskCagri : null);
+  const zararli = useIstek<Zararli>(nokta && !zararliDisi ? zararliCagri : null);
 
   if (!nokta) {
     return (
@@ -250,11 +337,25 @@ export default function TarlaPaneli({
         <label>
           Ürün
           <select value={urun} onChange={(e) => setUrun(e.target.value)}>
-            {URUNLER.map((u) => (
-              <option key={u.anahtar} value={u.anahtar}>
-                {u.ad}
-              </option>
-            ))}
+            {!listedeVar && <option value={urun}>{urun.replace(/_/g, " ")}</option>}
+            {onerilen.length > 0 && (
+              <optgroup label="Bu tarlaya önerilenler">
+                {onerilen.map((u) => (
+                  <option key={u.anahtar} value={u.anahtar}>
+                    {u.ad} · {u.skor?.toFixed(0)} puan
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {digerleri.length > 0 && (
+              <optgroup label="Diğer ürünler">
+                {digerleri.map((u) => (
+                  <option key={u.anahtar} value={u.anahtar}>
+                    {u.ad}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </label>
         <label>
@@ -282,9 +383,21 @@ export default function TarlaPaneli({
       </form>
 
       <div className="tarla-kartlar">
-        <SulamaKarti katman={sulama} />
-        <RiskKarti katman={risk} />
-        <ZararliKarti katman={zararli} />
+        {sulamaDisi ? (
+          <KapsamDisiKarti baslik="Sulama" gerekce={sulamaDisi} />
+        ) : (
+          <SulamaKarti katman={sulama} />
+        )}
+        {iklimDisi ? (
+          <KapsamDisiKarti baslik="İklim riski" gerekce={iklimDisi} />
+        ) : (
+          <RiskKarti katman={risk} />
+        )}
+        {zararliDisi ? (
+          <KapsamDisiKarti baslik="Zararlı takvimi" gerekce={zararliDisi} />
+        ) : (
+          <ZararliKarti katman={zararli} />
+        )}
       </div>
     </div>
   );

@@ -20,12 +20,14 @@ from agents.state import AgentState
 from core.config import settings
 from data.open_meteo import get_season_temps
 from knowledge import degree_day as dd
+from knowledge.kapsam import zararli_urunleri
 
-_CROPS = settings.agent_crops
+# Kaynak: zararli tablosundaki boceklerin konak listesi (bkz kapsam.py).
+_CROPS = zararli_urunleri
 
 
 def _detect_crops(query: str) -> tuple[str, ...]:
-    found = tuple(c for c in _CROPS if c in query)
+    found = tuple(sorted(c for c in _CROPS() if c in query))
     return found or tuple(settings.target_crops)
 
 

@@ -1,3 +1,43 @@
+/* ---------------------------------------------------------------------------
+   Yazi tipi: Inter, KENDI SUNUCUMUZDAN.
+
+   Google Fonts CDN'i KULLANILMIYOR: ikinci bir kokene bagimlilik, ucuncu taraf
+   istegi ve ag kesildiginde bozulan bir sayfa demekti. Bu uygulama tarlada,
+   zayif baglantida aciliyor.
+
+   YALNIZCA IKI ALTKUME aliniyor, paketin index.css'i degil. index.css kiril,
+   yunan ve vietnam altkumelerini de getirir (~600 KB); bu arayuz Turkce.
+   Turkce harfler iki altkumeye dagilmis durumda: latin temel harfleri, ı (U+0131),
+   ğ (U+011F), ş (U+015F), İ (U+0130) ise latin-ext icinde. Ikisi de gerekli,
+   toplam 133 KB.
+
+   font-display: swap - yazi tipi inene kadar metin sistem yazi tipiyle GORUNUR.
+   Alternatifi (block) tarlada 3 saniye bos ekran demekti.
+--------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/inter/files/inter-latin-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
   --yesil: #2f7a3e;
   --yesil-koyu: #1f5228;
@@ -9,12 +49,181 @@
   --kart: #ffffff;
   --uyari: #9a6b00;
   --hata: #b23b2e;
-  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --isaret: #d94f3d;
+
+  /* Renkli zemin uzerine yazilan metin. Kart zemini (--kart) ile ayni deger
+     ama AYNI SEY DEGIL: biri yuzey, digeri o yuzeyin uzerindeki murekkep.
+     Ayri tutuluyorlar ki koyu tema eklendiginde biri degisip digeri kalabilsin. */
+  --uzeri: #ffffff;
+
+  /* UC AYRI OLCEK VAR VE BIRLESTIRILMEDILER. Ayni yesil-sari-gri gecisini
+     kullansalar da farkli seyleri olcuyorlar:
+       skor  = urun bu toprakta NE KADAR IYI yetisir
+       guven = model teshisinden NE KADAR EMIN
+       risk  = hava kosulu NE KADAR TEHLIKELI  (yonu ters: yesil yok, kirmizi var)
+     Tek olcege indirilirse "yuksek risk" ile "yuksek skor" ayni rengi alir ve
+     kullanici iyi haberi kotu haberden ayiramaz. */
+
+  /* Skor basamaklari (urun onerisi kart kenarligi) */
+  --skor-cok-iyi: #2f7a3e;
+  --skor-iyi: #7aa832;
+  --skor-orta: #d1a02a;
+  --skor-zayif: #b0aca4;
+
+  /* Guven basamaklari (hastalik teshisi rozeti ve cubugu) */
+  --guven-kesin: #2f7a3e;
+  --guven-olasi: #d4a017;
+  --guven-belirsiz: #d97706;
+  --guven-tanimsiz: #6b7280;
+
+  /* Bilgi kutulari ve rozetler icin acik zeminler. Uyari tonu ONCE IKIYDI
+     (#fff8e6 ve #fdf1d8); ayni anlami tasiyip farkli goruntu verdikleri icin
+     tek degere indirildi. */
+  --uyari-zemin: #fdf1d8;
+  --basari-zemin: #e8f5ea;
+  --hata-zemin: #fbe6e2;
+
+  /* -------------------------------------------------------------------------
+     YAZI OLCEGI. Once olculdu: 11 farkli px degeri vardi (9.5, 11, 12, 13, 14,
+     15, 16, 17, 18, 26, 34). 13 ile 14 arasindaki fark hiyerarsi kurmuyor,
+     sadece hizasizlik uretiyordu. Alti basamaga indirildi ve basamaklar
+     yaklasik 1.2 oraninda buyuyor; bu oran her adimi gozle secilebilir yapar,
+     komsu iki basamak "yanlislikla farkli" gorunmez.
+
+     Satir yuksekligi her basamakla BIRLIKTE tanimli: kucuk yazi orantili olarak
+     daha ferah, buyuk baslik daha sikidir. Tek bir global line-height, 12 px
+     etikette sikisik, 32 px baslikta dagilmis gorunurdu. */
+  --yazi-xs: 12px;
+  --yazi-xs-satir: 16px;
+  --yazi-s: 13px;
+  --yazi-s-satir: 18px;
+  --yazi-m: 15px;
+  --yazi-m-satir: 22px;
+  --yazi-l: 18px;
+  --yazi-l-satir: 24px;
+  --yazi-xl: 24px;
+  --yazi-xl-satir: 30px;
+  --yazi-2xl: 32px;
+  --yazi-2xl-satir: 36px;
+
+  /* -------------------------------------------------------------------------
+     BOSLUK RITMI, 4 px taban. Olcumde 16 farkli deger vardi (1,2,3,4,5,6,7,8,
+     9,10,11,12,14,16,18,20 px). 10 ile 12 arasindaki fark bir karar degil, bir
+     kazaydi. Alti basamak kaldi.
+
+     TABAN 8 DEGIL 4: 8'e cikarilinca rozet ic boslugu ya 4 px (sikisik) ya
+     8 px (sisik) olabiliyordu, arasi yoktu. 4 taban, 8 ana adim. */
+  --bos-1: 4px;
+  --bos-2: 8px;
+  --bos-3: 12px;
+  --bos-4: 16px;
+  --bos-5: 24px;
+  --bos-6: 32px;
+
+  /* Kose yariciplari: 9 farkli degerden 4'e. Kural, yariCap yuzeyin BOYUTUYLA
+     buyur: kucuk rozet keskin, buyuk kart yumusak. Ayni yariCapi her yerde
+     kullanmak kucuk ogeleri sisirir. */
+  --yuvarlak-s: 6px;
+  --yuvarlak-m: 10px;
+  --yuvarlak-l: 14px;
+  --yuvarlak-tam: 999px;
+
+  /* -------------------------------------------------------------------------
+     YUZEY SIRASI (elevation). Uc basamak var ve HER BIRI BIR ANLAM tasiyor:
+       golge-0 : sayfa zeminine yapisik yuzey (form alani, ic kutu) - golge yok
+       golge-1 : sayfadan kalkmis yuzey (kart) - okunur bir blok oldugunu soyler
+       golge-2 : gecici olarak ustte duran yuzey (acilir liste, ipucu)
+     Golge iki katmanli: genis+yumusak olan derinligi, dar+koyu olan kenari
+     verir. Tek katmanli golge ya bulanik ya sert gorunur. */
+  --golge-1: 0 1px 2px rgba(28, 35, 33, 0.04), 0 2px 8px rgba(28, 35, 33, 0.06);
+  --golge-2: 0 2px 4px rgba(28, 35, 33, 0.06), 0 8px 24px rgba(28, 35, 33, 0.12);
+
+  /* Odak halkasi. Renk yesilin kendisi degil daha koyu tonu: acik yesil
+     dugmenin uzerinde yesil halka gorunmezdi. */
+  --odak: var(--yesil-koyu);
+
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
   color: var(--metin);
+
+  /* Rakamlarin hepsi ayni genislikte olsun: sulama "7.6 mm" ile "12.4 mm"
+     arasinda gecerken sayilar ziplamasin. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* KLAVYE ODAGI HER YERDE GORUNUR. Tarayici varsayilani hem soluk hem de
+   :focus (fareyle tiklayinca da) tetikleniyordu. :focus-visible sadece klavye
+   ile gezerken cizer; boylece fare kullanicisi halka gormez, klavye kullanicisi
+   nerede oldugunu HER ZAMAN bilir. outline kullaniliyor (box-shadow degil)
+   cunku outline yerlesimi bozmaz ve yuksek kontrast modunda korunur. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+  border-radius: var(--yuvarlak-s);
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------------------
+   FORM DENETIMLERI: her isletim sisteminde AYNI gorunum.
+
+   Onceki halde <select>'ler tarayicinin kendi cizimiyle geliyordu: Windows'ta
+   gri gradyanli kutu ve kucuk siyah ucgen, Android'de baska bir kutu, iOS'ta
+   baska. Ayni ekranda bizim cizdiğimiz yuvarlak kartlarin yaninda durunca
+   arayuz "yarim bitmiş" gorunuyordu.
+
+   appearance: none SADECE select'e uygulaniyor. Sayi girisine (input[number])
+   uygulanmadi cunku o zaman Firefox artir/azalt oklarini da kaldirir ve
+   masaustunde alani fareyle ayarlamak imkansiz hale gelir.
+
+   Ok isareti arka plan gorseli olarak veriliyor (data URI, SVG). Ayri bir dosya
+   ya da ikon kutuphanesi eklenmedi: tek bir ok icin ag istegi ve bagimlilik
+   gereksiz. Rengi --soluk (#6b7671) elle yazili, cunku SVG data URI icinden
+   CSS degiskeni okunamaz; --soluk degisirse bu da degismeli.
+--------------------------------------------------------------------------- */
+.alan,
+.tarla-secim select,
+.tarla-secim input,
+.filtre-secim {
+  font: inherit;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--metin);
+  background-color: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-m);
+  padding: var(--bos-2) var(--bos-3);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tarla-secim select,
+.filtre-secim {
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%236b7671' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--bos-3) center;
+  /* Ok ile metnin ustuste binmemesi icin sag ic bosluk genis. */
+  padding-right: var(--bos-6);
+}
+
+.tarla-secim select:hover,
+.tarla-secim input:hover,
+.filtre-secim:hover {
+  border-color: var(--yesil);
+}
+
+/* Acilan listenin ic yazisi: tarayici <option>'lari isletim sistemi ciziyor,
+   oraya bicim uygulanamaz. En azindan yazi tipi ve boyut miras alsin. */
+.tarla-secim option,
+.tarla-secim optgroup {
+  font: inherit;
 }
 
 body {
@@ -25,37 +234,40 @@ body {
 .kabuk {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px;
+  padding: var(--bos-5);
 }
 
 .baslik {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--bos-4);
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: var(--bos-4);
 }
 
 .baslik h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: var(--yazi-xl);
+  line-height: var(--yazi-xl-satir);
   color: var(--yesil-koyu);
 }
 
 .alt {
-  margin: 4px 0 0;
+  margin: var(--bos-1) 0 0;
   color: var(--soluk);
-  font-size: 14px;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
 }
 
 .dugme {
   background: var(--yesil);
-  color: #fff;
+  color: var(--uzeri);
   border: 0;
-  border-radius: 8px;
-  padding: 11px 18px;
-  font-size: 15px;
+  border-radius: var(--yuvarlak-m);
+  padding: var(--bos-3) var(--bos-5);
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
   font-weight: 600;
   cursor: pointer;
 }
@@ -74,22 +286,23 @@ body {
    asagi itip ekranin buyuk kismini yiyordu. Kaydirmali seritte yukseklik
    tek satirda kaliyor. */
 .kisayollar {
-  margin-bottom: 16px;
+  margin-bottom: var(--bos-4);
 }
 
 .kisayol-baslik {
   display: block;
-  font-size: 13px;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   font-weight: 600;
   color: var(--soluk);
-  margin-bottom: 6px;
+  margin-bottom: var(--bos-2);
 }
 
 .kisayol-serit {
   display: flex;
-  gap: 8px;
+  gap: var(--bos-2);
   overflow-x: auto;
-  padding-bottom: 6px;
+  padding-bottom: var(--bos-2);
   scrollbar-width: thin;
 }
 
@@ -97,9 +310,10 @@ body {
   flex: 0 0 auto;
   background: var(--kart);
   border: 1px solid var(--cizgi);
-  border-radius: 999px;
-  padding: 7px 14px;
-  font-size: 13px;
+  border-radius: var(--yuvarlak-tam);
+  padding: var(--bos-2) var(--bos-4);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   color: var(--metin);
   cursor: pointer;
   white-space: nowrap;
@@ -121,19 +335,20 @@ body {
 .kisayol.secili {
   background: var(--yesil);
   border-color: var(--yesil);
-  color: #fff;
+  color: var(--uzeri);
 }
 
 .kisayol-alt {
-  margin: 6px 0 0;
-  font-size: 12px;
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
   color: var(--soluk);
 }
 
 .govde {
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
-  gap: 16px;
+  gap: var(--bos-4);
   align-items: start;
 }
 
@@ -146,7 +361,7 @@ body {
 .harita {
   height: 560px;
   width: 100%;
-  border-radius: 12px;
+  border-radius: var(--yuvarlak-l);
   border: 1px solid var(--cizgi);
 }
 
@@ -154,69 +369,79 @@ body {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #d94f3d;
-  border: 3px solid #fff;
+  background: var(--isaret);
+  border: 3px solid var(--uzeri);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
 }
 
 .yan {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--bos-3);
 }
 
+/* Kart: sayfa zemininden BIR basamak yukarida duran yuzey.
+   Kenarlik ve golge BIRLIKTE var, biri digerinin yerine degil: golge derinlik
+   verir ama bu acik temada neredeyse gorunmez, kenarlik ise kartin nerede
+   bittigini kesin soyler. Yalniz kenarlikla kart kagit gibi duz, yalniz
+   golgeyle sinirsiz gorunuyordu. */
 .kart {
   background: var(--kart);
   border: 1px solid var(--cizgi);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border-radius: var(--yuvarlak-l);
+  padding: var(--bos-4);
+  box-shadow: var(--golge-1);
 }
 
 .kart-bas {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: var(--bos-3);
+  margin-bottom: var(--bos-2);
 }
 
 .kart-bas h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--soluk);
 }
 
 .rozet {
-  font-size: 12px;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
   color: var(--soluk);
   background: var(--zemin);
-  border-radius: 20px;
-  padding: 2px 9px;
+  border-radius: var(--yuvarlak-l);
+  padding: var(--bos-1) var(--bos-3);
   white-space: nowrap;
 }
 
 .yer {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--yazi-l);
+  line-height: var(--yazi-l-satir);
   font-weight: 600;
 }
 
 .satirlar {
-  margin: 10px 0 0;
+  margin: var(--bos-3) 0 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--bos-2);
 }
 
 .satirlar > div {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 14px;
+  gap: var(--bos-3);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   border-bottom: 1px dashed var(--cizgi);
-  padding-bottom: 5px;
+  padding-bottom: var(--bos-2);
 }
 
 .satirlar dt {
@@ -237,29 +462,78 @@ body {
 
 .bekleyen {
   color: var(--soluk);
-  font-size: 14px;
-  margin: 6px 0 0;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  margin: var(--bos-2) 0 0;
+}
+
+/* Yukleme iskeleti. Satir genislikleri kasitli olarak esit degil: hepsi ayni
+   boyda olursa tablo gibi gorunur, gelen veri ise duz metin. */
+.iskelet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-3);
+  padding: var(--bos-1) 0 var(--bos-1);
+}
+
+.iskelet-satir {
+  height: 12px;
+  border-radius: var(--yuvarlak-s);
+  /* Parlama, acik bir seridin zemin uzerinde saga kaymasiyla olusuyor.
+     Iki uc renk de mevcut tokenlar: yeni gri tonu uretilmiyor. */
+  background: linear-gradient(
+    90deg,
+    var(--cizgi) 0%,
+    var(--zemin) 40%,
+    var(--cizgi) 80%
+  );
+  background-size: 300% 100%;
+  animation: iskelet-kay 1.4s ease-in-out infinite;
+}
+
+.iskelet-satir.kisa {
+  width: 62%;
+}
+
+@keyframes iskelet-kay {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Surekli hareket bas donmesi tetikleyebiliyor. Isletim sisteminde "hareketi
+   azalt" acikken iskelet DURUR ama GORUNUR kalir: yer ayirma isini
+   animasyonsuz da yapiyor. */
+@media (prefers-reduced-motion: reduce) {
+  .iskelet-satir {
+    animation: none;
+    background: var(--cizgi);
+  }
 }
 
 .hata {
   color: var(--hata);
-  font-size: 14px;
-  margin: 6px 0 0;
+  font-size: var(--yazi-s);
+  margin: var(--bos-2) 0 0;
   line-height: 1.45;
 }
 
 .uyari {
   color: var(--uyari);
-  font-size: 13px;
-  margin: 8px 0 0;
+  font-size: var(--yazi-s);
+  margin: var(--bos-2) 0 0;
   line-height: 1.45;
 }
 
 .eksik {
-  margin: 8px 0 0;
-  padding-left: 18px;
+  margin: var(--bos-2) 0 0;
+  padding-left: var(--bos-5);
   color: var(--uyari);
-  font-size: 13px;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
 }
 
 .bos-mesaj {
@@ -268,26 +542,28 @@ body {
 
 .parsel-liste {
   list-style: none;
-  margin: 8px 0 0;
+  margin: var(--bos-2) 0 0;
   padding: 0;
-  font-size: 14px;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
 }
 
 .parsel-liste li {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  padding: 4px 0;
+  gap: var(--bos-3);
+  padding: var(--bos-1) 0;
   border-bottom: 1px dashed var(--cizgi);
 }
 
 .oneri-alan {
-  margin-top: 16px;
+  margin-top: var(--bos-4);
 }
 
 .grup h3 {
-  margin: 16px 0 8px;
-  font-size: 14px;
+  margin: var(--bos-4) 0 var(--bos-2);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--toprak);
@@ -299,28 +575,28 @@ body {
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 10px;
+  gap: var(--bos-3);
 }
 
 .urun {
   border: 1px solid var(--cizgi);
   border-left: 4px solid var(--cizgi);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: var(--yuvarlak-m);
+  padding: var(--bos-3) var(--bos-3);
   background: var(--zemin);
 }
 
 .urun.cok-iyi {
-  border-left-color: #2f7a3e;
+  border-left-color: var(--skor-cok-iyi);
 }
 .urun.iyi {
-  border-left-color: #7aa832;
+  border-left-color: var(--skor-iyi);
 }
 .urun.orta {
-  border-left-color: #d1a02a;
+  border-left-color: var(--skor-orta);
 }
 .urun.zayif {
-  border-left-color: #b0aca4;
+  border-left-color: var(--skor-zayif);
 }
 
 .urun-bas {
@@ -328,7 +604,7 @@ body {
   width: 100%;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--bos-3);
   background: none;
   border: 0;
   padding: 0;
@@ -339,18 +615,21 @@ body {
 
 .urun-ad {
   font-weight: 600;
-  font-size: 15px;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
 }
 
 .urun-skor {
   font-weight: 700;
-  font-size: 17px;
+  font-size: var(--yazi-l);
+  line-height: var(--yazi-l-satir);
   color: var(--yesil-koyu);
 }
 
 .urun-alt {
-  margin: 3px 0 0;
-  font-size: 13px;
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   color: var(--soluk);
 }
 
@@ -358,39 +637,208 @@ body {
    puan degildir, puani aciklar. Ayni goruntu agirliginda olsaydi ikinci bir
    puan sanilirdi. */
 .urun-merkez {
-  margin: 2px 0 0;
-  font-size: 12px;
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-xs);
   color: var(--soluk);
   line-height: 1.35;
 }
 
+/* Ekim penceresi seridi: 12 ay, tam yil.
+   UYGUN OLMAYAN AYLAR DA CIZILIYOR. Sadece uygun aylar gosterilseydi "Mart,
+   Nisan, Ağustos" ile "Mart, Nisan, Mayıs" ayni uzunlukta gorunur, oysa
+   birincisi ikiye bolunmus bir pencere. Bosluk burada bilgi tasiyor. */
+.ay-serit {
+  display: flex;
+  gap: var(--bos-1);
+  margin-top: var(--bos-2);
+}
+
+.ay-hucre {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  font-size: var(--yazi-xs);
+  line-height: 16px;
+  border-radius: var(--yuvarlak-s);
+  background: var(--zemin);
+  color: var(--soluk);
+  overflow: hidden;
+}
+
+.ay-hucre.uygun {
+  background: var(--yesil);
+  color: var(--uzeri);
+}
+
+/* Icinde bulunulan ay. Renkle DEGIL cerceveyle isaretleniyor: renk zaten
+   "ekilebilir mi" sorusuna ayrilmis, ustune ikinci bir anlam bindirilirse
+   yesil hucrenin neyi soyledigi belirsizlesir. */
+.ay-hucre.simdi {
+  outline: 2px solid var(--metin);
+  outline-offset: -2px;
+  font-weight: 700;
+}
+
 .urun-aylar {
-  margin: 4px 0 0;
-  font-size: 12px;
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-xs);
   color: var(--yesil-koyu);
   line-height: 1.35;
+}
+
+/* Puanin faktor kirilimi (detay bloğunda). Cubuk dolgusu skor olceginin ayni
+   basamaklarini kullanir; gerekce OneriListesi.tsx > SkorKirilimi icinde. */
+.kirilim {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-2);
+  margin-bottom: var(--bos-3);
+}
+
+.kirilim-bas {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+}
+
+.kirilim-ad {
+  color: var(--metin);
+}
+
+.kirilim-deger {
+  color: var(--soluk);
+  white-space: nowrap;
+}
+
+.kirilim-uyum {
+  font-variant-numeric: tabular-nums;
+}
+
+.kirilim-yol {
+  height: 6px;
+  border-radius: var(--yuvarlak-s);
+  background: var(--cizgi);
+  margin-top: var(--bos-1);
+  overflow: hidden;
+}
+
+.kirilim-dolu {
+  display: block;
+  height: 100%;
+  border-radius: var(--yuvarlak-s);
+}
+
+.kirilim-dolu.cok-iyi {
+  background: var(--skor-cok-iyi);
+}
+.kirilim-dolu.iyi {
+  background: var(--skor-iyi);
+}
+.kirilim-dolu.orta {
+  background: var(--skor-orta);
+}
+.kirilim-dolu.zayif {
+  background: var(--skor-zayif);
+}
+
+.kirilim-not {
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
 }
 
 /* GAEZ satiri detay bloguna dusuk gorunum agirligiyla giriyor: puan degil,
    puanin kaynak sinyali. Ana puanla karistirilmasin diye kucuk ve soluk. */
 .urun-gaez {
-  margin: 4px 0 0;
-  font-size: 12px;
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-xs);
   color: var(--soluk);
   line-height: 1.35;
 }
 
+/* Filtre cubugu. Sarmalanir (wrap), yatay kaymaz: kisayol seridinin aksine
+   burada oge sayisi sabit ve az, kaydirmali serit gizlenen bir denetim
+   birakirdi. Filtre gizlenirse kullanici listenin neden kisa oldugunu
+   anlamaz. */
+.filtre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bos-2);
+  margin: var(--bos-3) 0 var(--bos-1);
+  padding-bottom: var(--bos-3);
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.filtre-secim {
+  font: inherit;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  padding: var(--bos-2) var(--bos-2);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-m);
+  background: var(--kart);
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.filtre-kutu {
+  display: flex;
+  align-items: center;
+  gap: var(--bos-2);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  cursor: pointer;
+}
+
+.filtre-kutu input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--yesil);
+  cursor: pointer;
+}
+
+/* Kac urunun elendigini soyleyen sayac. SADECE filtre acikken cikar: filtre
+   kapaliyken "29 üründen 29 tanesi" yazmak bilgi degil gurultu olurdu. */
+.filtre-sayi {
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+  margin-left: auto;
+}
+
+.filtre .dugme.yalin {
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  padding: var(--bos-2) var(--bos-3);
+}
+
+@media (pointer: coarse) {
+  .filtre-secim,
+  .filtre-kutu {
+    min-height: 44px;
+  }
+  .filtre-kutu input {
+    width: 22px;
+    height: 22px;
+  }
+}
+
 .oneri-bolum {
-  margin-top: 18px;
+  margin-top: var(--bos-5);
   border-top: 1px solid var(--cizgi);
-  padding-top: 12px;
+  padding-top: var(--bos-3);
 }
 
 .bolum-bas {
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 10px;
+  gap: var(--bos-3);
   background: none;
   border: 0;
   padding: 0;
@@ -401,40 +849,44 @@ body {
 
 .bolum-ad {
   font-weight: 700;
-  font-size: 16px;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
 }
 
 .bolum-sayi {
-  font-size: 12px;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
   font-weight: 700;
   color: var(--yesil-koyu);
   background: rgba(47, 122, 62, 0.1);
-  border-radius: 999px;
-  padding: 1px 8px;
+  border-radius: var(--yuvarlak-tam);
+  padding: var(--bos-1) var(--bos-2);
 }
 
 .bolum-ok {
   margin-left: auto;
-  font-size: 18px;
+  font-size: var(--yazi-l);
+  line-height: var(--yazi-l-satir);
   color: var(--soluk);
 }
 
 .bolum-alt {
-  margin: 4px 0 0;
-  font-size: 13px;
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   color: var(--soluk);
 }
 
 .urun-detay {
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: var(--bos-2);
+  padding-top: var(--bos-2);
   border-top: 1px dashed var(--cizgi);
-  font-size: 13px;
+  font-size: var(--yazi-s);
   line-height: 1.5;
 }
 
 .urun-detay p {
-  margin: 0 0 5px;
+  margin: 0 0 var(--bos-2);
 }
 
 .bilimsel {
@@ -447,16 +899,17 @@ body {
    -------------------------------------------------------------------------- */
 .sekme-cubugu {
   display: flex;
-  gap: 4px;
+  gap: var(--bos-1);
   border-bottom: 2px solid var(--cizgi);
-  margin-bottom: 16px;
+  margin-bottom: var(--bos-4);
 }
 
 .sekme {
   background: transparent;
   border: 0;
-  padding: 12px 20px;
-  font-size: 15px;
+  padding: var(--bos-3) var(--bos-5);
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
   font-weight: 600;
   color: var(--soluk);
   cursor: pointer;
@@ -488,19 +941,19 @@ body {
 .teshis-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--bos-4);
 }
 
 .teshis-tanit {
   color: var(--soluk);
-  font-size: 14px;
+  font-size: var(--yazi-s);
   line-height: 1.5;
-  margin: 0 0 12px;
+  margin: 0 0 var(--bos-3);
 }
 
 .teshis-yukleme {
   display: flex;
-  gap: 8px;
+  gap: var(--bos-2);
   flex-wrap: wrap;
   align-items: center;
 }
@@ -536,13 +989,13 @@ body {
 
 .teshis-analiz-dugme {
   align-self: flex-start;
-  margin-top: 4px;
+  margin-top: var(--bos-1);
 }
 
 .teshis-onizleme {
-  margin-top: 12px;
+  margin-top: var(--bos-3);
   border: 1px solid var(--cizgi);
-  border-radius: 8px;
+  border-radius: var(--yuvarlak-m);
   overflow: hidden;
   background: var(--zemin);
 }
@@ -558,8 +1011,9 @@ body {
 .teshis-onizleme-alt {
   display: flex;
   justify-content: space-between;
-  padding: 8px 12px;
-  font-size: 13px;
+  padding: var(--bos-2) var(--bos-3);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   color: var(--soluk);
 }
 
@@ -574,51 +1028,52 @@ body {
    belirsiz=turuncu, tanimsiz=gri. Guven cubugu ile ayni palet. */
 /* Kucultme bildirimi: bilgi tonunda, uyari degil. Yapilan islem gizlenmiyor. */
 .teshis-kazanc {
-  margin: 8px 0 0;
-  font-size: 12px;
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-xs);
   color: var(--soluk);
   line-height: 1.45;
 }
 
 .teshis-rozet {
   display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: var(--bos-1) var(--bos-3);
+  border-radius: var(--yuvarlak-l);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #fff;
+  color: var(--uzeri);
 }
 
 .teshis-rozet.kesin {
-  background: var(--yesil);
+  background: var(--guven-kesin);
 }
 
 .teshis-rozet.olasi {
-  background: #d4a017;
+  background: var(--guven-olasi);
 }
 
 .teshis-rozet.belirsiz {
-  background: #d97706;
+  background: var(--guven-belirsiz);
 }
 
 .teshis-rozet.tanimsiz {
-  background: #6b7280;
+  background: var(--guven-tanimsiz);
 }
 
 .teshis-guven-satiri {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 8px 0 12px;
+  gap: var(--bos-3);
+  margin: var(--bos-2) 0 var(--bos-3);
 }
 
 .teshis-guven-cubugu {
   flex: 1;
   height: 10px;
   background: var(--cizgi);
-  border-radius: 5px;
+  border-radius: var(--yuvarlak-s);
   overflow: hidden;
 }
 
@@ -628,31 +1083,33 @@ body {
 }
 
 .teshis-guven-doldu.kesin {
-  background: var(--yesil);
+  background: var(--guven-kesin);
 }
 
 .teshis-guven-doldu.olasi {
-  background: #d4a017;
+  background: var(--guven-olasi);
 }
 
 .teshis-guven-doldu.belirsiz {
-  background: #d97706;
+  background: var(--guven-belirsiz);
 }
 
 .teshis-guven-doldu.tanimsiz {
-  background: #6b7280;
+  background: var(--guven-tanimsiz);
 }
 
 .teshis-guven-yazi {
-  font-size: 13px;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   color: var(--soluk);
   min-width: 80px;
   text-align: right;
 }
 
 .teshis-urun {
-  margin: 0 0 8px;
-  font-size: 14px;
+  margin: 0 0 var(--bos-2);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   color: var(--soluk);
 }
 
@@ -661,45 +1118,48 @@ body {
 }
 
 .teshis-uyari {
-  background: #fff8e6;
+  background: var(--uyari-zemin);
   border-left: 3px solid var(--uyari);
-  padding: 10px 12px;
-  margin: 8px 0;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: var(--bos-3) var(--bos-3);
+  margin: var(--bos-2) 0;
+  border-radius: var(--yuvarlak-s);
+  font-size: var(--yazi-s);
   line-height: 1.5;
   color: var(--metin);
 }
 
 .teshis-saglikli {
-  background: #e8f5ea;
+  background: var(--basari-zemin);
   border-left: 3px solid var(--yesil);
-  padding: 10px 12px;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: var(--bos-3) var(--bos-3);
+  border-radius: var(--yuvarlak-s);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   color: var(--yesil-koyu);
-  margin: 8px 0;
+  margin: var(--bos-2) 0;
 }
 
 .teshis-tedavi {
   border-top: 1px solid var(--cizgi);
-  padding-top: 12px;
-  margin-top: 12px;
+  padding-top: var(--bos-3);
+  margin-top: var(--bos-3);
 }
 
 .teshis-tedavi h3 {
-  margin: 0 0 12px;
-  font-size: 16px;
+  margin: 0 0 var(--bos-3);
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
   color: var(--yesil-koyu);
 }
 
 .tedavi-bolum {
-  margin-bottom: 12px;
+  margin-bottom: var(--bos-3);
 }
 
 .tedavi-bolum h4 {
-  margin: 0 0 4px;
-  font-size: 13px;
+  margin: 0 0 var(--bos-1);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--soluk);
@@ -707,20 +1167,21 @@ body {
 
 .tedavi-bolum p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--yazi-s);
   line-height: 1.55;
   color: var(--metin);
 }
 
 .teshis-alt-tahminler {
   border-top: 1px dashed var(--cizgi);
-  padding-top: 10px;
-  margin-top: 12px;
+  padding-top: var(--bos-3);
+  margin-top: var(--bos-3);
 }
 
 .teshis-alt-tahminler h4 {
-  margin: 0 0 8px;
-  font-size: 12px;
+  margin: 0 0 var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--soluk);
@@ -735,8 +1196,9 @@ body {
 .teshis-alt-tahminler li {
   display: flex;
   justify-content: space-between;
-  padding: 6px 0;
-  font-size: 13px;
+  padding: var(--bos-2) 0;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   border-bottom: 1px dotted var(--cizgi);
 }
 
@@ -765,37 +1227,37 @@ body {
 .tarla-secim {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: var(--bos-4);
   background: var(--kart);
   border: 1px solid var(--cizgi);
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
+  border-radius: var(--yuvarlak-l);
+  padding: var(--bos-4) var(--bos-4);
+  margin-bottom: var(--bos-4);
 }
 
 .tarla-secim label {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  font-size: 12px;
+  gap: var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--soluk);
 }
 
+/* 44 px dokunma hedefi: bu ekran tarlada telefonla aciliyor. Gorunumun geri
+   kalani yukaridaki ortak form denetimi blogundan geliyor. */
 .tarla-secim select,
 .tarla-secim input {
-  font: inherit;
-  font-size: 15px;
-  text-transform: none;
-  letter-spacing: normal;
-  color: var(--metin);
-  background: var(--kart);
-  border: 1px solid var(--cizgi);
-  border-radius: 8px;
-  /* 44 px dokunma hedefi: bu ekran tarlada telefonla aciliyor. */
   min-height: 44px;
-  padding: 8px 10px;
+}
+
+/* Urun listesi 116 secenek: dar ekranda tam genislik alsin, uzun urun adlari
+   ("Kanola (kolza)") kesilmesin. */
+.tarla-secim label:first-child {
+  flex: 1 1 220px;
+  min-width: 0;
 }
 
 .tarla-secim input {
@@ -807,46 +1269,49 @@ body {
 .tarla-kartlar {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
-  gap: 16px;
+  gap: var(--bos-4);
   align-items: start;
 }
 
 .tarla-olcum {
-  padding: 6px 0 10px;
+  padding: var(--bos-2) 0 var(--bos-3);
   border-bottom: 1px solid var(--cizgi);
-  margin-bottom: 10px;
+  margin-bottom: var(--bos-3);
 }
 
 .tarla-buyuk {
-  font-size: 34px;
+  font-size: var(--yazi-2xl);
   font-weight: 600;
   line-height: 1.1;
   color: var(--yesil-koyu);
 }
 
 .tarla-birim {
-  font-size: 15px;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
   font-weight: 400;
   color: var(--soluk);
-  margin-left: 6px;
+  margin-left: var(--bos-2);
 }
 
 .tarla-alt {
-  font-size: 14px;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   color: var(--soluk);
-  margin-top: 4px;
+  margin-top: var(--bos-1);
 }
 
 .tarla-satirlar {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
 }
 
 .tarla-satirlar > div {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  padding: 4px 0;
+  gap: var(--bos-3);
+  padding: var(--bos-1) 0;
 }
 
 .tarla-satirlar dt {
@@ -860,34 +1325,34 @@ body {
 }
 
 .tarla-uyari {
-  margin: 12px 0 0;
-  padding-top: 10px;
+  margin: var(--bos-3) 0 0;
+  padding-top: var(--bos-3);
   border-top: 1px solid var(--cizgi);
-  font-size: 12px;
+  font-size: var(--yazi-xs);
   line-height: 1.5;
   color: var(--soluk);
 }
 
 .tarla-temiz {
-  margin: 6px 0 0;
-  font-size: 14px;
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-s);
   line-height: 1.45;
   color: var(--soluk);
 }
 
 .risk-liste {
   list-style: none;
-  margin: 4px 0 0;
+  margin: var(--bos-1) 0 0;
   padding: 0;
 }
 
 .risk {
   display: flex;
-  gap: 10px;
+  gap: var(--bos-3);
   align-items: flex-start;
-  padding: 9px 0;
+  padding: var(--bos-3) 0;
   border-bottom: 1px solid var(--cizgi);
-  font-size: 14px;
+  font-size: var(--yazi-s);
   line-height: 1.45;
 }
 
@@ -897,23 +1362,24 @@ body {
 
 .risk-rozet {
   flex: none;
-  font-size: 11px;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-radius: 20px;
-  padding: 3px 9px;
-  margin-top: 1px;
+  border-radius: var(--yuvarlak-l);
+  padding: var(--bos-1) var(--bos-3);
+  margin-top: var(--bos-1);
 }
 
 /* Seviye rengi METINLE BIRLIKTE gider, tek basina anlam tasimaz: renk korligi
    olan kullanici seviyeyi aciklamadan okur. */
 .risk-yuksek .risk-rozet {
-  background: #fbe6e2;
+  background: var(--hata-zemin);
   color: var(--hata);
 }
 
 .risk-orta .risk-rozet {
-  background: #fdf1d8;
+  background: var(--uyari-zemin);
   color: var(--uyari);
 }
 
@@ -924,12 +1390,12 @@ body {
 
 .zararli-liste {
   list-style: none;
-  margin: 4px 0 0;
+  margin: var(--bos-1) 0 0;
   padding: 0;
 }
 
 .zararli-liste > li {
-  padding: 10px 0;
+  padding: var(--bos-3) 0;
   border-bottom: 1px solid var(--cizgi);
 }
 
@@ -941,18 +1407,66 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
-  font-size: 15px;
+  gap: var(--bos-3);
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
 }
 
 .zararli-gdd {
-  font-size: 13px;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
   color: var(--soluk);
-  margin-top: 3px;
+  margin-top: var(--bos-1);
 }
 
 .zararli-not {
-  margin: 6px 0 0;
-  font-size: 13px;
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-s);
   line-height: 1.45;
+}
+
+/* ---------------------------------------------------------------------------
+   Dokunmatik hedef boyutlari.
+
+   NEDEN (pointer: coarse), NEDEN (max-width) DEGIL: sorun ekranin dar olmasi
+   degil, PARMAGIN FARE IMLECINDEN KALIN olmasi. Genislige bakan bir kural
+   dokunmatik dizustunde hicbir sey buyutmez, dar pencerede acilmis masaustu
+   tarayicida ise gereksiz buyutur. "coarse" tam olarak "hassas isaretleyici
+   yok" demek, olculmesi gereken sey bu.
+
+   Olcum (375x812, degisiklikten once): 44 pikselin altinda 54 ogen vardi.
+   .kisayol 31, .dugme 40, .bolum-bas 24, .urun-bas 22, leaflet zoom 30 piksel.
+   Hedef 44: WCAG 2.2 asgarisi 24 piksel ama Apple ve Google'in ikisi de 44
+   oneriyor; tarlada eldivenli parmakla kullanilacak bir arayuzde asgari degil
+   onerilen deger alindi.
+
+   Sekmeler (.sekme, 62 piksel) zaten geciyordu, o yuzden burada yok.
+   Leaflet'in kaynak atif baglantilari (14 piksel) BILEREK buyutulmedi: onlar
+   yasal kaynak kunyesi, tiklanmasi beklenen bir eylem degil; buyutulmeleri
+   haritanin altini kaplar.
+   --------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+  .dugme,
+  .kisayol {
+    min-height: 44px;
+  }
+
+  /* Bu ikisi ic ice metinden ibaret satir dugmeleri; yukseklikleri iceriginden
+     geliyordu. Dikey dolgu yerine min-height + ortalama: dolgu verilseydi
+     kartin ic bosluklari dokunmatikte masaustundekinden farkli gorunurdu. */
+  .urun-bas,
+  .bolum-bas {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  /* Leaflet kendi 30 piksellik dokunma boyutunu (.leaflet-touch) uyguluyor.
+     Ikonun kendisi buyumesin diye sadece kutu buyutuluyor, satir yuksekligi
+     ile "+" ve "-" isaretleri ortada tutuluyor. */
+  .leaflet-touch .leaflet-control-zoom a,
+  .leaflet-control-zoom a {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+  }
 }

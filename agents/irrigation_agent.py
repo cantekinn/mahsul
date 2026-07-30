@@ -25,9 +25,11 @@ from agents.state import AgentState
 from core.config import settings
 from data.open_meteo import get_irrigation_inputs
 from knowledge import fao56
+from knowledge.kapsam import sulama_urunleri
 
-# sorguda urun/asama tespiti
-_CROPS = settings.agent_crops
+# sorguda urun/asama tespiti. Kaynak: Kc tablosunun kendisi (bkz kapsam.py) -
+# elle tutulan bir liste, tablo genisleyince sessizce geride kalirdi.
+_CROPS = sulama_urunleri
 _STAGE_KEYWORDS = {
     "ini": ("fide", "ekim", "dikim", "baslangic", "cimlen"),
     "end": ("hasat", "olgun", "son donem"),
@@ -42,7 +44,7 @@ def _detect_stage(query: str) -> str:
 
 
 def _detect_crops(query: str) -> tuple[str, ...]:
-    found = tuple(c for c in _CROPS if c in query)
+    found = tuple(sorted(c for c in _CROPS() if c in query))
     return found or tuple(settings.target_crops)
 
 
@@ -60,7 +62,9 @@ def sulama_plani(
     """Bir konum icin FAO-56 sulama plani. Saf hesap: hata YUTMAZ.
 
     Open-Meteo erisilemezse cagiranin gormesi icin istisna yukari gider.
-    ET0 uretilemezse ET0Yok atar.
+    ET0 uretilemezse ET0Yok atar. Urunun FAO-56 Kc katsayisi yoksa fao56.KcYok
+    atar; burada yakalanmaz cunku "Kc'siz urune yaklasik bir sayi uretmek" bu
+    modulun yapmayacagi tek sey.
     """
     inputs = get_irrigation_inputs(lat, lon)
     et0 = inputs.get("et0_mm_gun")
@@ -102,6 +106,16 @@ def irrigation_node(state: AgentState) -> AgentState:
         sonuc = sulama_plani(lat, lon, _detect_crops(query), stage, area)
     except ET0Yok as exc:
         return {"result": {"agent": "irrigation", "message": str(exc), "data": {}}}
+    except fao56.KcYok as exc:
+        # Ag hatasi degil kapsam sorunu; asagidaki genel dala dusup "hava
+        # servisine ulasilamadi" demesi kullaniciyi yanlis yere bakmaya iterdi.
+        return {"result": {
+            "agent": "irrigation",
+            "message": f"{exc.args[0].capitalize()} için FAO-56 su tüketim "
+                       "katsayısı (Kc) tanımlı değil, sulama miktarı "
+                       "hesaplanamıyor.",
+            "data": {},
+        }}
     except Exception as exc:  # ag/servis hatasi - agent cokmesin
         return {"result": {
             "agent": "irrigation",

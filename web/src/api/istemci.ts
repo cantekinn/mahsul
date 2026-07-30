@@ -19,6 +19,7 @@ export type Kisayol = components["schemas"]["KisayolYanit"];
 export type Sulama = components["schemas"]["SulamaYanit"];
 export type IklimRisk = components["schemas"]["IklimRiskYanit"];
 export type Zararli = components["schemas"]["ZararliYanit"];
+export type Kapsam = components["schemas"]["KapsamYanit"];
 
 /**
  * API'nin koku.
@@ -92,4 +93,8 @@ export const api = {
     al<IklimRisk>("/iklim-riski", { lat, lon, urun }),
   zararli: (lat: number, lon: number, urun: string) =>
     al<Zararli>("/zararli", { lat, lon, urun }),
+  // Hangi hesabin hangi urunu cevapladigi. Uc hesabin siniri ayni DEGIL
+  // (iklim 116, sulama 84, zararli 5 urun); arayuz kapsam disi urunu
+  // gizlemek yerine sebebiyle isaretlesin diye sunucudan cekiliyor.
+  kapsam: () => al<Kapsam[]>("/kapsam"),
 };

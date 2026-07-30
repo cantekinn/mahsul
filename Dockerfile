@@ -153,11 +153,14 @@ COPY --from=arayuz --chown=kullanici /kaynak/dist  web/dist
 RUN python -c "\
 from api.main import app, kisayollar; \
 from models.disease.classifier_onnx import is_available as teshis_hazir, _session; \
+from knowledge import kapsam; \
 yollar = {r.path for r in app.routes}; \
 [__import__('sys').exit(f'uc nokta eksik: {y}') for y in \
  ('/saglik', '/konum', '/toprak', '/parseller', '/oneri', '/kisayollar', '/teshis', \
-  '/sulama', '/iklim-riski', '/zararli') \
+  '/sulama', '/iklim-riski', '/zararli', '/kapsam') \
  if y not in yollar]; \
+iklim = len(kapsam.kapsam('iklim')); \
+assert iklim >= 100, f'iklim kapsami {iklim} urun: crop_params_global.yaml imaja girmemis'; \
 k = kisayollar(); \
 assert len(k) == 37, f'kisayol sayisi beklenen 37 degil: {len(k)}'; \
 h = sum(1 for x in k if x.isitildi); \

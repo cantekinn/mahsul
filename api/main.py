@@ -46,6 +46,7 @@ from agents.irrigation_agent import ET0Yok, sulama_plani
 from agents.pest_agent import SicaklikSerisiYok, zararli_durumu
 from core.config import settings
 from core.schemas import ClimateData, SoilData
+from knowledge import fao56, kapsam
 from data.global_location import (
     SOILGRIDS_HIZLI_BUTCE_S,
     KonumOzeti,
@@ -719,21 +720,74 @@ URUN_Q = Query(
 )
 
 
-def _urunleri_coz(urun: str | None) -> tuple[str, ...]:
-    """Tek urun adini dogrular; bos ise bolge hedef urunlerini doner.
+def _urun_tr(anahtar: str) -> str:
+    """Urun anahtarinin arayuzde gorunecek Turkce adi.
 
-    Desteklenmeyen urunde 422 atilir. Sessizce hedef urunlere dusmek, kullanici
-    'zeytin' isteyip domates plani almasina yol acardi.
+    Kaynak sirasi bilerek boyle: bilgi tabanindaki 'ad' alani 116 urunu de
+    kapsar ve dogru Turkce karakterleri tasir; CROP_TR yalnizca hastalik
+    modelinin 16 urununu bilir. Son care olarak anahtarin kendisi yazilir ama
+    alt cizgiler bosluga cevrilir - kullaniciya 'Yer_fistigi' gostermek arayuz
+    hatasi gibi gorunur.
+    """
+    kayit = kapsam.iklim_bilgi_tabani().get(anahtar)
+    if isinstance(kayit, dict) and kayit.get("ad"):
+        return kayit["ad"]
+    return CROP_TR.get(anahtar, anahtar.replace("_", " ").capitalize())
+
+
+def _urunleri_coz(urun: str | None, yetenek: str) -> tuple[str, ...]:
+    """Tek urun adini O UC NOKTANIN kapsamina gore dogrular.
+
+    Kapsam uc noktaya gore DEGISIR (bkz knowledge/kapsam.py): iklim riski 116
+    urun cevaplar, sulama 84, zararli 5. Once hepsi ortak 6 urunluk listeyle
+    dogrulaniyordu; bu, iklim riski hesaplanabilen 110 urunu var olmayan bir
+    sinira takiyordu.
+
+    Desteklenmeyen urunde 422 atilir ve mesaj O YETENEGIN kendi gerekcesini
+    yazar. Sessizce hedef urunlere dusmek kullaniciyi 'zeytin' isteyip domates
+    plani almaya goturur.
     """
     if urun is None:
         return tuple(settings.target_crops)
-    if urun not in settings.agent_crops:
-        raise HTTPException(
-            422,
-            f"Desteklenmeyen ürün: {urun}. Desteklenenler: "
-            f"{', '.join(settings.agent_crops)}.",
-        )
+    if not kapsam.destekli(yetenek, urun):
+        raise HTTPException(422, f"'{urun}' bu hesap için kapsam dışında. "
+                                 f"{kapsam.YETENEK_GEREKCE[yetenek]}")
     return (urun,)
+
+
+class KapsamUrunu(BaseModel):
+    anahtar: str
+    ad: str = Field(..., description="Arayüzde görünen Türkçe ad.")
+
+
+class KapsamYanit(BaseModel):
+    """Bir yetenegin cevaplayabildigi urunler. Arayuz listeyi buna gore isaretler."""
+    yetenek: str
+    urunler: list[KapsamUrunu]
+    gerekce: str = Field(..., description="Kapsam dışı üründe gösterilecek sebep.")
+
+
+@app.get("/kapsam", response_model=list[KapsamYanit], tags=["tarla"],
+         summary="Her tarla hesabının kapsadığı ürünler")
+def kapsam_listesi() -> list[KapsamYanit]:
+    """Hangi hesabın hangi ürünü cevaplayabildiği.
+
+    Arayüz bunu bir kez çeker ve ürün listesinde kapsam dışı olanları
+    gizlemek yerine sebebiyle birlikte işaretler.
+    """
+    return [
+        KapsamYanit(
+            yetenek=y,
+            # Turkce ada gore siralanir, anahtara gore degil: listeyi okuyan
+            # kullanici 'Ü' harfini 'uzum' anahtarinin yerinde arar.
+            urunler=sorted(
+                (KapsamUrunu(anahtar=k, ad=_urun_tr(k)) for k in kapsam.kapsam(y)),
+                key=lambda u: u.ad.lower(),
+            ),
+            gerekce=kapsam.YETENEK_GEREKCE[y],
+        )
+        for y in kapsam.YETENEKLER
+    ]
 
 
 def _hava_503(exc: Exception, ne: str) -> HTTPException:
@@ -821,11 +875,17 @@ def sulama(
     toprak nemi, sulama yönteminin verimi ve tuzluluk yıkama payı bu hesapta
     yoktur.
     """
-    urunler = _urunleri_coz(urun)
+    urunler = _urunleri_coz(urun, "sulama")
     try:
         sonuc = sulama_plani(lat, lon, urunler, asama, alan_m2)
     except ET0Yok as exc:
         raise HTTPException(503, str(exc)) from exc
+    except fao56.KcYok as exc:
+        # urun=None ile gelen bolge hedef urunlerinden biri Kc'siz ise buraya
+        # duser. _urunleri_coz onu dogrulamadi cunku kullanici secmedi; yine de
+        # 500 degil kapsam cevabi donmeli.
+        raise HTTPException(422, f"'{exc.args[0]}' bu hesap için kapsam dışında. "
+                                 f"{kapsam.YETENEK_GEREKCE['sulama']}") from exc
     except Exception as exc:
         raise _hava_503(exc, "Sulama planı için hava verisi alınamadı") from exc
 
@@ -837,7 +897,7 @@ def sulama(
         asama=asama,
         asama_tr=_ASAMA_TR[asama],
         planlar=[
-            SulamaPlani(urun_tr=CROP_TR.get(p["urun"], p["urun"].capitalize()), **p)
+            SulamaPlani(urun_tr=_urun_tr(p["urun"]), **p)
             for p in sonuc["planlar"]
         ],
         uyari="Net sulama ihtiyacıdır. Damla sulamada verim payı, toprak nemi "
@@ -858,7 +918,7 @@ def iklim_risk(
     Eşikler ürünün EcoCrop sıcaklık trapezinden gelir, genel bir hava uyarısı
     değildir: aynı 5 °C gece domates için riskli, zeytin için değildir.
     """
-    urunler = _urunleri_coz(urun)
+    urunler = _urunleri_coz(urun, "iklim")
     try:
         sonuc = iklim_riski(lat, lon, urunler)
     except TahminYok as exc:
@@ -870,7 +930,7 @@ def iklim_risk(
         lat=lat, lon=lon, gun=sonuc["gun"],
         urunler=[
             UrunRiski(
-                urun=k, urun_tr=CROP_TR.get(k, k.capitalize()),
+                urun=k, urun_tr=_urun_tr(k),
                 riskler=[
                     RiskMaddesi(tur_tr=_RISK_TUR_TR.get(r["tur"], r["tur"]), **r)
                     for r in v
@@ -895,7 +955,7 @@ def zararli(
     Mücadele zamanlaması için izleme penceresi verir, ilaçlama reçetesi değildir.
     Ürünün tabloda kaydı yoksa liste boş döner; bu hata değildir.
     """
-    urunler = _urunleri_coz(urun)
+    urunler = _urunleri_coz(urun, "zararli")
     try:
         sonuc = zararli_durumu(lat, lon, urunler)
     except SicaklikSerisiYok as exc:

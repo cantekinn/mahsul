@@ -238,6 +238,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kapsam": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Her tarla hesabının kapsadığı ürünler
+         * @description Hangi hesabın hangi ürünü cevaplayabildiği.
+         *
+         *     Arayüz bunu bir kez çeker ve ürün listesinde kapsam dışı olanları
+         *     gizlemek yerine sebebiyle birlikte işaretler.
+         */
+        get: operations["kapsam_listesi_kapsam_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sulama": {
         parameters: {
             query?: never;
@@ -372,6 +395,31 @@ export interface components {
             urunler: components["schemas"]["UrunRiski"][];
             /** Uyari */
             uyari: string;
+        };
+        /** KapsamUrunu */
+        KapsamUrunu: {
+            /** Anahtar */
+            anahtar: string;
+            /**
+             * Ad
+             * @description Arayüzde görünen Türkçe ad.
+             */
+            ad: string;
+        };
+        /**
+         * KapsamYanit
+         * @description Bir yetenegin cevaplayabildigi urunler. Arayuz listeyi buna gore isaretler.
+         */
+        KapsamYanit: {
+            /** Yetenek */
+            yetenek: string;
+            /** Urunler */
+            urunler: components["schemas"]["KapsamUrunu"][];
+            /**
+             * Gerekce
+             * @description Kapsam dışı üründe gösterilecek sebep.
+             */
+            gerekce: string;
         };
         /** KisayolYanit */
         KisayolYanit: {
@@ -1176,6 +1224,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    kapsam_listesi_kapsam_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KapsamYanit"][];
                 };
             };
         };
