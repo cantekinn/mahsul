@@ -44,6 +44,39 @@ const SEKMELER: { anahtar: Gorunum; ad: string; alt: string }[] = [
   },
 ];
 
+/** Marka isareti: filiz.
+ *
+ *  Cizim public/favicon.svg ile AYNI yollardan olusuyor, yeni bir sekil
+ *  uydurulmadi. Sekme ikonu, ana ekran ikonu ve baslik ayni isareti
+ *  gosterdiginde kullanici uygulamayi tek bir seyle taniyor.
+ *
+ *  Satir ici SVG: tek bir sekil icin ayri bir ag istegi ya da ikon
+ *  kutuphanesi eklemenin karsiligi yok. <img src="/favicon.svg"> de olurdu
+ *  ama o zaman isaret sayfayla ayni anda gelmez, baslik bir kare bos durur. */
+function MarkaIsareti() {
+  return (
+    <svg
+      className="marka-isaret"
+      viewBox="0 0 64 64"
+      width="40"
+      height="40"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect width="64" height="64" rx="14" fill="var(--yesil)" />
+      <path
+        d="M32 53 V32"
+        stroke="#ffffff"
+        strokeWidth="5"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path d="M31 37 C 31 24 22 15 11 14 C 10 27 18 36 31 37 Z" fill="#ffffff" />
+      <path d="M33 44 C 33 33 41 25 53 24 C 54 36 45 44 33 44 Z" fill="#a8d5a2" />
+    </svg>
+  );
+}
+
 /** Adresteki ?g= degeri sekmeyi acar. Taninmayan deger haritaya duser. */
 function adrestenGorunum(): Gorunum {
   const g = new URLSearchParams(window.location.search).get("g");
@@ -177,9 +210,9 @@ export default function App() {
   return (
     <div className="kabuk">
       <header className="baslik">
-        <div>
+        <div className="marka">
+          <MarkaIsareti />
           <h1>Tarım Asistanı</h1>
-          <p className="alt">{SEKMELER.find((s) => s.anahtar === gorunum)?.alt}</p>
         </div>
         {gorunum === "harita" && (
           <button className="dugme" onClick={rastgeleSec} disabled={rastgeleYukleniyor}>
@@ -188,22 +221,35 @@ export default function App() {
         )}
       </header>
 
-      {/* Sekme cubugu: iki gorunum arasindaki tek anahtar. URL'ye yaziliyor,
-          paylasilabilir ve yenilemeye dayanikli. */}
-      <nav className="sekme-cubugu" role="tablist">
-        {SEKMELER.map((s) => (
-          <button
-            key={s.anahtar}
-            type="button"
-            role="tab"
-            aria-selected={gorunum === s.anahtar}
-            className={`sekme ${gorunum === s.anahtar ? "aktif" : ""}`}
-            onClick={() => setGorunum(s.anahtar)}
-          >
-            {s.ad}
-          </button>
-        ))}
-      </nav>
+      {/* Sekme cubugu YAPISKAN, marka satiri DEGIL.
+          Oneri listesi acikken sayfa 3400 px'i geciyordu; sekme degistirmek
+          icin her seferinde en basa donmek gerekiyordu, yani ana gezinme
+          sayfanin yalnizca ilk ekraninda vardi. Marka satirini da yapisik
+          tutmak seridi telefonda 142 px'e cikariyordu (ekranin altida biri);
+          marka kimligi surekli gorunmek zorunda degil, gezinme zorunda.
+          Serit simdi 70 px. */}
+      <div className="ust-serit">
+        <nav className="sekme-cubugu" role="tablist">
+          {SEKMELER.map((s) => (
+            <button
+              key={s.anahtar}
+              type="button"
+              role="tab"
+              aria-selected={gorunum === s.anahtar}
+              className={`sekme ${gorunum === s.anahtar ? "aktif" : ""}`}
+              onClick={() => setGorunum(s.anahtar)}
+            >
+              {s.ad}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Sekme aciklamasi SERIDIN DISINDA: iki satirlik bir cumle yapisik
+          seritte duraydi, serit her ekranda 40 px daha uzun olurdu ve
+          telefonda goruntunun besde birini kaplardi. Aciklama zaten bir kez
+          okunup gecilen bir metin, sekme adi ise surekli lazim. */}
+      <p className="gorunum-alt">{SEKMELER.find((s) => s.anahtar === gorunum)?.alt}</p>
 
       {/* Soru kutusu SEKMELERIN ALTINDA ve her sekmede duruyor: kullanicinin
           sorusu hangi sekmede aklina gelirse gelsin ayni yerde sorulabilsin.
@@ -298,6 +344,28 @@ export default function App() {
           <TeshisPaneli nokta={nokta} />
         </main>
       )}
+
+      {/* Alt bilgi HER SEKMEDE duruyor ve tek isi var: ekrandaki sayilarin
+          NEREDEN geldigini yazmak. Uygulama "toprakta %2.1 organik madde var"
+          diyor; bunun bir uydu urununden mi yoksa bir tahminden mi geldigi
+          kullanicinin bilmesi gereken bir sey. Kaynaklar sayfanin icine
+          dagitilmis olsaydi (her kartin altina bir satir) kart basina bir
+          satir daha eklenir ve okunan bilgiyi seyreltirdi. */}
+      <footer className="alt-bilgi">
+        <p>
+          <strong>Veri kaynakları:</strong> iklim ve buharlaşma Open-Meteo,
+          toprak ISRIC SoilGrids, yer adı ve harita OpenStreetMap, ürün
+          uygunluğu FAO GAEZ v4, sulama katsayıları FAO-56, sera gazı IPCC 2019
+          Tier 1, tapu parselleri TKGM.
+        </p>
+        <p>
+          Bu araç ölçülen veriyi hesaplayıp gösterir; ziraat mühendisi ya da
+          laboratuvar analizinin yerine geçmez.
+        </p>
+        <p className="alt-bilgi-imza">
+          Google YZTA 2026 &middot; 14. Grup &middot; Yapay Zeka
+        </p>
+      </footer>
     </div>
   );
 }

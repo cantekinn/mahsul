@@ -226,9 +226,26 @@
   font: inherit;
 }
 
+/* Sayfa zemini duz gri idi ve kartlar zeminden yalnizca golgeyle ayriliyordu;
+   ekranin tamami tek bir tonda kaliyordu. Ustten asagi soluk bir yesil hale
+   ekleniyor: kaynagi baslikta, dolayisiyla goz once oraya gidiyor.
+
+   GORSEL DOSYA YOK, tek bir gradyan. Alfa 0.09'da: daha yuksek degerde kart
+   kenarliklarinin (--cizgi) kontrasti dusuyor ve kartin nerede bittigi
+   belirsizlesiyor.
+
+   fixed ekleme: sayfa kaydiginda hale yerinde kalir, yoksa uzun oneri
+   listesinde asagida ikinci bir renk bandi gibi gorunurdu. */
 body {
   margin: 0;
-  background: var(--zemin);
+  background-color: var(--zemin);
+  background-image: radial-gradient(
+    1100px 420px at 50% -140px,
+    rgba(47, 122, 62, 0.09),
+    rgba(47, 122, 62, 0) 70%
+  );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 .kabuk {
@@ -237,13 +254,74 @@ body {
   padding: var(--bos-5);
 }
 
+/* Telefonda 24 px kenar boslugu 375 px ekranin %13'unu yiyordu. Icerik zaten
+   dar; bosluk 12 px'e iniyor ve kartlara 24 px daha genislik kaliyor. */
+@media (max-width: 600px) {
+  .kabuk {
+    padding: var(--bos-3);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Sekme seridi: YAPISKAN kap.
+
+   Yapiskan olan sekme cubugunun KENDISI degil, altindaki kap. Cubuk tam
+   yuvarlak kenarli ve dar; tek basina yapistirilsaydi sayfa metni onun
+   yuvarlak koselerinin yanindan ve altindan gorunerek kayardi. Kap, ekran
+   kenarindan kenarina uzanan opak bir zemin veriyor.
+
+   z-index 1050 SECILDI: Leaflet kendi denetimlerini 1000'e koyuyor (serit
+   altta kalirsa yakinlastirma dugmeleri seridin uzerine cizilir), soru
+   kutusu 1100'de (o seridin ustunde kalmali, cunku acikken sayfanin geri
+   kalanini gecici olarak orter).
+
+   Bulaniklik (backdrop-filter) DESTEKLENMEYEN tarayicida sessizce dusuyor;
+   bu yuzden zemin rengi ayrica yariopak veriliyor, yoksa serit saydam kalip
+   altindaki metin uzerine binerdi.
+
+   Negatif yan bosluk: serit .kabuk'un ic boslugunu asip icerik kutusunun
+   kenarina kadar uzansin, yoksa yapisip durdugunda sagindan ve solundan
+   kayan metin gorunurdu. */
+.ust-serit {
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+  margin: 0 calc(var(--bos-5) * -1) var(--bos-4);
+  padding: var(--bos-2) var(--bos-5);
+  background: rgba(246, 247, 245, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--cizgi);
+}
+
+@media (max-width: 600px) {
+  .ust-serit {
+    margin: 0 calc(var(--bos-3) * -1) var(--bos-3);
+    padding: var(--bos-2) var(--bos-3);
+  }
+}
+
 .baslik {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--bos-4);
   flex-wrap: wrap;
-  margin-bottom: var(--bos-4);
+  margin-bottom: var(--bos-3);
+}
+
+/* Isaret ve yazi tek blok: sarmalandiginda dugme alta iner, marka bolunmez. */
+.marka {
+  display: flex;
+  align-items: center;
+  gap: var(--bos-3);
+  min-width: 0;
+}
+
+.marka-isaret {
+  flex: 0 0 auto;
+  border-radius: var(--yuvarlak-m);
+  box-shadow: var(--golge-1);
 }
 
 .baslik h1 {
@@ -251,6 +329,23 @@ body {
   font-size: var(--yazi-xl);
   line-height: var(--yazi-xl-satir);
   color: var(--yesil-koyu);
+  /* Buyuk puntoda harfler arasi bosluk optik olarak buyur; -0.02em o
+     genislemeyi geri alir ve baslik tek bir kelime kutlesi gibi okunur. */
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+/* Telefonda 40 px'lik isaret + 24 px baslik iki satira tasiyordu. */
+@media (max-width: 480px) {
+  .marka-isaret {
+    width: 32px;
+    height: 32px;
+  }
+
+  .baslik h1 {
+    font-size: var(--yazi-l);
+    line-height: var(--yazi-l-satir);
+  }
 }
 
 .alt {
@@ -260,25 +355,96 @@ body {
   line-height: var(--yazi-s-satir);
 }
 
+/* Acik olan sekmenin ne ise yaradigini anlatan cumle. Genislik 68ch ile
+   sinirli: tam genislikte 1400 px'lik ekranda satir 200 karaktere ciKiyor ve
+   goz satir sonundan satir basina donerken yerini kaybediyor. */
+.gorunum-alt {
+  margin: 0 0 var(--bos-4);
+  max-width: 68ch;
+  color: var(--soluk);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
 .dugme {
   background: var(--yesil);
   color: var(--uzeri);
-  border: 0;
+  /* Kenarlik SAYDAM ama VAR: yalin (.yalin) surumunde 1 px kenarlik cikiyor
+     ve kenarliksiz surumle yan yana durduklarinda ikisi 2 px farkli
+     yukseklikte oluyordu. */
+  border: 1px solid transparent;
   border-radius: var(--yuvarlak-m);
   padding: var(--bos-3) var(--bos-5);
+  /* Dokunma hedefi tavsiye edilen 44 px'in altina dusmesin. 15 px yazi +
+     2x12 px dolgu = 46 px, yani su an saglaniyor; alt sinir yine de yazili
+     ki ilerde dolgu kisilirsa dugme sessizce kucukmesin. */
+  min-height: 44px;
   font-size: var(--yazi-m);
   line-height: var(--yazi-m-satir);
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(28, 35, 33, 0.12);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.06s;
 }
 
 .dugme:hover:not(:disabled) {
   background: var(--yesil-koyu);
 }
 
+/* Basili tutulurken dugme 1 px asagi iner ve golgesini birakir: tiklamanin
+   islendigi, cevap gelmeden once gorunur. Yavas baglantida (tarla) bu tek
+   geri bildirim, kullanicinin ikinci kez tiklamasini onluyor. */
+.dugme:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
 .dugme:disabled {
   opacity: 0.6;
   cursor: default;
+  box-shadow: none;
+}
+
+/* Dokunmatik ekranda :hover TAKILI KALIR (parmak kalktiktan sonra da koyu
+   yesil durur). Gecis ve donusum bu yuzden yalnizca fare olan cihazlarda
+   anlamli; ama :hover kuralini kaldirmak masaustunde geri bildirimi
+   siliyordu, o yuzden sadece "hover yok" durumunda geri aliniyor. */
+@media (hover: none) {
+  .dugme:hover:not(:disabled) {
+    background: var(--yesil);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Alt bilgi. Sayfanin BITTIGINI soyleyen tek oge; onceden icerik son kartta
+   kesiliyordu ve kullanici asagida devam eden bir sey olup olmadigini
+   bilemiyordu.
+
+   Genislik 78ch ile sinirli: 1400 px'lik ekranda kaynak listesi tek satirda
+   200 karaktere ciKiyor ve okunmuyor.
+   -------------------------------------------------------------------------- */
+.alt-bilgi {
+  margin-top: var(--bos-6);
+  padding-top: var(--bos-4);
+  border-top: 1px solid var(--cizgi);
+  max-width: 78ch;
+  color: var(--soluk);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+}
+
+.alt-bilgi p {
+  margin: 0 0 var(--bos-2);
+}
+
+.alt-bilgi strong {
+  color: var(--metin);
+  font-weight: 600;
+}
+
+.alt-bilgi-imza {
+  margin-bottom: 0;
+  letter-spacing: 0.04em;
 }
 
 /* Hizli erisim kisayollari.
@@ -312,16 +478,22 @@ body {
   border: 1px solid var(--cizgi);
   border-radius: var(--yuvarlak-tam);
   padding: var(--bos-2) var(--bos-4);
+  /* 13 px yazi + 2x8 px dolgu = 34 px idi; serit yatay kaydigi icin parmagin
+     yanlis dugmeye degmesi kolaydi. 40 px, ustune 8 px'lik serit araligiyla
+     birlikte komsu hedefi ayirmaya yetiyor. */
+  min-height: 40px;
   font-size: var(--yazi-s);
   line-height: var(--yazi-s-satir);
   color: var(--metin);
   cursor: pointer;
   white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 .kisayol:hover {
   border-color: var(--yesil);
   color: var(--yesil-koyu);
+  box-shadow: var(--golge-1);
 }
 
 /* Bir katmani eksik kalan nokta. Gizlemiyoruz, listeden de cikarmiyoruz:
@@ -432,12 +604,18 @@ body {
   margin-bottom: var(--bos-2);
 }
 
+/* Kart basligi 15 px BUYUK KAPITAL idi: kartin icindeki govde metniyle ayni
+   punto, ustune buyuk harf. Baslik govdeden daha guclu gorunuyor ve gozu
+   iceriden alip etikete cekiyordu. Punto iki kademe dusuruldu, agirlik ve
+   harf araligi artirildi: etiket artik "burasi ne karti" sorusunu cevapliyor,
+   okunacak metin olmaya calismiyor. */
 .kart-bas h2 {
   margin: 0;
-  font-size: var(--yazi-m);
-  line-height: var(--yazi-m-satir);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.09em;
+  font-weight: 700;
   color: var(--soluk);
 }
 
@@ -1173,60 +1351,92 @@ body {
 /* --------------------------------------------------------------------------
    Sekme cubugu (harita / teshis arasi anahtar)
    -------------------------------------------------------------------------- */
-/* SARMA ACIK: uc sekme yan yana en az 263 px ister. 320 px'lik telefonda
-   govdenin kenar bosluklari dusunce 288 px kaliyor, yani su an siginiyor ama
-   payi kucuk. Sarma kapali olsaydi bir sekme adi uzadigi anda cubuk TUM sayfayi
-   yana kaydirirdi; olcup gorduk, 300 px'te oluyordu. Sarma ile en kotu ihtimal
-   sekmenin alt satira inmesi. */
+/* Cubuk alt cizgili sekmelerden BOLMELI DENETIME (segmented control) gecti.
+   Alt cizgili halde uc dugme sayfa zeminine yapisik duruyordu ve aralarindaki
+   tek fark 3 px'lik bir cizgiydi; hangisinin acik oldugunu anlamak icin ince
+   bir detaya bakmak gerekiyordu. Bolmeli denette acik olan sekme BEYAZ BIR
+   YUZEY olarak yukari kalkiyor, yani fark rengin yaninda yuzey sirasindan da
+   okunuyor.
+
+   SARMA KALDIRILDI, yerine cubugun KENDI ICINDE yatay kaydirma kondu.
+   Sarma, bolmeli denetin cercevesini iki satira boluyor ve tek bir denetim
+   gorunumunu bozuyordu. Kaydirmada en kotu ihtimal ucuncu sekmenin bir
+   parmak hareketi uzakta kalmasi; sayfanin KENDISI yana kaymiyor, cunku
+   tasma cerceve icinde sinirli.
+   Olcum: 375 px ekranda (12 px kenar boslugu ile) uculu 316 px, siginiyor;
+   320 px ekranda sigmiyor ve cubuk kaydiriliyor. */
 .sekme-cubugu {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--bos-1);
-  border-bottom: 2px solid var(--cizgi);
-  margin-bottom: var(--bos-4);
+  padding: var(--bos-1);
+  /* Alt bosluk YOK: cubuk artik .ust-serit kabinin icinde ve bosluk kaba
+     verildi. Ikisinde birden olsaydi serit bos bir seride donerdi. */
+  margin: 0;
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-tam);
+  /* Denetim ICERIGI KADAR genis. Tam genislikte birakildiginda 1440 px'lik
+     ekranda 1352 px'lik bos bir cerceve ve sol basinda uc kucuk dugme
+     goruluyordu; cerceve neyi cevreledigini soylemez hale geliyordu.
+     max-width ile dar ekranda yine kaba sigiyor ve tasma kaydiriliyor. */
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  /* Kaydirma cubugu GIZLI: 4 px'lik cerceve icinde cizilince denetin alt
+     kenarini yiyordu. Kaydirilabildigi zaten tasan sekmeden anlasiliyor. */
+  scrollbar-width: none;
+}
+
+.sekme-cubugu::-webkit-scrollbar {
+  display: none;
 }
 
 .sekme {
+  flex: 0 0 auto;
   background: transparent;
   border: 0;
-  /* Yatay bosluk --bos-5 (24 px) idi: uc sekmeyi 311 px'e cikariyor ve dar
-     telefonda cubuk sigmiyordu. Metin ayni, yalnizca nefes payi kisildi. */
-  padding: var(--bos-3) var(--bos-4);
-  /* Etiket ORTASINDAN bolunmesin. Bu satir olmadan telefonda sekmeler tek
-     satirda kaliyor ama iceride "Ürün / önerisi" diye ikiye kiriliyordu; iki
-     kelimeyi alt alta okumak sekme adini bir anda taramayi zorlastiriyor.
-     Simdi sigmayan sekmenin KENDISI alt satira iniyor (cubukta flex-wrap). */
+  border-radius: var(--yuvarlak-tam);
+  padding: var(--bos-2) var(--bos-4);
+  min-height: 40px;
+  /* Etiket ORTASINDAN bolunmesin: "Ürün / önerisi" diye ikiye kirilan bir
+     sekme adini bir bakista taramak zor. */
   white-space: nowrap;
   font-size: var(--yazi-m);
   line-height: var(--yazi-m-satir);
   font-weight: 600;
   color: var(--soluk);
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
-.sekme:hover {
+.sekme:hover:not(.aktif) {
   color: var(--metin);
+  background: var(--zemin);
 }
 
+/* Acik sekme: DOLU YESIL DEGIL, acik yesil zemin + koyu yesil yazi.
+   Dolu yesil denendi; sayfadaki tek dolu yesil oge "Rastgele nokta"
+   dugmesiydi ve sekme onunla ayni gorununce tiklanip bir is yapacak bir
+   dugme gibi duruyordu. Oysa acik sekme bir dugme degil, bulunulan yer.
+
+   Fark UC KANALDAN birden okunuyor: zemin rengi, yazi rengi ve kenar halkasi.
+   Yalniz renk birakilsaydi kirmizi-yesil ayirt edemeyen kullanici hangi
+   sekmede oldugunu goremezdi. */
 .sekme.aktif {
   color: var(--yesil-koyu);
-  border-bottom-color: var(--yesil);
+  background: var(--basari-zemin);
+  box-shadow: inset 0 0 0 1px rgba(47, 122, 62, 0.28);
 }
 
-/* Telefonda uc sekme dogal olcusuyle 392 px ister, 375 px ekranda 343 px yer
-   var. Sarma acik oldugu icin sayfa yana kaymiyor ama ucuncu sekme tek basina
-   alt satira dusuyordu; ana gezinmenin oksuz bir ikinci satiri oluyordu.
-   Yaziyi bir kademe kucultup nefes payini daraltinca uculu 306 px'e iniyor ve
-   tek satirda kaliyor. Dikey bosluk buyutuldu: dokunma hedefi 44 px'in altina
-   dusmesin (13 px yazi + 2x16 px = 50 px). */
+/* Telefonda uculu 392 px isterdi. Yazi bir kademe kuculup nefes payi
+   daralinca 316 px'e iniyor ve 375 px ekranda tek satirda kaliyor.
+   Dikey olcu 44 px'te tutuluyor: dokunma hedefi kucultulmedi. */
 @media (max-width: 480px) {
   .sekme {
     font-size: var(--yazi-s);
     line-height: var(--yazi-s-satir);
-    padding: var(--bos-4) var(--bos-2);
+    padding: var(--bos-3) var(--bos-3);
+    min-height: 44px;
   }
 }
 
