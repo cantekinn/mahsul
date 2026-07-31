@@ -1,7 +1,8 @@
 """Yerel MEGSIS/TKGM parsel JSON dosyalarindan parsel yukleyici.
 
-Repo kokunde bolge klasorleri (orn. serik_bogazkent, aksu, alanya_turkler,
-gazipasa_beyobasi) icindeki `tkgm-parsel-sorgu-sonuc-*.json` dosyalarini tarar.
+`data/parseller/` altindaki bolge klasorleri (orn. serik_bogazkent, aksu,
+alanya_turkler, gazipasa_beyobasi) icindeki `tkgm-parsel-sorgu-sonuc-*.json`
+dosyalarini tarar.
 Her dosya bir GeoJSON FeatureCollection'dir; buradan:
   - adres bilgisi (il/ilce/mahalle/ada/parsel, mevkii, nitelik)
   - merkez koordinat (lat/lon) ve alan (m2)  -> data.megsis.parcel_from_geojson
@@ -18,7 +19,7 @@ from pathlib import Path
 from core.schemas import Parcel
 from data.megsis import parcel_from_geojson
 
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parent / "parseller"
 _GLOB = "*/tkgm-parsel-sorgu-sonuc-*.json"
 
 
