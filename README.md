@@ -386,21 +386,26 @@ ya da hesabı yeniden yazılarak sığdırıldı.
   yönlendiriyor, 'anlamadım' demiyor. 48 gerçek tapu parselini seçilebilir hale
   getirdim; kullanıcı haritada gözle tarla aramak yerine kendi kaydını seçiyor,
   alan da tapudan geliyor. Sprint sonunda pytest paketini kurdum, toprak besin
-  karnesini ve sezon günlüğünü bağladım. Önümde engel yok."
+  karnesini ve sezon günlüğünü bağladım. Beklediğim tek şey Sıla'nın ONNX
+  çıktısının boyutu: model imaja sığmazsa öneri motorunu da beraberinde
+  düşürür, o yüzden önce onu ölçüp sonra kalan bütçeye göre ilerliyorum."
 * **Sıla (Product Owner / Developer):** "Modeli 45 sınıf / 16 ürüne genişletip
   Colab GPU'da yeniden eğittim. Asıl iş modeli webe sokmaktı: PyTorch canlı
   imaja sığmıyordu, modeli ONNX'e çevirip `onnxruntime` ile torch'suz çıkarım
   yaptım. Grad-CAM torch geri yayılımı istediği için canlıda kullanılamıyordu,
   yerine sınıf aktivasyon ağırlıklarını önceden çıkarıp forward-only ısı
   haritası ürettim, yani çiftçi modelin yaprağın neresine baktığını hâlâ
-  görüyor. Teşhis sekmesi mobilde doğrudan kamerayı açıyor. Önümde engel yok."
+  görüyor. Teşhis sekmesi mobilde doğrudan kamerayı açıyor. Açık kalan bir
+  konu var: saha doğruluğu Sprint 2'deki tavanda duruyor, bunu bu sprintte
+  kapatamayacağız, sınıf başına daha fazla gerçek tarla fotoğrafı gerekiyor."
 * **Özlem (Developer):** "Sprint 2'de yazdığımız üç agent'ı üç uç noktaya ve tek
   bir Tarla takvimi sekmesine bağladım. Kc kapsamını FAO-56 Tablo 12'den 84
   ürüne çıkardım. Karbon agent'ının stub'ını IPCC 2019 Tier 1 emisyon
   faktörleriyle gerçekledim; gübre, yakıt ve kalıntı yakma kalemleri ayrı ayrı
   görünüyor. Sprint sonunda tasarım sistemini kurdum: tipografi ve boşluk
-  jetonları, tek bir odak halkası, dokunmatikte 44 piksel hedefler. Önümde engel
-  yok."
+  jetonları, tek bir odak halkası, dokunmatikte 44 piksel hedefler. Can'dan
+  kapsam uç noktasına karbon kaleminin de eklenmesini bekliyorum, yoksa
+  kullanıcı neyin hesaplandığını tek yerden göremiyor."
 
 <!-- SS2: Daily Scrum (WhatsApp) yazışma ekran görüntüsü -->
 
@@ -569,10 +574,25 @@ ve günlükten gelen birikmiş açık birlikte gelsin.
 - Saha doğruluğu tavanı Sprint 2'den devam ediyor: laboratuvar %98.6, gerçek
   tarla fotoğrafı %61.9. Sınıf başına yaklaşık 75 saha fotoğrafı sınırı.
 
-**Sonraki adımlar:**
-- `yayin_hazirla.py` ve `Dockerfile` dosya listelerinin tek kaynaktan
-  üretilmesi.
-- Saha doğruluğunu artırmak için ek saha verisi toplanması.
-- Öneri skorunun kırılım grafiği (hangi etken kaç puan) ve çevrimdışı açılış
-  için PWA önbelleği.
-- WhatsApp kanalı (ücretsiz kademedeki 15 dakikalık uyku sorunu çözüldüğünde).
+---
+
+### 8. Kapanış
+
+Sprint 3 bootcamp sürecinin son sprinti. Üç sprintin toplamında planlanan 93 SP
+teslim edildi ve proje, kurulum gerektirmeden herkesin açabileceği bir adreste
+çalışır durumda:
+
+**https://mahsul-ulro.onrender.com**
+
+Sprint 1'de veri omurgasını kurduk, Sprint 2'de uzman agent'ları ve hastalık
+modelini yazdık, Sprint 3'te bunların tamamını canlıya aldık. Elde kalan tek
+şey, teslim ettiğimiz sınırların kendisi ve onları gizlemedik: saha fotoğrafı
+doğruluğu %61.9'da, gübre dozu hesaplanamadığı için verilmiyor, sezon günlüğü
+110 metrelik koordinat hücresine bağlı ve WhatsApp kanalı ücretsiz barındırmanın
+uyku davranışı yüzünden açılmadı. Hepsinin gerekçesi ölçülmüş ve yukarıdaki
+tablolarda yazılı.
+
+Ürünün tamamı açık veriyle çalışıyor: lisanslı veri seti, ödemeli API ve LLM
+çağrısı yok. Kullanıcı başına maliyeti sıfır olduğu için bir çiftçinin bunu
+kullanabilmesi için ödemesi gereken bir şey de yok. SDG 1, 2 ve 13 hedefleriyle
+kurduğumuz bağ tam olarak burada.

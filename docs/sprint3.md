@@ -54,20 +54,25 @@ sorusundan geçti.
   yönlendiriyor. 48 gerçek tapu parselini seçilebilir hale getirdim; kullanıcı
   haritada gözle tarla aramak yerine kendi kaydını seçiyor, alan da tapudan
   geliyor. Sprint sonunda pytest paketini kurdum ve sezon günlüğünü bağladım.
-  Önümde engel yok."
+  Beklediğim tek şey Sıla'nın ONNX çıktısının boyutu: model imaja sığmazsa
+  öneri motorunu da beraberinde düşürür, o yüzden önce onu ölçüp sonra kalan
+  bütçeye göre ilerliyorum."
 * **Sıla (Product Owner / Developer):** "Modeli 45 sınıf / 16 ürüne genişletip
   Colab GPU'da yeniden eğittim. Asıl iş modeli webe sokmaktı: PyTorch canlı
   imaja sığmıyordu, ONNX'e çevirdim ve `onnxruntime` ile torch'suz çıkarım
   yaptım. Grad-CAM torch geri yayılımı istediği için canlıda yerine sınıf
   aktivasyon ağırlıklarını (`cam_agirlik.npy`) önceden çıkarıp forward-only ısı
-  haritası ürettim. Teşhis sekmesi mobilde doğrudan kamerayı açıyor. Önümde
-  engel yok."
+  haritası ürettim. Teşhis sekmesi mobilde doğrudan kamerayı açıyor. Açık
+  kalan bir konu var: saha doğruluğu Sprint 2'deki tavanda duruyor, bunu bu
+  sprintte kapatamayacağız, sınıf başına daha fazla gerçek tarla fotoğrafı
+  gerekiyor."
 * **Özlem (Developer):** "Sprint 2'de yazdığımız üç agent'ı üç uç noktaya ve tek
   bir Tarla takvimi sekmesine bağladım. Kc kapsamını FAO-56 Tablo 12'den 84
   ürüne çıkardım. Karbon agent'ının stub'ını IPCC 2019 Tier 1 emisyon
   faktörleriyle gerçekledim. Sprint sonunda tasarım sistemini kurdum: tipografi
   ve boşluk jetonları, tek bir odak halkası, dokunmatikte 44 piksel hedefler.
-  Önümde engel yok."
+  Can'dan kapsam uç noktasına karbon kaleminin de eklenmesini bekliyorum, yoksa
+  kullanıcı neyin hesaplandığını tek yerden göremiyor."
 
 ---
 
@@ -210,7 +215,20 @@ günlükten gelen birikmiş açık birlikte gelsin.
   birleştirir ve **başkasının sulama tarihinden yanlış bir açık** hesaplardı;
   boş günlük görmek buna tercih edildi. Bilinen ve kabul edilmiş sınır.
 
-**Sonraki sprint için:**
-- `yayin_hazirla.py` ve `Dockerfile` dosya listelerinin tek kaynaktan üretilmesi.
-- Saha doğruluğunu artırmak için ek saha verisi (Sprint 2'den devam eden tavan).
-- Mobil PWA (çevrimdışı açılış) ve öneri skorunun kırılım grafiği.
+---
+
+### 7. Kapanış
+
+Sprint 3 bootcamp sürecinin son sprintidir. Üç sprintte planlanan 93 SP'nin
+tamamı teslim edildi ve ürün kurulum gerektirmeden açılabilen bir adreste
+çalışıyor: **https://mahsul-ulro.onrender.com**
+
+Teslim ettiğimiz sınırları gizlemiyoruz: saha fotoğrafı doğruluğu %61.9,
+gübre dozu hesaplanamadığı için verilmiyor, sezon günlüğü 110 metrelik
+koordinat hücresine bağlı, WhatsApp kanalı ücretsiz barındırmanın uyku
+davranışı yüzünden açılmadı. Hepsinin gerekçesi ölçülmüş ve 5. bölümdeki
+tabloda yazılı.
+
+Ürünün tamamı açık veriyle çalışıyor: lisanslı veri seti, ödemeli API ve LLM
+çağrısı yok. Kullanıcı başına maliyet sıfır olduğu için çiftçinin ödemesi
+gereken bir şey de yok. SDG 1, 2 ve 13 ile kurduğumuz bağ tam olarak burada.

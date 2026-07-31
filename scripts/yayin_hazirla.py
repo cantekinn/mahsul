@@ -53,13 +53,10 @@ DOSYALAR = [
     "data/one_cikan.py",
     "data/gaez_lookup.py",
     # Kayitli tapu parselleri: okuyucu + geometri + sorgu sonuclari.
-    # Bolge klasorleri KOKTE duruyor cunku parcel_files.py onlari orada ariyor.
+    # Bolge klasorleri data/parseller/ altinda; parcel_files.py orayi tariyor.
     "data/megsis.py",
     "data/parcel_files.py",
-    "aksu/",
-    "alanya_turkler/",
-    "gazipasa_beyobasi/",
-    "serik_bogazkent/",
+    "data/parseller/",
     "data/_onbellek/",
     # Hastalik teshis (ONNX cikarim, torch YOK).
     # classifier.py DAHIL EDILMIYOR: torch+timm gerektirir, canliya girmez.

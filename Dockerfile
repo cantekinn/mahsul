@@ -134,13 +134,11 @@ COPY --chown=kullanici models/disease/cam_agirlik.npy                models/dise
 COPY --chown=kullanici data/_onbellek/  data/_onbellek/
 
 # TKGM parsel sorgu sonuclari (49 dosya / 217 KB). parcel_files.py bunlari
-# KOK ALTINDAKI bolge klasorlerinde ariyor ("*/tkgm-parsel-sorgu-sonuc-*.json"),
-# o yuzden klasor adlari aynen korunuyor. Kucukler; onbellek gibi imaja gomulu
-# olmalari kalici disk gerektirmedikleri anlamina geliyor.
-COPY --chown=kullanici aksu/              aksu/
-COPY --chown=kullanici alanya_turkler/    alanya_turkler/
-COPY --chown=kullanici gazipasa_beyobasi/ gazipasa_beyobasi/
-COPY --chown=kullanici serik_bogazkent/   serik_bogazkent/
+# data/parseller/ altindaki bolge klasorlerinde ariyor
+# ("*/tkgm-parsel-sorgu-sonuc-*.json"), o yuzden klasor adlari aynen korunuyor.
+# Kucukler; onbellek gibi imaja gomulu olmalari kalici disk gerektirmedikleri
+# anlamina geliyor.
+COPY --chown=kullanici data/parseller/ data/parseller/
 
 # Ajanlar: /sulama, /iklim-riski, /zararli, /karbon ve /sor.
 # YALNIZCA hesap yapan dosyalar geliyor.
