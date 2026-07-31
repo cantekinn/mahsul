@@ -65,17 +65,16 @@ def diagnosis_node(state: AgentState) -> AgentState:
     guven = pred["guven"]
     seviye = pred.get("seviye", "kesin")
 
-    # Tanimsiz: model bu yapragi hedef urunlerden (domates/biber/patates) biri
-    # olarak tanimadi. Teshis DAYATMA, yaniltici isi haritasi URETME.
+    # Tanimsiz: model bu yapragi bildigi 17 urunden biri olarak tanimadi.
+    # Teshis DAYATMA, yaniltici isi haritasi URETME.
     if seviye == "tanimsiz":
         return {"result": {
             "agent": "diagnosis",
             "message": (
-                "Bu yaprak eğittiğim ürünlerden (domates, biber, patates) birine "
-                "benzemiyor; büyük olasılıkla başka bir bitki (ör. narenciye, zeytin, "
-                "muz) ya da net olmayan bir fotoğraf.\n"
+                "Bu yaprak eğittiğim ürünlerden birine benzemiyor; büyük olasılıkla "
+                "kapsam dışı bir bitki ya da net olmayan bir fotoğraf.\n"
                 "Bu yüzden hastalık teşhisi ve ısı haritası vermiyorum (yanlış olurdu). "
-                "Domates, biber veya patates yaprağını yakından net çekip tekrar deneyin."
+                "Yaprağı yakından ve net çekip tekrar deneyin."
             ),
             "data": {"teshis": pred, "tedavi": None, "gradcam": None},
         }}
@@ -101,8 +100,8 @@ def diagnosis_node(state: AgentState) -> AgentState:
             f"En olası ihtimaller: {olasi}.",
             "Daha iyi sonuç için: yaprağı yakından ve net çekin, birden fazla "
             "yaprak deneyin, ya da belirtiyi yazın (örn: yaprakta kahverengi leke).",
-            "Not: model yalnızca domates, biber ve patates için eğitildi; başka bir "
-            "bitkiyse doğru teşhis veremez.",
+            "Not: model 17 ürün için eğitildi (domates, biber, patates, narenciye, "
+            "zeytin, muz, elma, üzüm ve dahası); kapsam dışı bir bitkiyse doğru teşhis veremez.",
         ]
         if gradcam_path:
             lines.append(f"Isı haritası (Grad-CAM): {gradcam_path}")

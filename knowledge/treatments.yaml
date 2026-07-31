@@ -35,7 +35,7 @@ gec_yaniklik:
 
 kulleme:
   ad: "Külleme (Powdery mildew)"
-  konak: [domates, biber, muz]
+  konak: [domates, biber, kiraz, kabak, uzum]
   anahtar: [kulleme, külleme, powdery mildew, beyaz un, pudra]
   belirti: "Yaprak yüzeyinde un gibi beyaz-gri örtü, sararan-kuruyan yaprak."
   dogal: "Süt-su karışımı veya potasyum bikarbonat, kükürt tozu, havalanmayı artır."
@@ -44,7 +44,7 @@ kulleme:
 
 bakteriyel_leke:
   ad: "Bakteriyel leke (Xanthomonas)"
-  konak: [domates, biber]
+  konak: [domates, biber, seftali]
   anahtar: [bakteriyel leke, xanthomonas, bakteri, sulu leke]
   belirti: "Yaprak/meyvede sulu, koyu kenarlı küçük lekeler; sarı haleli."
   dogal: "Bakır + mancozeb, temiz tohum, alet dezenfeksiyonu, hasta bitki imhası."
@@ -77,3 +77,158 @@ muz_yaprak_leke:
   dogal: "Hasta yaprağı buda-imha et, sıra arası havalanmayı sağla, dengeli potasyum ver."
   kimyasal: "Koruyucu mancozeb + mineral yağ; sistemik triazol (örtü altında nadir)."
   korunma: "Sık dikimden kaçın, drenaj, dengeli gübre."
+
+# --- Skala genisletme (2026-07): PlantVillage 38 + zeytin/muz yeni siniflari ---
+
+pas:
+  ad: "Pas hastalığı (Rust)"
+  konak: [elma, misir, ahududu]
+  anahtar: [pas, sedir pas, yaygin pas, rust, turuncu püskül, turuncu puskul]
+  belirti: "Yaprak alt/üst yüzeyinde turuncu-kahve toz püstüller, sararan doku."
+  dogal: "Enfekteli yaprakları topla, ara konakçıyı (ardıç vb.) uzak tut, havalanmayı artır."
+  kimyasal: "Koruyucu mancozeb/kükürt; triazol (miklobutanil/tebukonazol)."
+  korunma: "Dayanıklı çeşit, dengeli azot, sık izleme."
+
+misir_gri_yaprak_lekesi:
+  ad: "Mısır gri yaprak lekesi (Cercospora zeae-maydis)"
+  konak: [misir]
+  anahtar: [gri yaprak lekesi, gray leaf spot, cercospora, gri leke]
+  belirti: "Yaprakta damarlarla sınırlı dikdörtgen gri-kahve lekeler, birleşip yaprağı kurutur."
+  dogal: "Sap-yaprak artığını parçala/göm (kışlama azalır), münavebe uygula, dayanıklı çeşit seç."
+  kimyasal: "Gerekirse strobilurin/triazol (püskül döneminde); koruyucu mancozeb."
+  korunma: "Münavebe, toprak işleme ile artık yönetimi, dayanıklı hibrit."
+
+elma_kara_leke:
+  ad: "Elma kara lekesi (Venturia inaequalis / scab)"
+  konak: [elma]
+  anahtar: [kara leke, scab, elma leke, karaleke]
+  belirti: "Yaprak ve meyvede zeytin-yeşili kadifemsi lekeler, deformasyon."
+  dogal: "Dökülen yaprakları temizle-imha et (kışlama azalır), taç seyreltmesi yap."
+  kimyasal: "Koruyucu kaptan/mancozeb; enfeksiyon döneminde triazol/strobilurin."
+  korunma: "Dayanıklı çeşit, ilkbahar yağış döneminde program, iyi havalanma."
+
+siyah_curukluk:
+  ad: "Siyah çürüklük (Black rot)"
+  konak: [elma, uzum]
+  anahtar: [siyah curukluk, siyah çürüklük, black rot, kara curukluk, kara çürüklük]
+  belirti: "Yaprakta halkalı kahve lekeler, meyvede mumyalaşan siyah çürük."
+  dogal: "Mumyalaşmış meyve ve kanserli dalları budayıp imha et, temizlik esas."
+  kimyasal: "Koruyucu mancozeb/kaptan; kabarcık döneminde strobilurin/triazol."
+  korunma: "Budama ile inokulum azalt, iyi havalanma, dengeli gübreleme."
+
+uzum_esca:
+  ad: "Üzüm esca (kara ölçek, odun hastalığı)"
+  konak: [uzum]
+  anahtar: [esca, kara olcek, kara ölçek, black measles, odun hastalik]
+  belirti: "Yapraklarda kaplan deseni sararma/kuruma, ani solgunluk, odunda çürük."
+  dogal: "Hasta kolları sağlam dokuya kadar budayıp imha et, budama yaralarını kapat."
+  kimyasal: "Etkili küratif kimyasal sınırlı; budama hijyeni ve yara koruması esas."
+  korunma: "Kuru havada buda, alet dezenfeksiyonu, su stresinden kaçın."
+
+misir_yaprak_yanikligi:
+  ad: "Mısır kuzey yaprak yanıklığı (Exserohilum turcicum)"
+  konak: [misir]
+  anahtar: [misir yaprak yanikligi, northern leaf blight, kuzey yaprak, misir yanik, exserohilum]
+  belirti: "Yaprakta uzun, puro biçimli gri-yeşilden kahveye dönen nekrotik lekeler, birleşerek kuruma."
+  dogal: "Sap-yaprak artığını göm, münavebe uygula, dayanıklı hibrit seç."
+  kimyasal: "Gerekirse strobilurin/triazol (püskül-koçan döneminde); koruyucu mancozeb."
+  korunma: "Münavebe, artık yönetimi, dayanıklı çeşit, dengeli azot."
+
+uzum_yaprak_yanikligi:
+  ad: "Üzüm yaprak yanıklığı (Isariopsis leaf spot)"
+  konak: [uzum]
+  anahtar: [uzum yaprak yanikligi, uzum yaprak, isariopsis, yaprak yanıklığı]
+  belirti: "Yaprakta köşeli kahve-kırmızımsı lekeler, birleşerek yanıklık, erken döküm."
+  dogal: "Hasta yaprakları temizle, kanopiyi seyrelt, damla sulama kullan."
+  kimyasal: "Koruyucu mancozeb/bakır; nemli dönemde program."
+  korunma: "İyi havalanma, üstten sulamadan kaçın."
+
+narenciye_yesillenme:
+  ad: "Narenciye yeşillenmesi (HLB / Huanglongbing)"
+  konak: [narenciye]
+  anahtar: [yesillenme, yeşillenme, hlb, huanglongbing, greening, citrus greening, sari surgun, sarı sürgün]
+  belirti: "Asimetrik yaprak sararması, damar kalınlaşması, küçük-çarpık acı meyve. Psillid böcek taşır."
+  dogal: "Hasta ağacı sök-imha et (kaynak yayılımı önle), psillid vektörünü izle-baskıla."
+  kimyasal: "Hastalığa küratif ilaç yok; vektör psillid için ruhsatlı insektisit + sertifikalı fidan."
+  korunma: "Sertifikalı temiz fidan, psillid takibi, bölgesel mücadele."
+
+domates_yaprak_kufu:
+  ad: "Domates yaprak küfü (Passalora fulva)"
+  konak: [domates]
+  anahtar: [yaprak kufu, yaprak küfü, leaf mold, cladosporium, passalora]
+  belirti: "Üst yüzeyde sarı lekeler, alt yüzeyde zeytin-kahve kadifemsi küf; örtü altında sık."
+  dogal: "Nem/oransal nemi düşür, havalandır, hasta yaprağı al; bakır uygula."
+  kimyasal: "Klorotalonil/mancozeb koruyucu; gerekirse strobilurin/triazol."
+  korunma: "Sera havalandırması, sık dikimden kaçın, dayanıklı çeşit."
+
+domates_septoria_leke:
+  ad: "Domates septoria yaprak lekesi"
+  konak: [domates]
+  anahtar: [septoria, septoria leke, kucuk leke, küçük leke]
+  belirti: "Alt yapraklarda küçük, koyu kenarlı gri-merkezli çok sayıda leke, sararma-döküm."
+  dogal: "Alt hasta yaprakları topla-imha et, malçla, damla sula, münavebe uygula."
+  kimyasal: "Koruyucu klorotalonil/mancozeb; ağır basınçta strobilurin/triazol."
+  korunma: "Münavebe, üstten sulamadan kaçın, iyi havalanma."
+
+domates_orumcek_akari:
+  ad: "İki noktalı örümcek akarı (Tetranychus urticae)"
+  konak: [domates]
+  anahtar: [orumcek akari, örümcek akarı, spider mite, kirmizi orumcek, kırmızı örümcek]
+  belirti: "Yaprakta iğne başı sarı benekler, alt yüzeyde ince ağ, sararma-kuruma; sıcak-kuruda patlar."
+  dogal: "Yaprak altını su ile yıka, nem artır, avcı akar (Phytoseiulus) sal; yağ/sabun uygula."
+  kimyasal: "Ruhsatlı akarisit (spiromesifen/abamektin); rotasyonla direnç önle."
+  korunma: "Toz/su stresini önle, erken izleme, faydalıları koru."
+
+domates_hedef_leke:
+  ad: "Domates hedef leke (Corynespora target spot)"
+  konak: [domates]
+  anahtar: [hedef leke, target spot, corynespora, halka leke]
+  belirti: "Yaprak/meyvede iç içe halkalı (hedef tahtası) kahve lekeler, döküm."
+  dogal: "Hasta yaprağı al, havalandır, damla sula, bakır uygula."
+  kimyasal: "Koruyucu klorotalonil/mancozeb; strobilurin/triazol."
+  korunma: "Münavebe, iyi havalanma, üstten sulamadan kaçın."
+
+domates_virus:
+  ad: "Domates virüs hastalıkları (TYLCV / mozaik)"
+  konak: [domates]
+  anahtar: [sari yaprak virusu, sarı yaprak virüsü, tylcv, mozaik virusu, mozaik virüsü, mosaic, kivrilma, kıvrılma]
+  belirti: "Sararma-kıvrılma-cücelik (TYLCV, beyazsinek taşır) veya mozaik desen/deformasyon (mekanik bulaşır)."
+  dogal: "Hasta bitkiyi sök-imha et, beyazsinek vektörünü baskıla, alet/el hijyeni sağla."
+  kimyasal: "Virüse ilaç yok; TYLCV için beyazsinek insektisidi + tül/ağ, dayanıklı çeşit."
+  korunma: "Dayanıklı çeşit, vektör kontrolü, temiz fide, yabancı ot temizliği."
+
+cilek_yaprak_yanigi:
+  ad: "Çilek yaprak yanığı (Diplocarpon earlianum leaf scorch)"
+  konak: [cilek]
+  anahtar: [yaprak yanigi, yaprak yanığı, leaf scorch, cilek leke, çilek leke]
+  belirti: "Yaprakta çok sayıda küçük mor leke, birleşerek yanık görünüm, yaprak kuruması."
+  dogal: "Hasta-yaşlı yaprakları temizle, damla sula, sıra arasını havalandır."
+  kimyasal: "Koruyucu kaptan/mancozeb; gerekirse triazol."
+  korunma: "Dayanıklı çeşit, iyi havalanma, üstten sulamadan kaçın."
+
+zeytin_akar:
+  ad: "Zeytin gal akarı (Aculus/Aceria olearius)"
+  konak: [zeytin]
+  anahtar: [zeytin akar, gal akari, gal akarı, aculus, aceria]
+  belirti: "Yaprak ve sürgünlerde deformasyon, renk değişimi, tomurcuk-yaprak bozulması."
+  dogal: "Enfekteli sürgünleri budayıp imha et, ağaç canlılığını koru; kükürt uygula."
+  kimyasal: "Kükürt bazlı akarisit; gerekirse ruhsatlı akarisit, ilkbahar sürgün döneminde."
+  korunma: "Sağlıklı fidan, dengeli sulama-gübre, erken izleme."
+
+muz_cordana:
+  ad: "Muz Cordana yaprak lekesi"
+  konak: [muz]
+  anahtar: [cordana, muz cordana]
+  belirti: "Yaprakta iğ/oval, açık merkezli kahve lekeler, sarı hale, birleşerek kuruma."
+  dogal: "Hasta yaprağı buda-imha et, havalanmayı sağla, dengeli gübrele."
+  kimyasal: "Koruyucu mancozeb + mineral yağ; gerekirse triazol."
+  korunma: "Sık dikimden kaçın, drenaj, alet hijyeni."
+
+muz_pestalotiopsis:
+  ad: "Muz Pestalotiopsis yaprak lekesi"
+  konak: [muz]
+  anahtar: [pestalotiopsis, muz pestalotiopsis]
+  belirti: "Yaprak kenar/ucundan başlayan kahve-gri nekroz, koyu kenarlı, kuruyan doku."
+  dogal: "Hasta yaprakları temizle, yaralanmayı önle, dengeli beslen."
+  kimyasal: "Koruyucu mancozeb/bakır; gerekirse strobilurin/triazol."
+  korunma: "Yaprak yaralanmasını azalt, havalanma, dengeli gübre."

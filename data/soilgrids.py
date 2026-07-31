@@ -22,6 +22,8 @@ _PROPS = {
     "sand": ("sand", 10.0),
     "silt": ("silt", 10.0),
     "soc": ("organic_carbon", 10.0),  # dg/kg -> g/kg
+    "bdod": ("bulk_density", 100.0),  # cg/cm3 -> g/cm3
+    "cec": ("cec", 10.0),             # mmol(c)/kg -> cmol(c)/kg
 }
 
 

@@ -5,6 +5,10 @@ Akis:
   -> knowledge.climate_risk: urune ozel esiklerle don/sicak/yagis/kuraklik riski.
 
 Urun sorguda gecerse o urun; yoksa bolge hedef urunleri degerlendirilir.
+
+Modul iki kapi sunar: iklim_riski() saf hesaptir (hata yutmaz, HTTP uc noktasi
+bunu cagirir), climate_risk_node() LangGraph adaptorudur. Gerekce
+irrigation_agent.py basindaki notta.
 """
 from __future__ import annotations
 
@@ -12,14 +16,40 @@ from agents.state import AgentState
 from core.config import settings
 from data.open_meteo import get_forecast_series
 from knowledge import climate_risk
-from models.crop_reco.recommender import load_knowledge_base
+from knowledge.kapsam import iklim_bilgi_tabani, iklim_urunleri
 
-_CROPS = ("domates", "biber", "patates", "narenciye", "zeytin", "muz")
+# Sorguda urun tespiti icin: iklim riski hesaplanabilen HER urun. Once 6
+# urunluk ortak liste kullaniliyordu, oysa sicaklik trapezi 116 urunde var
+# (bkz knowledge/kapsam.py).
+_CROPS = iklim_urunleri
 
 
 def _detect_crops(query: str) -> tuple[str, ...]:
-    found = tuple(c for c in _CROPS if c in query)
+    found = tuple(sorted(c for c in _CROPS() if c in query))
     return found or tuple(settings.target_crops)
+
+
+class TahminYok(RuntimeError):
+    """Open-Meteo cevap verdi ama bu konum icin gunluk seri bos dondu."""
+
+
+def iklim_riski(lat: float, lon: float, urunler: tuple[str, ...]) -> dict:
+    """16 gunluk tahminden urune ozel risk listesi. Saf hesap: hata YUTMAZ."""
+    fc = get_forecast_series(lat, lon)
+    if fc["gun"] == 0:
+        raise TahminYok("Bu konum için tahmin verisi alınamadı.")
+
+    kb = iklim_bilgi_tabani()
+    return {
+        "gun": fc["gun"],
+        "riskler": {
+            crop: climate_risk.assess_climate_risk(
+                fc["tmin"], fc["tmax"], fc["prec"],
+                crop_key=crop, crop_params=kb.get(crop),
+            )
+            for crop in urunler
+        },
+    }
 
 
 def climate_risk_node(state: AgentState) -> AgentState:
@@ -36,7 +66,9 @@ def climate_risk_node(state: AgentState) -> AgentState:
         }}
 
     try:
-        fc = get_forecast_series(lat, lon)
+        sonuc = iklim_riski(lat, lon, _detect_crops(query))
+    except TahminYok as exc:
+        return {"result": {"agent": "climate_risk", "message": str(exc), "data": {}}}
     except Exception as exc:
         return {"result": {
             "agent": "climate_risk",
@@ -44,22 +76,7 @@ def climate_risk_node(state: AgentState) -> AgentState:
             "data": {},
         }}
 
-    if fc["gun"] == 0:
-        return {"result": {
-            "agent": "climate_risk",
-            "message": "Bu konum için tahmin verisi alınamadı.",
-            "data": {},
-        }}
-
-    kb = load_knowledge_base()
-    crops = _detect_crops(query)
-
-    per_crop = {}
-    for crop in crops:
-        risks = climate_risk.assess_climate_risk(
-            fc["tmin"], fc["tmax"], fc["prec"], crop_key=crop, crop_params=kb.get(crop)
-        )
-        per_crop[crop] = risks
+    per_crop = sonuc["riskler"]
 
     # mesaj: en yuksek seviyeli riskleri one al
     order = {"yuksek": 0, "orta": 1, "dusuk": 2}
@@ -70,7 +87,4 @@ def climate_risk_node(state: AgentState) -> AgentState:
         lines.append(f"- {crop.capitalize()}: {rl}")
 
     msg = "16 günlük iklim risk değerlendirmesi:\n" + "\n".join(lines)
-    return {"result": {"agent": "climate_risk", "message": msg, "data": {
-        "gun": fc["gun"],
-        "riskler": per_crop,
-    }}}
+    return {"result": {"agent": "climate_risk", "message": msg, "data": sonuc}}

@@ -1,0 +1,47 @@
+# Docker'a gonderilen baglam (build context) kucuk kalsin.
+#
+# Bu dosya olmadan baglam 546 MB: bunun 468 MB'si data/plantvillage, 71 MB'si
+# data/field_benchmark, 5 MB'si data/ood_holdout. Ucu de hastalik teshis
+# modelinin egitim verisi ve HTTP servisi hicbirine dokunmuyor. Baglam Docker
+# arka planina OLDUGU GIBI kopyalaniyor, yani liste olmasa her kurulum yarim
+# gigabayti bosuna tasirdi.
+#
+# NOT: Dockerfile zaten dosyalari tek tek COPY ediyor, yani bunlar imaja
+# girmezdi. Buradaki kazanc imaj boyutu degil, kurulum SURESI.
+
+data/plantvillage/
+data/field_benchmark/
+data/ood_holdout/
+data/_kaynak/
+data/Crop_recommendation.csv
+
+# Arayuz: kaynak gerekli, kurulan paketler ve eski derleme ciktisi degil.
+# node_modules imaj icinde "npm ci" ile yeniden kuruluyor; disaridan tasimak
+# hem yavas hem de yanlis isletim sistemi ikililerini tasima riski.
+web/node_modules/
+web/dist/
+
+# Streamlit arayuzu ve egitim scriptleri servise dahil degil.
+app/
+paylasim/
+
+# agents/ TUMUYLE haric TUTULAMAZ: sulama/iklim/zararli/karbon/danisman
+# ajanlari artik uc noktalardan cagriliyor, yani Dockerfile onlari COPY
+# ediyor. Blanket "agents/" satiri yuzunden bu COPY "not found" ile kuruluma
+# coktu. Servise girmeyen IKI modul tek tek elenir:
+#   orchestrator.py  -> langgraph istiyor; niyet yonlendirmesi agents/router.py'ye
+#                       tasindi, o bagimliliksiz.
+#   diagnosis_agent.py -> torch+timm istiyor; teshis /teshis'te ONNX ile yapiliyor.
+agents/orchestrator.py
+agents/diagnosis_agent.py
+docs/
+memory/
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.db
+*.sqlite3
+.git/

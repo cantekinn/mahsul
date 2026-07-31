@@ -1,8 +1,12 @@
 """Orkestrator: niyeti belirler ve dogru uzman agent'a yonlendirir.
 
-Sprint 2: tum uzman agent'lar gercek (crop_reco, irrigation, climate_risk,
-pest, diagnosis, advisor). Sadece carbon Sprint 3'e kadar stub.
-Router anahtar-kelime tabanli; ayrica fotograf varsa dogrudan teshise gider.
+Sprint 3 itibariyla YEDI dugumun yedisi de gercek; stub kalmadi (carbon en son
+gerceklendi, bkz agents/carbon_agent.py).
+
+Bu modul langgraph'a bagli oldugu icin canli kaba GIRMIYOR. Ayni yonlendirme
+karari HTTP'de de gerekiyordu; o yuzden karar mantigi agents/router.py'ye
+tasindi ve iki taraf da oradan okuyor. Burada kalan sey yalnizca grafik
+kurulumu.
 """
 from __future__ import annotations
 
@@ -12,47 +16,24 @@ from agents.advisor_agent import advisor_node
 from agents.climate_risk_agent import climate_risk_node
 from agents.diagnosis_agent import diagnosis_node
 from agents.irrigation_agent import irrigation_node
+from agents.carbon_agent import carbon_node
 from agents.pest_agent import pest_node
+from agents.router import INTENT_KEYWORDS, route  # noqa: F401  (disari acik)
 from agents.state import AgentState
 from core.schemas import ClimateData, SoilData
 from models.crop_reco import recommend
 
-# Niyet -> anahtar kelimeler (basit kural tabanli router).
-# Anahtarlar ASCII yazilir; _norm() sorgudaki Turkce karakterleri ASCII'ye katladigi
-# icin "zararlı böcek" gibi Turkce girisler de eslesir.
-INTENT_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "diagnosis": ("hastalik", "yaprak", "leke", "teshis", "curume"),
-    "crop_reco": ("ne ek", "urun", "oneri", "tavsiye", "ekim"),
-    "irrigation": ("sula", "su ", "sulama"),
-    "climate_risk": ("don", "kurak", "risk", "hava", "sicaklik"),
-    "pest": ("bocek", "zararli", "haser"),
-    "carbon": ("karbon", "ayak izi"),
-}
-
-# Turkce -> ASCII katlama (router eslesmesi karakterden bagimsiz olsun)
-_TR_FOLD = str.maketrans("çğıiöşüÇĞİIÖŞÜ", "cgiiosucgiiosu")
-
-
-def _norm(text: str) -> str:
-    return text.translate(_TR_FOLD).lower()
-
 
 def route_intent(state: AgentState) -> AgentState:
-    """Kullanici sorgusundan (veya fotograf varliginda) niyeti cikarir."""
-    if state.get("image_path"):
-        return {"intent": "diagnosis"}     # foto varsa dogrudan teshis
-    query = _norm(state.get("query", ""))
-    for intent, keywords in INTENT_KEYWORDS.items():
-        if any(kw in query for kw in keywords):
-            return {"intent": intent}
-    return {"intent": "advisor"}  # varsayilan: genel danisman
+    """Kullanici sorgusundan (veya fotograf varliginda) niyeti cikarir.
 
-
-def _stub(agent_name: str, message: str):
-    """Henuz yazilmamis agent'lar icin yer tutucu dugum uretir."""
-    def node(state: AgentState) -> AgentState:
-        return {"result": {"agent": agent_name, "message": message, "data": {}}}
-    return node
+    Karar mantigi agents/router.py'de: HTTP katmani da ayni yonlendiriciyi
+    kullaniyor, iki kopya olmasin diye.
+    """
+    return {"intent": route(
+        state.get("query", ""),
+        has_image=bool(state.get("image_path")),
+    )}
 
 
 def crop_reco_node(state: AgentState) -> AgentState:
@@ -78,10 +59,6 @@ def crop_reco_node(state: AgentState) -> AgentState:
     message = "Toprak ve iklime en uygun urunler:\n" + "\n".join(lines)
     return {"result": {"agent": "crop_reco", "message": message, "data": {"oneriler": recos}}}
 
-
-# Sprint 2: uzman agent'lar gercek (ilgili modullerden import edildi).
-# carbon Sprint 3'te gelecek -> simdilik stub.
-carbon_node = _stub("carbon", "[stub] Karbon ayak izi Sprint 3'te gelecek.")
 
 AGENT_NODES = {
     "crop_reco": crop_reco_node,

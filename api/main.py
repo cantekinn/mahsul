@@ -1,0 +1,1601 @@
+"""Tarim Asistani HTTP servisi (FastAPI).
+
+Calistirma:  py -m uvicorn api.main:app --reload --port 8000
+Dokuman   :  http://127.0.0.1:8000/docs
+
+TASARIM KARARLARI (olcume dayali, gerekceleri asagida):
+
+1) YAVAS KATMANLAR (PARSEL VE TOPRAK) AYRI UC NOKTADIR.
+   Olctuk: yer adi + yukselti + iklim katmanlari 1.4-5.1 s suruyor. Parsel
+   sorgusu onbellekte yoksa Overpass butcesi kadar (25 s'ye kadar), SoilGrids
+   ise 1-40 s arasi degisken (ayni sorgu 6 kez sorulunca: 40.4 zaman asimi,
+   37.5, 40.4 zaman asimi, 27.2, 1.2, 22.8 saniye) surebiliyor. Hepsini tek
+   yanitta birlestirmek tum ekrani en yavas katmanin hizina indirirdi; olcumde
+   /konum boylece 46-49 saniye surdu.
+   Bu yuzden /konum bu iki katmani BEKLEMEDEN doner; arayuz /toprak ve
+   /parseller uc noktalarini ayrica ve sonradan cagirip ekrani doldurur.
+
+2) UC NOKTALAR "async def" DEGIL "def".
+   Icerideki her sey requests ile SENKRON HTTP yapiyor. async def icinde
+   senkron bir istek olay dongusunu bloklar ve tek bir 25 saniyelik parsel
+   sorgusu TUM sunucuyu durdururdu. Duz "def" kullanildiginda FastAPI islevi
+   threadpool'a atar, diger istekler akmaya devam eder.
+
+3) DIS SERVIS COKERSE BOS SONUC DONMEYIZ, HATA DONERIZ.
+   Bu projede en cok zarar veren hata tipi tam olarak buydu: dis servis
+   "basarili" derken eksik veri veriyor, biz de onu "veri yok" saniyoruz
+   (Overpass 429 -> "parsel yok", EcoCrop bos KTMPR -> "dona dayanikli").
+   Bu yuzden iklim verisi alinamazsa oneri uc noktasi bos liste degil HTTP 503
+   dondurur. Bos liste "burada hicbir urun yetismez" demektir ve bu bir yalandir.
+"""
+from __future__ import annotations
+
+import json
+import os
+import time
+from datetime import date
+
+from pathlib import Path
+
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
+
+from agents.advisor_agent import advisor_node
+from agents.carbon_agent import carbon_node, karbon_plani
+from agents.climate_risk_agent import TahminYok, climate_risk_node, iklim_riski
+from agents.irrigation_agent import ET0Yok, irrigation_node, sulama_plani
+from agents.pest_agent import SicaklikSerisiYok, pest_node, zararli_durumu
+from agents.router import INTENT_TR, route
+from core.config import settings
+from core.schemas import ClimateData, SoilData
+from knowledge import besin, fao56, gunluk as gunluk_kb, kapsam
+from data.global_location import (
+    SOILGRIDS_HIZLI_BUTCE_S,
+    KonumOzeti,
+    hazir_katmanlar,
+    konum_ozeti,
+    onbellekteki_yer_adi,
+    parselleri_al,
+    rastgele_tarim_noktasi,
+    surum_katmani_al,
+    toprak_al_durum,
+    yer_adi_al,
+)
+from data.one_cikan import ONE_CIKANLAR
+from data import open_meteo
+from data.open_meteo import get_monthly_climate
+from data.parcel_files import load_parcels
+from models.crop_reco.global_reco import AYLAR, bilgi_tabani, gruba_gore, urun_oner
+from models.crop_reco.recommender import _texture_class
+from models.disease.classifier import CROP_TR, label_display
+from models.disease.classifier_onnx import (
+    TeshisModelYok,
+    is_available as teshis_hazir,
+    predict as teshis_predict,
+    status as teshis_durum,
+)
+from models.disease.tedavi import tedavi_bul
+
+app = FastAPI(
+    title="Tarım Asistanı API",
+    description="Dünyanın herhangi bir koordinatı için toprak, iklim, parsel ve "
+                "ürün önerisi. Tüm kaynaklar ücretsiz ve anahtarsızdır: "
+                "SoilGrids (ISRIC), Open-Meteo, OpenStreetMap (Nominatim, Overpass), "
+                "FAO EcoCrop.",
+    version="0.1.0",
+)
+
+# Arayuz ayri porttan (React 5173 / Next 3000) geldigi icin tarayici CORS ister.
+# Canli surumde ARAYUZ_KOKEN ile gercek alan adi verilir.
+_KOKENLER = [k for k in os.getenv("ARAYUZ_KOKEN", "").split(",") if k] or [
+    "http://localhost:3000", "http://127.0.0.1:3000",
+    "http://localhost:5173", "http://127.0.0.1:5173",
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_KOKENLER,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
+
+LAT = Query(..., ge=-90, le=90, description="Enlem")
+LON = Query(..., ge=-180, le=180, description="Boylam")
+
+
+# --------------------------------------------------------------------------
+# Yanit modelleri: arayuz tarafinin tipi /openapi.json'dan uretebilmesi icin
+# --------------------------------------------------------------------------
+
+class ParselYanit(BaseModel):
+    osm_id: int
+    tur: str
+    tur_tr: str
+    alan_m2: float | None = None
+    alan_dekar: float | None = None
+    merkez_lat: float | None = None
+    merkez_lon: float | None = None
+    ad: str | None = None
+    sinir: list[tuple[float, float]] = Field(default_factory=list)
+
+
+class ParsellerYanit(BaseModel):
+    lat: float
+    lon: float
+    durum: str = Field(description='"ok" ise liste kesindir; boşsa gerçekten '
+                                   'parsel yok. Başka bir değerse sunucuya '
+                                   'ulaşılamadı, parsel olup olmadığı BİLİNMİYOR.')
+    kesin: bool = Field(description='durum == "ok" mi. Arayüz boş listeyi '
+                                    '"parsel yok" diye yazmadan önce buna bakmalı.')
+    adet: int
+    parseller: list[ParselYanit]
+    sure_s: float
+
+
+class ToprakYanit(BaseModel):
+    lat: float
+    lon: float
+    durum: str = Field(description='"ok" ise sonuç kesindir. Başka bir değerse '
+                                   'SoilGrids yanıt vermedi, toprak "yok" değil '
+                                   'BİLİNMİYOR demektir.')
+    kesin: bool
+    toprak: SoilData | None = None
+    kaynak_mesafe_km: float | None = Field(
+        default=None,
+        description="0 ise değer tam bu noktanın. Büyükse SoilGrids bu noktada "
+                    "boştu ve değer bu kadar uzaktaki komşu noktadan alındı.")
+    doku_sinifi: str | None = None
+    sure_s: float
+
+
+class KonumYanit(BaseModel):
+    lat: float
+    lon: float
+    yer_adi: str | None = None
+    ulke: str | None = None
+    karada: bool = True
+    yukselti_m: float | None = None
+    toprak: SoilData | None = None
+    toprak_kaynak_mesafe_km: float | None = Field(
+        default=None,
+        description="Toprak verisi tam noktadan gelmediyse kaç km uzaktan alındığı")
+    toprak_durum: str = Field(
+        default="sorgulanmadi",
+        description='Bu uç noktada normalde "sorgulanmadi" olur: toprak yavaş '
+                    'katmandır ve /toprak uç noktasından ayrıca istenir.')
+    iklim: ClimateData | None = Field(
+        default=None,
+        description="30 yıllık normal. Öneri motorunun kullandığı sayının "
+                    "aynısıdır; nem alanı bu kaynakta yoktur.")
+    eksik: list[str] = Field(default_factory=list)
+    sure_s: float
+
+
+class OneriYanit(BaseModel):
+    urun: str
+    ad: str
+    bilimsel_ad: str = ""
+    grup: str = ""
+    skor: float
+    uygunluk: str
+    cok_yillik: bool
+    ekim_ayi: str | None = None
+    hasat_ayi: str | None = None
+    ekim_aylari: list[str] = Field(
+        default_factory=list,
+        description="İklim olarak ekilebilir bulunan TÜM aylar: en iyi ekim "
+                    "ayının puanının %95'inden aşağı düşmeyen aylar. Çok "
+                    "yıllıklarda boştur, çünkü ağaç ekilmez fidan dikilir ve "
+                    "dikim zamanı EcoCrop'ta yoktur. Bu bir EKİM TAKVİMİ "
+                    "DEĞİLDİR: yalnızca sıcaklık uygunluğudur, vernalizasyon "
+                    "ve gün uzunluğu hesaba girmez.")
+    merkezlik: float = Field(
+        default=0.0,
+        description="Ölçülen değerlerin ürünün optimum aralığının neresinde "
+                    "durduğu: 1.0 tam ortası, 0.0 kenarı. PUANA DAHİL DEĞİLDİR; "
+                    "EcoCrop optimum aralığın içini eşit derecede uygun sayar. "
+                    "Aynı puanı alan ürünleri ayırt etmek içindir.")
+    su_acigi_mm: int = 0
+    uygunluk_gaez: float | None = Field(
+        default=None,
+        description="FAO GAEZ v4 Suitability Index (0-100), bu koordinatta bu "
+                    "ürünün ne kadar iyi yetiştiğinin bölgesel ölçümü. Skor "
+                    "buradan 0.7 ağırlıkla hesaba girer; EcoCrop trapezoidinin "
+                    "sıkıştırdığı 90-100 aralığını bölgesel gerçeklikle açar. "
+                    "None ise GAEZ'de bu ürüne eşleme yok veya konum GAEZ "
+                    "yüksek çözünürlük bölgesi (20-48 E, 33-44 N) dışında.")
+    faktorler: list[dict] = Field(default_factory=list)
+    uyarilar: list[str] = Field(default_factory=list)
+    sezon: str = ""
+    notlar: str = ""
+
+
+class IklimOzet(BaseModel):
+    yillik_yagis_mm: float | None = None
+    en_sicak_ay_c: float | None = None
+    en_soguk_ay_c: float | None = None
+    mutlak_min_c: float | None = None
+    yil_sayisi: int = 0
+    ay_sicaklik: list[float | None] = Field(default_factory=list)
+    ay_yagis: list[float | None] = Field(default_factory=list)
+
+
+class OneriKumesi(BaseModel):
+    lat: float
+    lon: float
+    yer_adi: str | None = None
+    ulke: str | None = None
+    toprak: SoilData | None = None
+    toprak_var: bool = Field(
+        description="False ise puanlama SADECE iklime dayanır, pH ve doku "
+                    "faktörleri hesaba girmemiştir.")
+    toprak_durum: str = Field(
+        description='Toprak yoksa nedeni: "ok" gerçekten veri yok, başka bir '
+                    'değer SoilGrids\'e ulaşılamadı.')
+    iklim: IklimOzet
+    toplam_uygun: int = Field(description="Elenmeden kalan ürün sayısı")
+    su_anki_ay: str = Field(
+        description="Sunucunun bulunduğu takvim ayı. Arayüz 'şimdi ekilebilir' "
+                    "ile 'mevsiminde ekilebilir' ayrımını buna göre yapar. "
+                    "Sunucudan gelir çünkü ayrım bir veri sonucudur, kullanıcı "
+                    "cihazının saatine bırakılmamalıdır.")
+    oneriler: list[OneriYanit]
+    sure_s: float
+
+
+# --------------------------------------------------------------------------
+# Yardimcilar
+# --------------------------------------------------------------------------
+
+def _iklim_ozet(iklim: dict) -> IklimOzet:
+    sic = [t for t in iklim["ay_sicaklik"] if t is not None]
+    return IklimOzet(
+        yillik_yagis_mm=iklim.get("yillik_yagis"),
+        en_sicak_ay_c=max(sic) if sic else None,
+        en_soguk_ay_c=min(sic) if sic else None,
+        mutlak_min_c=iklim.get("mutlak_min"),
+        yil_sayisi=iklim.get("yil_sayisi", 0),
+        ay_sicaklik=iklim["ay_sicaklik"],
+        ay_yagis=iklim["ay_yagis"],
+    )
+
+
+class _Girdi(BaseModel):
+    toprak: SoilData
+    toprak_var: bool
+    toprak_durum: str
+    iklim: dict
+    yer_adi: str | None = None
+    ulke: str | None = None
+
+
+def _girdi_topla(lat: float, lon: float) -> _Girdi:
+    """Oneri motorunun ihtiyaci olan toprak + iklim + yer adi.
+
+    Iklim ZORUNLUDUR: alinamazsa hata yukseltilir (bkz modul basligi, madde 3).
+    Toprak ise opsiyoneldir: SoilGrids bazi karelerde deger tutmuyor, ama iklim
+    tek basina da anlamli bir siralama uretir. Eksikligi yanitta toprak_var ve
+    toprak_durum ile ACIKCA bildirilir, sessizce yutulmaz.
+    """
+    try:
+        iklim = get_monthly_climate(lat, lon)
+    except Exception as exc:
+        # SUNUCUNUN KENDI GEREKCESI YAZILIR, istisna sinifinin adi degil.
+        # Onceden "Open-Meteo: RuntimeError" yaziyordu ve bu kullaniciya hicbir
+        # sey anlatmiyordu. Olctuk: gercek sebep "Hourly API request limit
+        # exceeded. Please try again in the next hour." idi; yani servis bozuk
+        # degil, kota dolmus ve bir saat sonra kendiliginden aciliyor. Bu ikisi
+        # kullanici icin taban tabana zit iki durum.
+        gerekce = str(exc) or type(exc).__name__
+        raise HTTPException(
+            status_code=503,
+            detail=f"İklim verisi alınamadı ({gerekce}). İklim olmadan ürün "
+                   f"önerisi üretilemez; boş liste döndürmek 'burada hiçbir "
+                   f"ürün yetişmez' anlamına gelirdi.",
+        ) from exc
+
+    # Toprak icin KISA butce. Gerekce: pH ve doku puanlamada ikincil agirliktadir
+    # (0.6 ve 0.4; sicaklik 1.0, yagis 0.9), yani toprak gelmezse siralama yine
+    # anlamlidir. Buna karsilik SoilGrids'i tam butceyle beklemek onerileri
+    # 60 saniyeye kadar geciktirebilir. Toprak gelmediyse yanitta toprak_var=False
+    # ve toprak_durum ile bildirilir; arayuz /toprak uc noktasi dolunca oneriyi
+    # tazeler. Sessizce "toprak yok" varsayilmaz.
+    toprak, _mesafe, durum = toprak_al_durum(lat, lon, butce_s=SOILGRIDS_HIZLI_BUTCE_S)
+    yer, ulke, _karada = yer_adi_al(lat, lon)
+    return _Girdi(toprak=toprak or SoilData(), toprak_var=toprak is not None,
+                  toprak_durum=durum, iklim=iklim, yer_adi=yer, ulke=ulke)
+
+
+def _parsel_yanit(p) -> ParselYanit:
+    return ParselYanit(
+        osm_id=p.osm_id, tur=p.tur, tur_tr=p.tur_tr,
+        alan_m2=round(p.alan_m2, 1) if p.alan_m2 else None,
+        # Ciftci dekar konusur, metrekare degil. 1 dekar = 1000 m2.
+        alan_dekar=round(p.alan_m2 / 1000, 2) if p.alan_m2 else None,
+        merkez_lat=p.merkez_lat, merkez_lon=p.merkez_lon,
+        ad=p.ad, sinir=p.sinir,
+    )
+
+
+def _konum_yanit(ozet: KonumOzeti, sure: float) -> KonumYanit:
+    return KonumYanit(
+        lat=ozet.lat, lon=ozet.lon, yer_adi=ozet.yer_adi, ulke=ozet.ulke,
+        karada=ozet.karada, yukselti_m=ozet.yukselti_m, toprak=ozet.toprak,
+        toprak_kaynak_mesafe_km=ozet.toprak_kaynak_mesafe_km,
+        toprak_durum=ozet.toprak_durum,
+        iklim=ozet.iklim, eksik=ozet.eksik, sure_s=round(sure, 2),
+    )
+
+
+# --------------------------------------------------------------------------
+# Uc noktalar
+# --------------------------------------------------------------------------
+
+@app.get("/saglik", tags=["servis"], summary="Servis ayakta mı")
+def saglik() -> dict:
+    kb = bilgi_tabani()
+    return {
+        "durum": "ayakta",
+        "urun_sayisi": len(kb),
+        "cok_yillik_sayisi": sum(1 for u in kb.values() if u.get("cok_yillik")),
+    }
+
+
+@app.get("/konum", response_model=KonumYanit, tags=["konum"],
+         summary="Koordinatın tarımsal kimlik kartı (parsel hariç)")
+def konum(lat: float = LAT, lon: float = LON) -> KonumYanit:
+    """Yer adı, ülke, yükselti ve 30 yıllık iklim normali.
+
+    Toprak ve parsel BİLEREK dahil edilmez, ayrı uç noktalardadır (bkz modül
+    başlığı, madde 1). Hiçbir katman akışı durdurmaz; gelmeyen katmanlar
+    `eksik` listesinde isimleriyle bildirilir, sessizce boş geçilmez.
+    """
+    t0 = time.time()
+    try:
+        ozet = konum_ozeti(lat, lon, parsel_ara=False, toprak_ara=False)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _konum_yanit(ozet, time.time() - t0)
+
+
+@app.get("/toprak", response_model=ToprakYanit, tags=["konum"],
+         summary="Toprak özellikleri (SoilGrids, ISRIC)")
+def toprak(lat: float = LAT, lon: float = LON) -> ToprakYanit:
+    """Ayrı uç noktadır çünkü SoilGrids gecikmesi ölçümde 1-40 saniye arası.
+
+    `durum` alanını okumadan boş toprağı yorumlamayın: "ok" değilse bu
+    "burada toprak verisi yok" DEĞİL, "sunucuya ulaşılamadı" demektir.
+    Sonuç bir kez alındığında diske yazılır, aynı 1 km hücresi bir daha
+    beklemez.
+    """
+    t0 = time.time()
+    veri, mesafe, durum = toprak_al_durum(lat, lon)
+    return ToprakYanit(
+        lat=lat, lon=lon, durum=durum, kesin=(durum == "ok"),
+        toprak=veri, kaynak_mesafe_km=mesafe,
+        doku_sinifi=_texture_class(veri) if veri else None,
+        sure_s=round(time.time() - t0, 2),
+    )
+
+
+class BesinBolumu(BaseModel):
+    anahtar: str
+    baslik: str
+    deger: float
+    birim: str = ""
+    sinif: str | None = None
+    aciklama: str
+
+
+class BesinEksik(BaseModel):
+    anahtar: str
+    sebep: str
+
+
+class KilitliElement(BaseModel):
+    element: str
+    sebep: str
+
+
+class LabTesti(BaseModel):
+    element: str
+    test: str
+    gerekce: str
+
+
+class BesinUrunu(BaseModel):
+    ad: str | None = None
+    verimlilik: str | None = Field(
+        default=None, description='EcoCrop FER alanı: low | moderate | high.')
+    ph_araligi: dict | None = None
+    notlar: list[str] = Field(default_factory=list)
+
+
+class OlculenDeger(BaseModel):
+    ad: str
+    deger: float
+    birim: str
+
+
+class BesinYanit(BaseModel):
+    """Toprak besin karnesi.
+
+    GÜBRE DOZU İÇERMEZ ve bu bir eksiklik değil, bilerek verilmiş bir karardır:
+    doz hesabı ürünün kaldırdığı azot tablosunu ve toprağın mineralizasyon
+    hızını ister; ikisi de ölçülemiyor. Uydurulmuş bir doz, tarlaya gerçek
+    gübre attırırdı. Bunun yerine ölçülenden kesin çıkanlar verilir ve
+    ölçülemeyenler için hangi laboratuvar testinin isteneceği yazılır.
+    """
+    lat: float
+    lon: float
+    durum: str = Field(description='"ok" ise sonuç kesindir.')
+    kesin: bool
+    derinlik_cm: float = Field(
+        description="Ölçümün derinliği. Laboratuvar raporlarıyla aynı sürüm "
+                    "katmanı olsun diye üç SoilGrids katmanı kalınlıkla "
+                    "ağırlıklandırılır; 0-5 cm tek başına organik maddeyi "
+                    "ölçülen üç Türk tarım noktasında 1.79-1.80 kat fazla "
+                    "gösteriyordu.")
+    # Bes liste de HER YANITTA gelir, bos olabilir. Varsayilan verilseydi
+    # OpenApi semasinda istege bagli gorunur, uretilen TypeScript tipleri de
+    # "undefined olabilir" derdi; arayuz o zaman hic olusamayacak bir durum
+    # icin dallanma yazmak zorunda kalirdi. Bos liste ile alan yoklugu ayni
+    # sey degil ve semanin bunu soylemesi gerekiyor.
+    olculen: dict[str, OlculenDeger]
+    bolumler: list[BesinBolumu]
+    eksik: list[BesinEksik] = Field(
+        description="Ölçümü gelmediği için HESAPLANMAYAN bölümler ve sebebi.")
+    kilitli: list[KilitliElement] = Field(
+        description="Toprakta bulunsa bile bu pH'ta bitkinin alamayacağı elementler.")
+    laboratuvar: list[LabTesti] = Field(
+        description="Uydu verisinden ölçülemeyen elementler için istenecek test.")
+    urun: BesinUrunu | None = None
+    sure_s: float
+
+
+@app.get("/besin", response_model=BesinYanit, tags=["tarla"],
+         summary="Toprak besin karnesi (0-30 cm sürüm katmanı)")
+def besin_karnesi_uc(lat: float = LAT, lon: float = LON,
+                     urun: str | None = Query(
+                         default=None,
+                         description="Bilgi tabanındaki ürün anahtarı. "
+                                     "Verilirse ürünün pH aralığı ve verimlilik "
+                                     "ihtiyacı toprakla karşılaştırılır.")
+                     ) -> BesinYanit:
+    """Ölçülen toprak değerlerinden ne çıkarılabileceğini, ne çıkarılamayacağını
+    birlikte verir.
+
+    İlk sorgu ~5 saniye sürer: üç derinlik ayrı ayrı çekilir. Sonuç diske
+    yazılır, aynı hücre bir daha beklemez.
+    """
+    t0 = time.time()
+    toprak, durum = surum_katmani_al(lat, lon)
+    if toprak is None:
+        raise HTTPException(
+            503 if durum != "bos" else 404,
+            "Bu nokta için toprak ölçümü alınamadı." if durum != "bos"
+            else "SoilGrids bu noktada değer tutmuyor (deniz, kayalık, kutup).")
+
+    kayit = kapsam.iklim_bilgi_tabani().get(urun) if urun else None
+    if urun and kayit is None:
+        raise HTTPException(422, f"'{urun}' bilgi tabanında yok.")
+
+    karne = besin.besin_karnesi(toprak, kayit)
+    return BesinYanit(
+        lat=lat, lon=lon, durum=durum, kesin=(durum == "ok"),
+        derinlik_cm=30.0, sure_s=round(time.time() - t0, 2), **karne)
+
+
+@app.get("/parseller", response_model=ParsellerYanit, tags=["konum"],
+         summary="Yakındaki tarım parselleri (OpenStreetMap)")
+def parseller(
+    lat: float = LAT,
+    lon: float = LON,
+    yaricap_m: int = Query(2500, ge=200, le=10000,
+                           description="Arama yarıçapı. Geniş yarıçap Overpass'ta "
+                                       "504 aldığı için üst sınır 10 km."),
+    limit: int = Query(40, ge=1, le=200),
+) -> ParsellerYanit:
+    """Ayrı uç noktadır çünkü önbellekte yoksa 25 saniyeye kadar sürebilir.
+
+    `durum` alanını okumadan boş listeyi yorumlamayın: "ok" değilse liste boş
+    olsa bile bu "parsel yok" demek DEĞİLDİR, "sunucuya ulaşılamadı" demektir.
+    """
+    t0 = time.time()
+    liste, durum = parselleri_al(lat, lon, yaricap_m=yaricap_m, limit=limit)
+    return ParsellerYanit(
+        lat=lat, lon=lon, durum=durum, kesin=(durum == "ok"),
+        adet=len(liste), parseller=[_parsel_yanit(p) for p in liste],
+        sure_s=round(time.time() - t0, 2),
+    )
+
+
+@app.get("/oneri", response_model=OneriKumesi, tags=["öneri"],
+         summary="Bu koordinatta ne yetişir (FAO EcoCrop)")
+def oneri(
+    lat: float = LAT,
+    lon: float = LON,
+    adet: int = Query(20, ge=1, le=200, description="Kaç ürün dönsün"),
+    grup: str | None = Query(None, description="Tek bir ürün grubuyla sınırla "
+                                               "(tahıl, sebze, meyve ...)"),
+) -> OneriKumesi:
+    """Sıralama 30 yıllık iklim normali + SoilGrids toprağı ile hesaplanır.
+
+    Puan bir UYGUNLUK puanıdır, karlılık değildir: pazar fiyatı, sözleşmeli
+    tarım ve sulama altyapısı EcoCrop'ta yoktur. "Burada ne yetişir" sorusunu
+    yanıtlar, "burada en çok ne kazandırır" sorusunu değil.
+    """
+    t0 = time.time()
+    g = _girdi_topla(lat, lon)
+
+    hepsi = urun_oner(g.toprak, g.iklim, adet=10_000, lat=lat, lon=lon)
+    secili = [r for r in hepsi if r["grup"] == grup] if grup else hepsi
+
+    return OneriKumesi(
+        lat=lat, lon=lon, yer_adi=g.yer_adi, ulke=g.ulke,
+        toprak=g.toprak if g.toprak_var else None, toprak_var=g.toprak_var,
+        toprak_durum=g.toprak_durum,
+        iklim=_iklim_ozet(g.iklim),
+        toplam_uygun=len(secili),
+        su_anki_ay=AYLAR[date.today().month - 1],
+        oneriler=[OneriYanit(**r) for r in secili[:adet]],
+        sure_s=round(time.time() - t0, 2),
+    )
+
+
+@app.get("/oneri/gruplar", tags=["öneri"],
+         summary="Her ürün grubundan en iyi N ürün")
+def oneri_gruplar(
+    lat: float = LAT,
+    lon: float = LON,
+    grup_basina: int = Query(3, ge=1, le=20),
+) -> dict:
+    """Sadece tepe listeyi göstermek çiftçiyi tek gruba boğuyor (hepsi meyve
+    çıkabiliyor). Gerçek seçenek sunmak için gruplar ayrı ayrı döner.
+    """
+    t0 = time.time()
+    g = _girdi_topla(lat, lon)
+    gruplar = gruba_gore(g.toprak, g.iklim, grup_basina=grup_basina, lat=lat, lon=lon)
+    return {
+        "lat": lat, "lon": lon, "yer_adi": g.yer_adi, "ulke": g.ulke,
+        "toprak_var": g.toprak_var, "toprak_durum": g.toprak_durum,
+        "iklim": _iklim_ozet(g.iklim).model_dump(),
+        "gruplar": {g: [OneriYanit(**r).model_dump() for r in l]
+                    for g, l in gruplar.items()},
+        "sure_s": round(time.time() - t0, 2),
+    }
+
+
+@app.get("/rastgele", response_model=KonumYanit, tags=["konum"],
+         summary="Dünyanın rastgele bir tarım bölgesinden konum")
+def rastgele(
+    tohum: int | None = Query(None, description="Aynı noktayı tekrar üretmek için"),
+    deneme: int = Query(12, ge=1, le=30),
+) -> KonumYanit:
+    """Tamamen rastgele koordinat ~%70 okyanus çıkardığı için seçim dünyanın
+    başlıca tarım havzalarıyla sınırlıdır.
+
+    Toprak ve parsel aranmaz: 12 deneme x (25 s parsel + 60 s toprak) bütçesi en
+    kötü durumda 17 dakika ederdi. Nokta döndükten sonra /toprak ve /parseller
+    ayrıca çağrılır.
+    """
+    t0 = time.time()
+    try:
+        ozet = rastgele_tarim_noktasi(deneme=deneme, tohum=tohum,
+                                      parsel_ara=False, toprak_ara=False)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return _konum_yanit(ozet, time.time() - t0)
+
+
+class KisayolYanit(BaseModel):
+    kisayol_ad: str = Field(
+        description="Listeyi hazırlarken düştüğüm not. VERİ DEĞİLDİR, sadece "
+                    "düğmenin üstünde yazan etikettir.")
+    yer_adi: str | None = Field(
+        default=None,
+        description="OpenStreetMap'ten gelen gerçek yer adı. Önbellekte yoksa "
+                    "null döner; uydurulmaz. Arayüz null ise kisayol_ad yazar.")
+    ulke: str | None = None
+    lat: float
+    lon: float
+    hazir_katmanlar: list[str] = Field(
+        description='Önbellekte gerçekten bulunan katmanlar: "yer", "iklim", '
+                    '"toprak", "parsel". Eksik olan katman düğmeye basınca '
+                    "canlı sorgulanır, yani o katman yavaş açılır.")
+    isitildi: bool = Field(
+        description='Dördü de hazır mı. False ise düğme YİNE ÇALIŞIR, sadece '
+                    "eksik katmanlar beklenir. Bu alan yer adının varlığına "
+                    "değil dört katmanın hepsine bakar.")
+
+
+@app.get("/kisayollar", response_model=list[KisayolYanit], tags=["konum"],
+         summary="Önbelleği hazır olan hızlı erişim noktaları")
+def kisayollar() -> list[KisayolYanit]:
+    """Ücretsiz barındırmada disk kalıcı olmadığı için bu noktaların önbelleği
+    depoya gömülüdür ve kutudan çıkar çıkmaz hazır gelir.
+
+    BU LİSTE UYGULAMAYI HIZLANDIRMAZ. Önbellek anahtarı koordinatı yaklaşık
+    1 km'lik hücreye yuvarlar; dünyanın kara yüzeyi ~149 milyon km2. Birkaç
+    düzine nokta rastgele bir tıklamayı yakalamaz. Sadece BURADAKİ noktalar
+    anında gelir. Bu yüzden arayüzde "popüler" ya da "önerilen" diye değil,
+    hızlı erişim kısayolu olarak sunulur.
+
+    Ağ isteği yapmaz: yer adı yalnızca önbellekte varsa doldurulur.
+    """
+    liste: list[KisayolYanit] = []
+    for notum, lat, lon in ONE_CIKANLAR:
+        ad, ulke = onbellekteki_yer_adi(lat, lon)
+        hazir = hazir_katmanlar(lat, lon)
+        liste.append(KisayolYanit(
+            kisayol_ad=notum, yer_adi=ad, ulke=ulke, lat=lat, lon=lon,
+            hazir_katmanlar=hazir,
+            # DORT KATMANIN DORDU. Yer adinin varligina bakmak yetmiyordu:
+            # yer adi onbellekte olup iklimi olmayan noktalarda "hazir"
+            # yazip acilmiyordu.
+            isitildi=len(hazir) == 4,
+        ))
+    return liste
+
+
+@app.get("/urunler", tags=["öneri"], summary="Bilgi tabanındaki tüm ürünler")
+def urunler() -> dict:
+    """Arayüzdeki grup filtresi ve ürün arama kutusu bunu kullanır.
+
+    `don_dinlenme_kaynak` alanı kasıtlı olarak dışarı verilir: kış dayanıklılığı
+    değerlerinin bir kısmı EcoCrop'ta boş olduğu için elle tamamlandı ve hangi
+    değerin nereden geldiği gizlenmemelidir.
+    """
+    kb = bilgi_tabani()
+    liste = [{
+        "urun": k,
+        "ad": u["ad"],
+        "bilimsel_ad": u.get("bilimsel_ad", ""),
+        "grup": u.get("grup", ""),
+        "cok_yillik": bool(u.get("cok_yillik")),
+        "sicaklik": u["sicaklik"],
+        "yagis_mm": u["yagis_mm"],
+        "ph": u["ph"],
+        "don_dinlenme_c": u.get("don_dinlenme_c"),
+        "don_dinlenme_kaynak": u.get("don_dinlenme_kaynak"),
+    } for k, u in sorted(kb.items(), key=lambda x: x[1]["ad"])]
+    gruplar = sorted({u["grup"] for u in liste if u["grup"]})
+    return {"adet": len(liste), "gruplar": gruplar, "urunler": liste}
+
+
+# --------------------------------------------------------------------------
+# Hastalik teshis (yaprak fotografi -> etiket + tedavi)
+# --------------------------------------------------------------------------
+# ONNX FP32 model (77 MB) + onnxruntime. Torch canliya girmez. Model dosyasi
+# yoksa (gelistirici surumu, model henuz commit edilmemis) uc nokta 503 doner;
+# 500 degil, cunku eksik dosya sunucu hatasi degil kurulum eksigi.
+
+MAX_TESHIS_BYTES = 6 * 1024 * 1024  # 6 MB. Mobil kamera JPEG'i 2-4 MB, yer var.
+
+
+class TopKMadde(BaseModel):
+    etiket: str = Field(..., description="Model etiketi, ornek 'domates_erken_yaniklik'.")
+    # Alt tahminler de arayuzde OKUNUR metin olarak cikiyor. Ham etiketin alt
+    # cizgilerini bosluga cevirmek yetmiyordu: "patates erken yaniklik" gibi
+    # Turkce karakteri olmayan bir metin uretiyordu. Ceviri ana etiketle AYNI
+    # kaynaktan (label_display) geliyor ki ayni hastalik iki yerde iki farkli
+    # adla gorunmesin.
+    etiket_tr: str = Field(..., description="Okunabilir Turkce ad.")
+    guven: float = Field(..., ge=0.0, le=1.0)
+
+
+class TedaviKaydi(BaseModel):
+    ad: str
+    konak: list[str] = []
+    belirti: str = ""
+    dogal: str = ""
+    kimyasal: str = ""
+    korunma: str = ""
+
+
+class Kirpma(BaseModel):
+    """Modelin gercekte gordugu kare, ORIJINAL fotografin pikselinde.
+
+    Model kisa kenari 224'e olcekleyip merkezden kare kesiyor; kullanici ise
+    tam fotografi goruyor. Isi haritasi tam fotografin uzerine cizilseydi
+    kenarlardaki kayma yuzunden isi yanlis yaprak parcasina duserdi.
+    """
+    x: float
+    y: float
+    boyut: float = Field(..., description="Kare kenari (piksel).")
+    genislik: int = Field(..., description="Yuklenen fotografin genisligi.")
+    yukseklik: int = Field(..., description="Yuklenen fotografin yuksekligi.")
+
+
+class TekrarKaydi(BaseModel):
+    """Ayni hastaligin gunlukte daha once yazilmis olmasi.
+
+    HUKUM ICERMEZ. "Ilac ise yaramadi" demiyoruz: ayni hastaligin tekrar
+    gorulmesinin ilacin etkisizligi, yanlis doz, yeniden bulasma veya komsu
+    tarladan tasinma gibi ayirt edemedigimiz sebepleri olabilir. Yan yana
+    konan iki olgu, gunluge bakan ciftcinin zaten gorecegi seydir.
+    """
+    onceki_tarih: str
+    gecen_gun: int
+    ilac_sayisi: int = Field(..., description="İki teşhis arasında kayıtlı ilaçlama sayısı.")
+    ilac_son: str | None = None
+    cumle: str
+
+
+class TeshisYanit(BaseModel):
+    """Yaprak fotografindan hastalik teshis sonucu.
+
+    seviye anlami:
+      - kesin: yuksek guven + margin (dogrudan tedavi one cikar)
+      - olasi: orta guven veya cekismeli iki sinif (kullaniciya alternatif goster)
+      - belirsiz: guven cok dusuk (yeni foto iste)
+      - tanimsiz: model 'diger' dedi (hedef urunlerden biri degil)
+    """
+    etiket: str = Field(..., description="Model etiketi (ASCII, snake_case).")
+    etiket_tr: str = Field(..., description="Turkce ad, kullanicida gosterilir.")
+    guven: float = Field(..., ge=0.0, le=1.0)
+    margin: float = Field(..., description="Top1 - Top2 guven farki.")
+    seviye: str = Field(..., description="kesin | olasi | belirsiz | tanimsiz")
+    belirsiz: bool
+    sebep: str | None = Field(None, description="hedef_disi | cekismeli | orta_guven | guven_dusuk")
+    urun: str | None = Field(None, description="Tahmin edilen urun grubu (ornek 'domates').")
+    urun_tr: str | None
+    urun_guven: float
+    topk: list[TopKMadde]
+    tedavi: TedaviKaydi | None = Field(None, description="treatments.yaml kaydi. Saglikli/tanimsiz icin null.")
+    uyari: str | None = Field(None, description="Seviyeye gore kullaniciya mesaj.")
+    isi: list[list[float]] | None = Field(
+        None,
+        description="Sinif etkinlik haritasi (CAM), 7x7, 0-1 arasi normalize. "
+                    "Top-1 sinifin logitinin mekansal ayrisimi: kareler "
+                    "toplandiginda modelin o sinifa verdigi puani yeniden "
+                    "kurar. Model dosyasi yamalanmamissa null.")
+    kirpma: Kirpma | None = Field(None, description="Isi haritasinin oturdugu kare.")
+    tekrar: TekrarKaydi | None = Field(
+        None,
+        description="Sezon günlüğü gönderildiyse ve aynı hastalık daha önce "
+                    "de teşhis edildiyse dolar. Fotoğraftan çıkmaz; geçmiş "
+                    "kayıttan çıkar.")
+
+
+def _tekrar_cumlesi(t: dict, etiket_tr: str) -> str:
+    """Kayıttan okunanı düz cümleye çevirir; yorum eklemez."""
+    bas = f"{etiket_tr}, {t['gecen_gun']} gün önce ({t['onceki_tarih']}) de teşhis edilmişti."
+    if t["ilac_sayisi"] == 0:
+        return bas + " Arada günlüğe ilaçlama yazılmamış."
+    return (bas + f" Arada {t['ilac_sayisi']} ilaçlama kayıtlı, "
+                  f"sonuncusu {t['ilac_son']}.")
+
+
+def _gunluk_coz(ham: str | None) -> list[dict]:
+    """İstemciden gelen günlük JSON'unu güvenle listeye çevirir.
+
+    Günlük TARAYICIDA tutuluyor, yani bu girdi kullanıcı tarafından
+    değiştirilebilir. Bozuk JSON teşhisi düşürmemeli: teşhis fotoğraftan
+    çıkar, günlük yalnızca ek bilgidir. Bu yüzden hata yutulur ve boş liste
+    dönülür; 400 atmak, asıl işi yan bilgiye bağımlı kılardı.
+    """
+    if not ham:
+        return []
+    try:
+        veri = json.loads(ham)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(veri, list):
+        return []
+    return [k for k in veri if isinstance(k, dict)][:500]
+
+
+def _uyari_metni(seviye: str, sebep: str | None) -> str | None:
+    """Seviye + sebebe gore kisa mesaj. Sabit metinler; i18n yok (TR tek dil)."""
+    if seviye == "kesin":
+        return None
+    if seviye == "olasi":
+        if sebep == "cekismeli":
+            return "İki hastalık benzer görünüyor. Alt seçenekleri de kontrol edin."
+        return "Orta güven. Farklı bir yapraktan ikinci bir fotoğraf çekmeniz önerilir."
+    if seviye == "belirsiz":
+        return "Güven düşük. Yaprağı ışıkta ve yakından, tek yaprağa odaklanarak yeniden çekin."
+    if seviye == "tanimsiz":
+        return "Model bu görüntüyü desteklenen ürünlerden biri olarak tanımadı. Desteklenen ürünler: " + ", ".join(sorted(CROP_TR.values())) + "."
+    return None
+
+
+@app.post("/teshis", response_model=TeshisYanit, tags=["teshis"],
+          summary="Yaprak fotoğrafından hastalık teşhisi (ONNX)")
+async def teshis(
+    dosya: UploadFile = File(..., description="Yaprak fotoğrafı (JPG/PNG)."),
+    gunluk: str | None = Form(
+        None,
+        description="Sezon günlüğü kayıtları, JSON dizisi: "
+                    '[{"tarih":"2026-07-05","tur":"teshis","etiket":"..."}]. '
+                    "Verilirse aynı hastalığın tekrarı yanıtta bildirilir."),
+) -> TeshisYanit:
+    """Yaprak fotoğrafı yükle, hastalık etiketi + tedavi kaydı al.
+
+    Boyut sınırı 6 MB, MIME tipi image/* olmalıdır. Yanıt sözleşmesi TeshisYanit.
+
+    Günlük gönderilirse teşhisin kendisi DEĞİŞMEZ; yalnızca `tekrar` alanı
+    dolar. Modelin çıktısını geçmiş kayda göre kaydırmak, aynı fotoğrafın
+    iki farklı çiftçide iki farklı sonuç vermesi demek olurdu.
+    """
+    # 1) MIME kontrolu. UploadFile.content_type "image/jpeg", "image/png" gibi.
+    #    Bosluk / farkli tip gelirse 415 doner (400 degil; icerik tipi hatasi).
+    ct = (dosya.content_type or "").lower()
+    if not ct.startswith("image/"):
+        raise HTTPException(415, f"Görüntü dosyası bekleniyor, alınan: {ct or 'bilinmiyor'}")
+
+    # 2) Model hazir mi? Dosya veya onnxruntime yoksa 503. Kullaniciya net mesaj.
+    if not teshis_hazir():
+        raise HTTPException(503, f"Teşhis modeli hazır değil: {teshis_durum()}")
+
+    # 3) Baytlari oku. UploadFile.read() bellekten olsa da tamamini yukleyip
+    #    boyut sinirina uymayan istegi kestik: UploadFile.file.seek(0, 2)
+    #    ile once size'i alabilirdik ama SpooledTemporaryFile'da her zaman
+    #    calismiyor; okuma sonrasi len() kontrolu 6 MB tavani icin yeterli.
+    veri = await dosya.read()
+    if len(veri) > MAX_TESHIS_BYTES:
+        raise HTTPException(
+            413, f"Dosya çok büyük: {len(veri)/1024/1024:.1f} MB (üst sınır 6 MB)"
+        )
+    if not veri:
+        raise HTTPException(400, "Dosya boş")
+
+    # 4) Cikarim. Model bozuksa (dosya var ama okunamaz) TeshisModelYok atar,
+    #    Pillow gecerli imaj degilse UnidentifiedImageError -> 400'e cevrilir.
+    try:
+        sonuc = teshis_predict(veri)
+    except TeshisModelYok as e:
+        raise HTTPException(503, f"Teşhis modeli çalışmadı: {e}") from e
+    except Exception as e:
+        # PIL UnidentifiedImageError, decode hatasi vb. 400 kullanici hatasi.
+        raise HTTPException(400, f"Görüntü çözülemedi: {type(e).__name__}: {e}") from e
+
+    # 5) Zenginlestir: TR ad, urun TR, tedavi kaydi, uyari.
+    tedavi_dict = tedavi_bul(sonuc["etiket"])
+
+    # 6) Hafiza: ayni etiket gunlukte daha once var mi. Bozuk gunluk teshisi
+    #    dusurmez (bkz _gunluk_coz), tarih bozuksa da tekrar kaydi uretilmez.
+    etiket_tr = label_display(sonuc["etiket"])
+    tekrar_model = None
+    kayitlar = _gunluk_coz(gunluk)
+    if kayitlar:
+        try:
+            t = gunluk_kb.tekrar_teshis(kayitlar, sonuc["etiket"])
+        except ValueError:
+            t = None      # gunlukte gecersiz tarih dizgisi
+        if t:
+            tekrar_model = TekrarKaydi(**t, cumle=_tekrar_cumlesi(t, etiket_tr))
+
+    return TeshisYanit(
+        etiket=sonuc["etiket"],
+        etiket_tr=etiket_tr,
+        guven=sonuc["guven"],
+        margin=sonuc["margin"],
+        seviye=sonuc["seviye"],
+        belirsiz=sonuc["belirsiz"],
+        sebep=sonuc["sebep"],
+        urun=sonuc["urun"],
+        urun_tr=CROP_TR.get(sonuc["urun"]) if sonuc["urun"] else None,
+        urun_guven=sonuc["urun_guven"],
+        topk=[
+            TopKMadde(etiket=m["etiket"], etiket_tr=label_display(m["etiket"]), guven=m["guven"])
+            for m in sonuc["topk"]
+        ],
+        tedavi=TedaviKaydi(**tedavi_dict) if tedavi_dict else None,
+        uyari=_uyari_metni(sonuc["seviye"], sonuc["sebep"]),
+        isi=sonuc.get("isi"),
+        kirpma=Kirpma(**sonuc["kirpma"]) if sonuc.get("kirpma") else None,
+        tekrar=tekrar_model,
+    )
+
+
+# --------------------------------------------------------------------------
+# Tarla takvimi: sulama, iklim riski, zararli (Sprint 2 ajanlari)
+# --------------------------------------------------------------------------
+# Hesap agents/ altindaki saf fonksiyonlarda; buradaki katman yalnizca girdi
+# dogrulamasi, Turkce adlandirma ve HATA SEMANTIGI ekler.
+#
+# NEDEN LANGGRAPH KAPTA YOK: uc ajanin hesabi bagimsiz. Orkestrator yalnizca
+# serbest metinden niyet cikarmak icin var; burada niyeti kullanici zaten
+# sekme secerek soyluyor. langgraph + langchain-core'u 512 MB'lik ucretsiz
+# katmana (icinde 77 MB ONNX modeli var) sirf kullanilmayacak bir yonlendirici
+# icin sokmak, olculmus bir fayda olmadan bellek riski almak olurdu.
+#
+# NEDEN AYRI UC UC NOKTA: ucu de Open-Meteo'ya AYRI sorgu atiyor (7 gunluk
+# ET0, 16 gunluk tahmin, 1 Mart'tan bugune arsiv). Tek uc noktada birlestirmek
+# en yavas olani beklemek demekti; ayri olunca tarayici ucunu paralel cekip
+# hangisi geldiyse onu gosteriyor.
+
+_ASAMA_TR = {"ini": "başlangıç", "mid": "gelişme", "end": "hasat"}
+
+# Risk turu anahtarlari ASCII (knowledge/climate_risk.py). Arayuzde rozet
+# olarak GORUNUYORLAR, bu yuzden okunur karsiliklari burada. Kaynak tabloya
+# yeni bir tur eklenirse burada karsiligi yoksa anahtarin kendisi yazilir;
+# sessizce bos rozet cikmasindansa ham anahtar gorunsun.
+_RISK_TUR_TR = {
+    "don": "don",
+    "soguk": "soğuk",
+    "sicak": "sıcak",
+    "yagis": "yağış",
+    "kuraklik": "kuraklık",
+    "uygunluk": "uygunluk",
+    "genel": "genel",
+}
+
+URUN_Q = Query(
+    None,
+    description="Ürün anahtarı. Boş bırakılırsa bölge hedef ürünleri "
+                "(" + ", ".join(settings.target_crops) + ") kullanılır.",
+)
+
+
+def _urun_tr(anahtar: str) -> str:
+    """Urun anahtarinin arayuzde gorunecek Turkce adi.
+
+    Kaynak sirasi bilerek boyle: bilgi tabanindaki 'ad' alani 116 urunu de
+    kapsar ve dogru Turkce karakterleri tasir; CROP_TR yalnizca hastalik
+    modelinin 16 urununu bilir. Son care olarak anahtarin kendisi yazilir ama
+    alt cizgiler bosluga cevrilir - kullaniciya 'Yer_fistigi' gostermek arayuz
+    hatasi gibi gorunur.
+    """
+    kayit = kapsam.iklim_bilgi_tabani().get(anahtar)
+    if isinstance(kayit, dict) and kayit.get("ad"):
+        return kayit["ad"]
+    return CROP_TR.get(anahtar, anahtar.replace("_", " ").capitalize())
+
+
+def _urunleri_coz(urun: str | None, yetenek: str) -> tuple[str, ...]:
+    """Tek urun adini O UC NOKTANIN kapsamina gore dogrular.
+
+    Kapsam uc noktaya gore DEGISIR (bkz knowledge/kapsam.py): iklim riski 116
+    urun cevaplar, sulama 84, zararli 5. Once hepsi ortak 6 urunluk listeyle
+    dogrulaniyordu; bu, iklim riski hesaplanabilen 110 urunu var olmayan bir
+    sinira takiyordu.
+
+    Desteklenmeyen urunde 422 atilir ve mesaj O YETENEGIN kendi gerekcesini
+    yazar. Sessizce hedef urunlere dusmek kullaniciyi 'zeytin' isteyip domates
+    plani almaya goturur.
+    """
+    if urun is None:
+        return tuple(settings.target_crops)
+    if not kapsam.destekli(yetenek, urun):
+        raise HTTPException(422, f"'{urun}' bu hesap için kapsam dışında. "
+                                 f"{kapsam.YETENEK_GEREKCE[yetenek]}")
+    return (urun,)
+
+
+class KapsamUrunu(BaseModel):
+    anahtar: str
+    ad: str = Field(..., description="Arayüzde görünen Türkçe ad.")
+
+
+class KapsamYanit(BaseModel):
+    """Bir yetenegin cevaplayabildigi urunler. Arayuz listeyi buna gore isaretler."""
+    yetenek: str
+    urunler: list[KapsamUrunu]
+    gerekce: str = Field(..., description="Kapsam dışı üründe gösterilecek sebep.")
+
+
+@app.get("/kapsam", response_model=list[KapsamYanit], tags=["tarla"],
+         summary="Her tarla hesabının kapsadığı ürünler")
+def kapsam_listesi() -> list[KapsamYanit]:
+    """Hangi hesabın hangi ürünü cevaplayabildiği.
+
+    Arayüz bunu bir kez çeker ve ürün listesinde kapsam dışı olanları
+    gizlemek yerine sebebiyle birlikte işaretler.
+    """
+    return [
+        KapsamYanit(
+            yetenek=y,
+            # Turkce ada gore siralanir, anahtara gore degil: listeyi okuyan
+            # kullanici 'Ü' harfini 'uzum' anahtarinin yerinde arar.
+            urunler=sorted(
+                (KapsamUrunu(anahtar=k, ad=_urun_tr(k)) for k in kapsam.kapsam(y)),
+                key=lambda u: u.ad.lower(),
+            ),
+            gerekce=kapsam.YETENEK_GEREKCE[y],
+        )
+        for y in kapsam.YETENEKLER
+    ]
+
+
+def _hava_503(exc: Exception, ne: str) -> HTTPException:
+    """Open-Meteo susunca 503 + SUNUCUNUN KENDI GEREKCESI (bkz _girdi_topla)."""
+    return HTTPException(503, f"{ne} ({str(exc) or type(exc).__name__}).")
+
+
+class SulamaPlani(BaseModel):
+    urun: str
+    urun_tr: str
+    stage: str
+    kc: float = Field(..., description="FAO-56 bitki katsayısı.")
+    et0_mm_gun: float
+    etc_mm_gun: float = Field(..., description="Bitki su tüketimi ET0 x Kc.")
+    net_mm_gun: float = Field(..., description="Etkili yağış düşülmüş net sulama.")
+    litre_gun: float | None = Field(None, description="Parsel alanı verildiyse L/gün.")
+
+
+class SulamaYanit(BaseModel):
+    lat: float
+    lon: float
+    et0_mm_gun: float
+    yagis_mm_donem: float
+    gun: int
+    asama: str
+    asama_tr: str
+    planlar: list[SulamaPlani]
+    uyari: str
+
+
+class RiskMaddesi(BaseModel):
+    tur: str = Field(..., description="don | soguk | sicak | yagis | kuraklik")
+    tur_tr: str = Field(..., description="Arayüzde gösterilen okunur ad.")
+    seviye: str = Field(..., description="yuksek | orta | dusuk")
+    aciklama: str
+
+
+class UrunRiski(BaseModel):
+    urun: str
+    urun_tr: str
+    riskler: list[RiskMaddesi]
+
+
+class IklimRiskYanit(BaseModel):
+    lat: float
+    lon: float
+    gun: int = Field(..., description="Değerlendirilen tahmin günü sayısı.")
+    urunler: list[UrunRiski]
+    uyari: str
+
+
+class ZararliDurumu(BaseModel):
+    zararli: str
+    toplam_gdd: float
+    nesil: int
+    evre: str
+    sonraki_evre_ad: str | None = None
+    sonraki_evre_gdd: float | None = None
+    aciklama: str
+
+
+class ZararliYanit(BaseModel):
+    lat: float
+    lon: float
+    gun: int
+    biofix: str = Field(..., description="Derece-gün birikiminin başladığı tarih.")
+    durumlar: list[ZararliDurumu]
+    uyari: str
+
+
+@app.get("/sulama", response_model=SulamaYanit, tags=["tarla"],
+         summary="FAO-56 günlük sulama planı")
+def sulama(
+    lat: float = LAT,
+    lon: float = LON,
+    urun: str | None = URUN_Q,
+    asama: str = Query("mid", pattern="^(ini|mid|end)$",
+                       description="ini=başlangıç, mid=gelişme, end=hasat"),
+    alan_m2: float | None = Query(None, gt=0, le=1e8,
+                                  description="Parsel alanı. Verilirse L/gün hesaplanır."),
+) -> SulamaYanit:
+    """Önümüzdeki 7 günün ET0 ve yağış tahmininden net sulama ihtiyacı.
+
+    Net sulama = ETc - etkili yağış. Sonuç bir üst sınır değil ihtiyaçtır:
+    toprak nemi, sulama yönteminin verimi ve tuzluluk yıkama payı bu hesapta
+    yoktur.
+    """
+    urunler = _urunleri_coz(urun, "sulama")
+    try:
+        sonuc = sulama_plani(lat, lon, urunler, asama, alan_m2)
+    except ET0Yok as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except fao56.KcYok as exc:
+        # urun=None ile gelen bolge hedef urunlerinden biri Kc'siz ise buraya
+        # duser. _urunleri_coz onu dogrulamadi cunku kullanici secmedi; yine de
+        # 500 degil kapsam cevabi donmeli.
+        raise HTTPException(422, f"'{exc.args[0]}' bu hesap için kapsam dışında. "
+                                 f"{kapsam.YETENEK_GEREKCE['sulama']}") from exc
+    except Exception as exc:
+        raise _hava_503(exc, "Sulama planı için hava verisi alınamadı") from exc
+
+    return SulamaYanit(
+        lat=lat, lon=lon,
+        et0_mm_gun=sonuc["et0_mm_gun"],
+        yagis_mm_donem=sonuc["yagis_mm_donem"],
+        gun=sonuc["gun"],
+        asama=asama,
+        asama_tr=_ASAMA_TR[asama],
+        planlar=[
+            SulamaPlani(urun_tr=_urun_tr(p["urun"]), **p)
+            for p in sonuc["planlar"]
+        ],
+        uyari="Net sulama ihtiyacıdır. Damla sulamada verim payı, toprak nemi "
+              "ve tuzluluk yıkaması bu hesapta yok; yerel tarım müdürlüğünün "
+              "önerisiyle birlikte değerlendirin.",
+    )
+
+
+class GunlukYanit(BaseModel):
+    """Son sulamadan bu yana biriken net su açığı.
+
+    /sulama'dan FARKI, ve bu fark özelliğin varlık sebebidir: /sulama
+    ÖNÜMÜZDEKİ 7 günün tahminine bakar ve "günde kaç mm ver" der. Burası
+    GEÇMİŞE bakar ve "en son suladığın günden bu yana ne kadar borç
+    birikti" der. İkincisi tarlanın kendi geçmişi olmadan hesaplanamaz;
+    hafızanın cevabı değiştirdiği tek yer budur.
+
+    Açık, toprakta o kadar su EKSİK demek değildir: toprağın tuttuğu nem
+    bu hesapta yok (ölçülmüyor). Bitkinin o günlerde tükettiği su ile o
+    günlerde düşen yağışın farkıdır.
+    """
+    lat: float
+    lon: float
+    urun: str
+    urun_tr: str
+    asama: str
+    asama_tr: str
+    son_sulama: str
+    gecen_gun: int
+    kc: float
+    etc_mm: float = Field(..., description="Geçen günlerin toplam bitki su tüketimi.")
+    yagis_mm: float = Field(..., description="Aynı günlerin ölçülen ham yağışı.")
+    etkili_yagis_mm: float = Field(..., description="Yağışın bitkiye ulaşan kısmı (%80).")
+    acik_mm: float
+    litre_dekar: float
+    yorum: str
+    uyari: str
+
+
+@app.get("/gunluk", response_model=GunlukYanit, tags=["tarla"],
+         summary="Son sulamadan bu yana biriken su açığı")
+def gunluk_su_acigi(
+    lat: float = LAT,
+    lon: float = LON,
+    urun: str = Query(..., description="Kc gerektiği için zorunlu."),
+    son_sulama: date = Query(..., description="Son sulama tarihi (YYYY-AA-GG)."),
+    asama: str = Query("mid", pattern="^(ini|mid|end)$",
+                       description="ini=başlangıç, mid=gelişme, end=hasat"),
+) -> GunlukYanit:
+    """Sezon günlüğündeki son sulama tarihi + ölçülen hava verisi.
+
+    Sulama gününün kendisi hesaba katılmaz (toprak o gün zaten ıslaktır),
+    ertesi günden başlanır. Yağışın %80'i etkili sayılır (FAO-56).
+    """
+    if not fao56.kc_var_mi(urun):
+        raise HTTPException(422, f"'{urun}' bu hesap için kapsam dışında. "
+                                 f"{kapsam.YETENEK_GEREKCE['sulama']}")
+    bugun = date.today()
+    gecen = (bugun - son_sulama).days
+    if gecen < 0:
+        raise HTTPException(422, "Son sulama tarihi gelecekte olamaz.")
+    if gecen > open_meteo.GECMIS_GUN_TAVANI:
+        raise HTTPException(
+            422,
+            f"Son sulama {gecen} gün önce. Hava verisi "
+            f"{open_meteo.GECMIS_GUN_TAVANI} güne kadar geriye gidiyor; "
+            "bu kadar uzun bir aradan sonra biriken açığı toplamak zaten "
+            "sulama kararına dayanak olmaz.")
+
+    try:
+        # +1: sulama gununu de pencereye alalim ki kesme noktasi pencerenin
+        # tam kenarina denk geldiginde ilk gun disarida kalmasin.
+        seri = open_meteo.get_gunluk_su_serisi(lat, lon, gecmis_gun=gecen + 1)
+    except Exception as exc:
+        raise _hava_503(exc, "Geçmiş hava verisi alınamadı") from exc
+
+    try:
+        s = gunluk_kb.birikmis_acik(seri["tarih"], seri["et0"], seri["yagis"],
+                                    son_sulama, urun, asama, bugun)
+    except gunluk_kb.GunlukVeriYok as exc:
+        # Bugun sulandiysa buraya duser. 404 degil 422: istek gecerli, ama
+        # hesaplanacak gun yok. Sifir acik DONDURULMEZ (bkz knowledge/gunluk).
+        raise HTTPException(422, f"Açık hesaplanamadı: {exc}. "
+                                 "Sulamadan sonra en az bir tam gün geçmeli.") from exc
+
+    # Gunluk ETc, acigin "kac gunluk tuketime denk" oldugunu soylemek icin:
+    # gecen gunlerin ortalamasi alinir, ayri bir API cagrisi yapilmaz.
+    gunluk_etc = s["etc_mm"] / s["gecen_gun"]
+    return GunlukYanit(
+        lat=lat, lon=lon,
+        urun=urun, urun_tr=_urun_tr(urun),
+        asama=asama, asama_tr=_ASAMA_TR[asama],
+        son_sulama=son_sulama.isoformat(),
+        yorum=gunluk_kb.acik_yorumu(s, gunluk_etc),
+        uyari="Toprakta hâlihazırda bulunan nem bu hesapta yok; açık, "
+              "bitkinin tükettiği su ile düşen yağışın farkıdır. Sulama "
+              "yönteminin verim payı da eklenmemiştir.",
+        **s,
+    )
+
+
+@app.get("/iklim-riski", response_model=IklimRiskYanit, tags=["tarla"],
+         summary="16 günlük tahminden ürüne özel risk")
+def iklim_risk(
+    lat: float = LAT,
+    lon: float = LON,
+    urun: str | None = URUN_Q,
+) -> IklimRiskYanit:
+    """Don, soğuk, sıcak, aşırı yağış ve kuraklık riskleri.
+
+    Eşikler ürünün EcoCrop sıcaklık trapezinden gelir, genel bir hava uyarısı
+    değildir: aynı 5 °C gece domates için riskli, zeytin için değildir.
+    """
+    urunler = _urunleri_coz(urun, "iklim")
+    try:
+        sonuc = iklim_riski(lat, lon, urunler)
+    except TahminYok as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except Exception as exc:
+        raise _hava_503(exc, "İklim riski için hava tahmini alınamadı") from exc
+
+    return IklimRiskYanit(
+        lat=lat, lon=lon, gun=sonuc["gun"],
+        urunler=[
+            UrunRiski(
+                urun=k, urun_tr=_urun_tr(k),
+                riskler=[
+                    RiskMaddesi(tur_tr=_RISK_TUR_TR.get(r["tur"], r["tur"]), **r)
+                    for r in v
+                ],
+            )
+            for k, v in sonuc["riskler"].items()
+        ],
+        uyari="Risk listesi boşsa 'önümüzdeki 16 günde bu ürün için eşik "
+              "aşımı yok' demektir; 'hiç risk yok' demek değildir.",
+    )
+
+
+@app.get("/zararli", response_model=ZararliYanit, tags=["tarla"],
+         summary="Derece-gün ile zararlı nesil/evre tahmini")
+def zararli(
+    lat: float = LAT,
+    lon: float = LON,
+    urun: str | None = URUN_Q,
+) -> ZararliYanit:
+    """1 Mart'tan bugüne biriken derece-gün ile zararlının hangi evrede olduğu.
+
+    Mücadele zamanlaması için izleme penceresi verir, ilaçlama reçetesi değildir.
+    Ürünün tabloda kaydı yoksa liste boş döner; bu hata değildir.
+    """
+    urunler = _urunleri_coz(urun, "zararli")
+    try:
+        sonuc = zararli_durumu(lat, lon, urunler)
+    except SicaklikSerisiYok as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except Exception as exc:
+        raise _hava_503(exc, "Zararlı tahmini için sıcaklık serisi alınamadı") from exc
+
+    return ZararliYanit(
+        lat=lat, lon=lon, gun=sonuc["gun"], biofix=sonuc["biofix"],
+        durumlar=[
+            ZararliDurumu(
+                zararli=d["zararli"], toplam_gdd=d["toplam_gdd"],
+                nesil=d["nesil"], evre=d["evre"],
+                sonraki_evre_ad=d["sonraki_evre"][0] if d["sonraki_evre"] else None,
+                sonraki_evre_gdd=d["sonraki_evre"][1] if d["sonraki_evre"] else None,
+                aciklama=d["not"],
+            )
+            for d in sonuc["durumlar"]
+        ],
+        uyari="Derece-gün modeli sıcaklığa dayanır. Tuzak sayımıyla "
+              "doğrulanmadan ilaçlama kararı vermeyin.",
+    )
+
+
+# --------------------------------------------------------------------------
+# Karbon ayak izi (Sprint 3)
+# --------------------------------------------------------------------------
+
+
+class KarbonKalemi(BaseModel):
+    ad: str
+    kg_co2e: float
+    kaynak: str = Field(..., description="Kullanılan emisyon faktörü ve kaynağı.")
+
+
+class KarbonAzaltim(BaseModel):
+    baslik: str
+    aciklama: str
+    kazanc_kg_co2e: float = Field(..., description="Bu adımın bu tarladaki karşılığı.")
+
+
+class KarbonYanit(BaseModel):
+    lat: float
+    lon: float
+    urun: str
+    urun_tr: str
+    dekar: float
+    sezon_gun: int
+    gosterge: bool = Field(..., description="Gübre/yakıt girilmediyse true.")
+    azot_kg_da: float
+    dizel_l_da: float
+    sulama_yontemi: str
+    su_kaynagi: str
+    et0_mm_gun: float
+    net_mm_gun: float
+    sulama_m3: float
+    sulama_kwh: float
+    su_senaryosu: str
+    kalemler: list[KarbonKalemi]
+    toplam_kg_co2e: float
+    dekar_basina_kg_co2e: float
+    azaltim: list[KarbonAzaltim]
+    kapsam_disi: list[str]
+    aciklama: str
+
+
+@app.get("/karbon", response_model=KarbonYanit, tags=["tarla"],
+         summary="IPCC 2019 Tier 1 sezonluk sera gazı envanteri")
+def karbon_ayak_izi(
+    lat: float = LAT,
+    lon: float = LON,
+    urun: str = Query(..., description="Ürün anahtarı (sulama kapsamında olmalı)."),
+    alan_m2: float = Query(..., gt=0, le=1e8, description="Parsel alanı (m2)."),
+    sezon_gun: int = Query(120, ge=1, le=365,
+                           description="Sulama sezonu uzunluğu (gün)."),
+    azot_kg_da: float | None = Query(None, ge=0, le=100,
+                                     description="Uygulanan saf azot kg/dekar. "
+                                                 "Boşsa tablo varsayılanı."),
+    dizel_l_da: float | None = Query(None, ge=0, le=200,
+                                     description="Yakıt litre/dekar. Boşsa varsayılan."),
+    sulama_yontemi: str = Query("damla", pattern="^(damla|yagmurlama|salma)$"),
+    su_kaynagi: str = Query("kuyu", pattern="^(kuyu|yuzey)$"),
+) -> KarbonYanit:
+    """Parselin bir sezonluk sera gazı salımı ve azaltım karşılıkları.
+
+    Beş kalem: gübreden doğrudan/dolaylı N2O, gübre üretimi, dizel, sulama
+    pompası elektriği. Sulama kalemi uydurulmaz, tarlanın kendi FAO-56
+    planından gelir; bu yüzden ürünün Kc katsayısı zorunludur.
+
+    Toprak karbon stoku, üre hidrolizi ve kireçleme kapsam dışıdır ve yanıtta
+    'kapsam_disi' olarak listelenir; sessizce sıfır sayılmaz.
+    """
+    # Kapsam kontrolu sulama yetenegine gore: sulama suyu olmadan envanterin
+    # besinci kalemi hesaplanamaz, o da toplamin ucte birine kadar cikabiliyor.
+    _urunleri_coz(urun, "sulama")
+    try:
+        s = karbon_plani(
+            lat, lon, urun, alan_m2,
+            sezon_gun=sezon_gun,
+            azot_kg_da=azot_kg_da,
+            dizel_l_da=dizel_l_da,
+            sulama_yontemi=sulama_yontemi,
+            su_kaynagi=su_kaynagi,
+        )
+    except ET0Yok as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except fao56.KcYok as exc:
+        raise HTTPException(422, f"'{exc.args[0]}' bu hesap için kapsam dışında. "
+                                 f"{kapsam.YETENEK_GEREKCE['sulama']}") from exc
+    except Exception as exc:
+        raise _hava_503(exc, "Karbon hesabı için hava verisi alınamadı") from exc
+
+    return KarbonYanit(
+        lat=lat, lon=lon, urun=urun, urun_tr=_urun_tr(urun),
+        dekar=s["dekar"], sezon_gun=s["sezon_gun"], gosterge=s["gosterge"],
+        azot_kg_da=s["azot_kg_da"], dizel_l_da=s["dizel_l_da"],
+        sulama_yontemi=s["sulama_yontemi"], su_kaynagi=s["su_kaynagi"],
+        et0_mm_gun=s["et0_mm_gun"], net_mm_gun=s["net_mm_gun"],
+        sulama_m3=s["sulama_m3"], sulama_kwh=s["sulama_kwh"],
+        su_senaryosu=s["su_senaryosu"],
+        kalemler=[KarbonKalemi(**k) for k in s["kalemler"]],
+        toplam_kg_co2e=s["toplam_kg_co2e"],
+        dekar_basina_kg_co2e=s["dekar_basina_kg_co2e"],
+        azaltim=[KarbonAzaltim(**a) for a in s["azaltim"]],
+        kapsam_disi=s["kapsam_disi"],
+        aciklama=s["not"],
+    )
+
+
+# --------------------------------------------------------------------------
+# Serbest metin yonlendirme (Sprint 1 niyet router'i, langgraph'siz)
+# --------------------------------------------------------------------------
+# Orkestrator grafigi kaba girmiyor (langgraph ~40 MB, gerekce Dockerfile'daki
+# agents/ COPY blogunda). Ama ciftciye deger katan sey grafik degil, "ne
+# yazarsam yazayim dogru cevaba gideyim" davranisi; o da agents/router.py'deki
+# saf yonlendirici + zaten canli olan *_node() adaptorleriyle karsilanir.
+# Orkestrator da ayni router'i kullanir, iki kopya yok.
+
+# Bu dort niyet dogrudan cevaplanir: hepsi tek bir Open-Meteo cagrisiyla biter.
+_NODE = {
+    "irrigation": irrigation_node,
+    "climate_risk": climate_risk_node,
+    "pest": pest_node,
+    "carbon": carbon_node,
+    "advisor": advisor_node,
+}
+
+# Bu ikisi CEVAPLANMAZ, yonlendirilir. Sebep: urun onerisi konum+toprak+iklim+
+# parsel katmanlarinin tamamini ister (25 sn'ye kadar) ve zaten /oneri olarak
+# ekranda duruyor; teshis ise fotograf ister, metinle cevaplanamaz. Burada
+# ikinci bir kopyasini calistirmak ayni tarla icin iki farkli liste uretme
+# riskidir.
+_YONLENDIR = {
+    "crop_reco": "Ürün önerisi haritada seçili nokta için zaten hesaplanıyor.",
+    "diagnosis": "Teşhis için yaprak fotoğrafı gerekiyor.",
+}
+
+
+def _birikmis_ek(lat: float, lon: float, planlar: list[dict],
+                 asama: str, son_sulama: date) -> tuple[str, dict] | None:
+    """Sulama cevabina, son sulamadan bu yana biriken acigi ekler.
+
+    NEDEN BURADA: sulama ajani ONUMUZDEKI gunlere bakar, "gunde su kadar ver"
+    der. Ciftcinin sorusu ise cogu zaman "simdi sulayayim mi" sorusudur ve o
+    sorunun cevabi en son ne zaman suladigini bilmeden verilemez. Gunlukteki
+    tarih burada tam olarak bu farki kapatiyor.
+
+    Hesabin kendisi /gunluk ile AYNI fonksiyona gider (knowledge/gunluk.py);
+    burada ikinci bir formul yazilmiyor, yoksa ayni tarla icin iki farkli
+    acik gosterme riski dogardi.
+
+    Sessizce None doner: bu bilgi CEVABIN KENDISI DEGIL, uzerine eklenen bir
+    cumle. Gecmis hava verisi gelmezse ya da sulamadan sonra tam gun
+    gecmemisse, asil sulama plani yine de gosterilmeli.
+    """
+    urun = (planlar[0].get("urun") or "").strip() if planlar else ""
+    if not urun or not fao56.kc_var_mi(urun):
+        return None
+    bugun = date.today()
+    gecen = (bugun - son_sulama).days
+    if gecen < 1 or gecen > open_meteo.GECMIS_GUN_TAVANI:
+        return None
+    try:
+        seri = open_meteo.get_gunluk_su_serisi(lat, lon, gecmis_gun=gecen + 1)
+        s = gunluk_kb.birikmis_acik(seri["tarih"], seri["et0"], seri["yagis"],
+                                    son_sulama, urun, asama, bugun)
+    except Exception:
+        return None
+    # Binlik ayraci nokta: ekrandaki gunluk kartiyla ayni bicim. Ayni sayinin
+    # bir yerde "46.100", oburunde "46100" gorunmesi kullaniciya iki farkli
+    # sayi izlenimi verirdi.
+    litre = f"{s['litre_dekar']:,.0f}".replace(",", ".")
+    cumle = (
+        f"\nSezon günlüğüne göre en son {son_sulama.isoformat()} tarihinde "
+        f"suladınız. O günden bu yana {urun} için biriken net açık "
+        f"{s['acik_mm']} mm, dekara {litre} litre "
+        f"(ETc {s['etc_mm']} mm, etkili yağış {s['etkili_yagis_mm']} mm)."
+    )
+    return cumle, s
+
+
+class SoruYanit(BaseModel):
+    soru: str
+    niyet: str = Field(..., description="Router'ın seçtiği uzman.")
+    niyet_tr: str
+    sekme: str = Field(..., description="Cevabın görüldüğü arayüz sekmesi.")
+    cevap: str
+    veri: dict = Field(default_factory=dict, description="Uzmanın ham çıktısı.")
+    yonlendirme: bool = Field(..., description="Cevap yerine sekmeye yönlendirildi mi.")
+
+
+@app.get("/sor", response_model=SoruYanit, tags=["tarla"],
+         summary="Serbest metin sorusunu doğru uzmana yönlendirir")
+def sor(
+    soru: str = Query(..., min_length=2, max_length=300,
+                      description="Örn: 'domatese kaç litre su vermeliyim'"),
+    lat: float | None = Query(None, ge=-90, le=90),
+    lon: float | None = Query(None, ge=-180, le=180),
+    alan_m2: float | None = Query(None, gt=0, le=1e8),
+    son_sulama: date | None = Query(
+        None, description="Sezon günlüğündeki son sulama tarihi (YYYY-AA-GG). "
+                          "Yalnızca sulama sorularında kullanılır."),
+) -> SoruYanit:
+    """Çiftçinin kendi cümlesini hangi hesabın cevaplayacağını bulur.
+
+    Anahtar kelime eşleşmesi Türkçe karakterden bağımsızdır ('böcek' ve
+    'bocek' aynı yere gider). Hiçbir eşleşme olmazsa genel danışmana düşer;
+    'anlamadım' denmez.
+
+    `son_sulama` verilirse sulama cevabına, o günden bu yana biriken net su
+    açığı eklenir. Plan DEĞİŞMEZ; eklenen şey, planın çiftçinin kendi
+    geçmişiyle birlikte okunmasını sağlayan ikinci bir cümledir.
+    """
+    niyet = route(soru)
+    ad, sekme = INTENT_TR[niyet]
+
+    if niyet in _YONLENDIR:
+        return SoruYanit(soru=soru, niyet=niyet, niyet_tr=ad, sekme=sekme,
+                         cevap=_YONLENDIR[niyet], yonlendirme=True)
+
+    if lat is None or lon is None:
+        return SoruYanit(
+            soru=soru, niyet=niyet, niyet_tr=ad, sekme=sekme,
+            cevap=f"{ad} için önce haritadan bir nokta seçin.",
+            yonlendirme=True,
+        )
+
+    # Node adaptorleri hatayi kendileri yutar ve cumle kurar (graf ortasinda
+    # patlamasinlar diye yazilmislardi); burada da ayni davranis isteniyor,
+    # cunku serbest metin girisinde 503 yerine acikklayici cumle daha iyi.
+    durum = {
+        "query": soru,
+        "farm_profile": {"parcel": {"lat": lat, "lon": lon, "alan_m2": alan_m2}},
+    }
+    sonuc = _NODE[niyet](durum)["result"]
+    cevap = sonuc["message"]
+    veri = sonuc.get("data") or {}
+
+    if niyet == "irrigation" and son_sulama is not None and veri.get("planlar"):
+        ek = _birikmis_ek(lat, lon, veri["planlar"],
+                          veri.get("stage", "mid"), son_sulama)
+        if ek:
+            cevap += ek[0]
+            veri = {**veri, "birikmis": ek[1]}
+
+    return SoruYanit(
+        soru=soru, niyet=niyet, niyet_tr=ad, sekme=sekme,
+        cevap=cevap, veri=veri, yonlendirme=False,
+    )
+
+
+# --------------------------------------------------------------------------
+# Kayitli TKGM parselleri (Sprint 1 - yerel parsel dosya yukleyici)
+# --------------------------------------------------------------------------
+
+
+class TkgmParsel(BaseModel):
+    bolge: str
+    etiket: str
+    il: str
+    ilce: str
+    mahalle: str
+    ada: str
+    parsel: str
+    mevkii: str | None = None
+    nitelik: str | None = None
+    lat: float
+    lon: float
+    alan_m2: float
+    dekar: float
+
+
+@app.get("/parseller/tkgm", response_model=list[TkgmParsel], tags=["konum"],
+         summary="Repodaki TKGM parsel sorgu sonuçları")
+def tkgm_parselleri() -> list[TkgmParsel]:
+    """Kayıtlı gerçek parseller: merkez koordinat ve resmi alan.
+
+    Canlı MEGSIS servisine gitmez. TKGM'nin parsel sorgu API'si kurumsal
+    erişim ister (istek HTML giriş sayfasına yönleniyor), bu yüzden sorgu
+    sonuçları dosya olarak tutuluyor. Kullanıcı haritada elle nokta aramak
+    yerine kendi parselini listeden seçer; alan da elle girilmez, tapudaki
+    değer gelir.
+    """
+    return [
+        TkgmParsel(
+            bolge=k["bolge"], etiket=k["etiket"],
+            il=p.il, ilce=p.ilce, mahalle=p.mahalle,
+            ada=p.ada, parsel=p.parsel,
+            mevkii=p.mevkii, nitelik=p.nitelik,
+            lat=p.lat, lon=p.lon, alan_m2=p.alan_m2,
+            dekar=round(p.alan_m2 / 1000.0, 2),
+        )
+        for k in load_parcels()
+        for p in (k["parcel"],)
+    ]
+
+
+# --------------------------------------------------------------------------
+# Arayuzu AYNI servisten sunmak
+# --------------------------------------------------------------------------
+# NEDEN: arayuzu ayri bir yere koyarsak (Pages, Netlify, Vercel) tarayici
+# baska kokene istek atar ve CORS listesini elle guncel tutmak gerekir.
+# Bu proje icin gereksiz bir kirilma noktasi: ikinci hesap, ikinci dagitim
+# adimi ve her alan adi degisiminde sessizce bozulan bir arayuz. Ayni
+# servisten sunuldugunda koken tek oldugu icin CORS hic devreye girmez.
+#
+# CORS ayari YINE DE DURUYOR: gelistirmede Vite 5173'te ayri calisiyor ve
+# derlenmis dosya yok. Yani bu mount gelistirmede devre disi kalir.
+#
+# html=True: React tek sayfa uygulamasi. Kullanici /?lat=..&lon=.. adresini
+# paylasip yeniledigi anda sunucuya o yol soruluyor; html=True olmasaydi 404
+# donerdi ve "paylasilabilir sonuc" ozelligi kagit uzerinde kalirdi.
+_ARAYUZ = Path(__file__).resolve().parent.parent / "web" / "dist"
+if (_ARAYUZ / "index.html").exists():
+    # Mount EN SONA yazilir. Starlette yollari kayit sirasina gore dener;
+    # once yazilsaydi "/" altindaki her sey statik dosyaya gider, API uc
+    # noktalari hic calismazdi.
+    app.mount("/", StaticFiles(directory=_ARAYUZ, html=True), name="arayuz")

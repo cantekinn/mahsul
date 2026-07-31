@@ -22,39 +22,86 @@ _LABELS_FILE = _DIR / "labels.txt"
 MODEL_NAME = "tf_efficientnetv2_s"
 IMG_SIZE = 224  # egitimle ayni (train.py); CPU icin 384 yerine 224
 
-# Egitim yoksa referans sinif listesi (PlantVillage alt kumesi, hedef urunler).
-# Etiketler treatments.yaml anahtarlariyla eslesecek sekilde secildi.
-DEFAULT_LABELS = [
-    "domates_saglikli",
-    "domates_erken_yaniklik",
-    "domates_gec_yaniklik",
-    "domates_kulleme",
-    "domates_bakteriyel_leke",
-    "biber_saglikli",
-    "biber_bakteriyel_leke",
-    "patates_saglikli",
-    "patates_erken_yaniklik",
-    "patates_gec_yaniklik",
-    "diger",  # hedef-disi/taninmayan yaprak (outlier exposure sinifi)
-]
+# Egitim yoksa referans sinif listesi. Skala genisletme (2026-07): 45 sinif / 17 urun.
+# PlantVillage 38 (narenciye dahil) + zeytin 3 + muz 4. Etiketler <urun>_<durum>,
+# <urun> daima tek kelime (predict() urun grubunu ilk "_" ile ayirir).
+# labels.txt (train.py ciktisi) varsa o esas alinir; bu liste yalnizca yedek.
+DEFAULT_LABELS = list(  # LABEL_TR anahtarlarindan turetilir (asagida tanimli)
+    ()
+)
 
 # Model etiketi (ic anahtar) -> kullaniciya gosterilecek okunakli Turkce ad
 LABEL_TR = {
+    # Domates
     "domates_saglikli": "Domates sağlıklı",
+    "domates_bakteriyel_leke": "Domateste bakteriyel leke",
     "domates_erken_yaniklik": "Domateste erken yanıklık",
     "domates_gec_yaniklik": "Domateste geç yanıklık",
-    "domates_kulleme": "Domateste külleme",
-    "domates_bakteriyel_leke": "Domateste bakteriyel leke",
+    "domates_yaprak_kufu": "Domateste yaprak küfü",
+    "domates_septoria_leke": "Domateste septoria yaprak lekesi",
+    "domates_orumcek_akari": "Domateste örümcek akarı",
+    "domates_hedef_leke": "Domateste hedef leke",
+    "domates_sari_yaprak_virusu": "Domateste sarı yaprak kıvrılma virüsü",
+    "domates_mozaik_virusu": "Domateste mozaik virüsü",
+    # Biber
     "biber_saglikli": "Biber sağlıklı",
     "biber_bakteriyel_leke": "Biberde bakteriyel leke",
+    # Patates
     "patates_saglikli": "Patates sağlıklı",
     "patates_erken_yaniklik": "Patateste erken yanıklık",
     "patates_gec_yaniklik": "Patateste geç yanıklık",
-    "diger": "Diğer / tanınmayan yaprak",
+    # Elma
+    "elma_saglikli": "Elma sağlıklı",
+    "elma_kara_leke": "Elmada kara leke (scab)",
+    "elma_siyah_curukluk": "Elmada siyah çürüklük",
+    "elma_sedir_pas": "Elmada sedir pası",
+    # Uzum
+    "uzum_saglikli": "Üzüm sağlıklı",
+    "uzum_kara_curukluk": "Üzümde kara çürüklük",
+    "uzum_esca": "Üzümde esca (kara ölçek)",
+    "uzum_yaprak_yanikligi": "Üzümde yaprak yanıklığı",
+    # Narenciye
+    "narenciye_yesillenme": "Narenciyede yeşillenme (HLB)",
+    # Seftali
+    "seftali_saglikli": "Şeftali sağlıklı",
+    "seftali_bakteriyel_leke": "Şeftalide bakteriyel leke",
+    # Kiraz
+    "kiraz_saglikli": "Kiraz sağlıklı",
+    "kiraz_kulleme": "Kirazda külleme",
+    # Cilek
+    "cilek_saglikli": "Çilek sağlıklı",
+    "cilek_yaprak_yanigi": "Çilekte yaprak yanığı",
+    # Misir
+    "misir_saglikli": "Mısır sağlıklı",
+    "misir_gri_yaprak_lekesi": "Mısırda gri yaprak lekesi",
+    "misir_yaygin_pas": "Mısırda yaygın pas",
+    "misir_yaprak_yanikligi": "Mısırda yaprak yanıklığı",
+    # Diger tek-sinifli urunler
+    "yabanmersini_saglikli": "Yaban mersini sağlıklı",
+    "ahududu_saglikli": "Ahududu sağlıklı",
+    "soya_saglikli": "Soya sağlıklı",
+    "kabak_kulleme": "Kabakta külleme",
+    # Zeytin
+    "zeytin_saglikli": "Zeytin sağlıklı",
+    "zeytin_tavus_gozu": "Zeytinde tavus gözü lekesi",
+    "zeytin_akar": "Zeytinde akar (gal akarı)",
+    # Muz
+    "muz_saglikli": "Muz sağlıklı",
+    "muz_sigatoka": "Muzda Sigatoka yaprak lekesi",
+    "muz_cordana": "Muzda Cordana yaprak lekesi",
+    "muz_pestalotiopsis": "Muzda Pestalotiopsis lekesi",
 }
 
+DEFAULT_LABELS = list(LABEL_TR.keys())
+
 # Ic urun anahtari -> okunakli ad (grup bazli "tespit edilen urun" gosterimi icin)
-CROP_TR = {"domates": "Domates", "biber": "Biber", "patates": "Patates"}
+CROP_TR = {
+    "domates": "Domates", "biber": "Biber", "patates": "Patates",
+    "elma": "Elma", "uzum": "Üzüm", "narenciye": "Narenciye",
+    "seftali": "Şeftali", "kiraz": "Kiraz", "cilek": "Çilek",
+    "misir": "Mısır", "yabanmersini": "Yaban mersini", "ahududu": "Ahududu",
+    "soya": "Soya", "kabak": "Kabak", "zeytin": "Zeytin", "muz": "Muz",
+}
 
 
 # Kademeli guven: lab-saha ucurumu yuzunden gercek tarla fotolarinda dogru sinif

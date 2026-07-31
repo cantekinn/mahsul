@@ -1,11 +1,14 @@
-"""PlantVillage alt kumesini indirir (gercek egitim verisi, Sprint 2).
+"""PlantVillage'in TAMAMINI (38 sinif / 14 urun) indirir (gercek egitim verisi).
 
 Kaynak: spMohanty/PlantVillage-Dataset (GitHub, kamuya acik, kimlik gerektirmez).
-Sadece hedef urunlerimizin (domates/biber/patates) siniflari cekilir ve
-treatments.yaml/classifier etiketleriyle eslesen Turkce anahtarlara donusturulur.
+Skala genisletme karari (2026-07): sadece domates/biber/patates yerine PlantVillage'in
+14 urununun 38 sinifi cekilir. Boylece narenciye (Orange greening), elma, uzum, seftali,
+kiraz, cilek, misir, soya, yaban mersini, ahududu, kabak da modele girer. Zeytin ve muz
+PlantVillage'de YOK; onlar download_kaggle_extra.py ile ayrica eklenir.
 
-Not: PlantVillage'de domates kullemesi (powdery mildew) yok; o sinif yalnizca
-metinden tedavi eslemesiyle (treatments.yaml) desteklenir, goruntu modeli disinda.
+Etiketler classifier.LABEL_TR ve treatments.yaml ile eslesen Turkce anahtarlara
+donusturulur. Her etiket <urun>_<durum> formatinda ve <urun> TEK kelimedir
+(predict() urun grubunu ilk "_" ile ayirir; yaban mersini -> "yabanmersini").
 
 ImageFolder duzeni uretir:
     data/plantvillage/train/<turkce_sinif>/*.jpg
@@ -26,17 +29,61 @@ _DIR = Path(__file__).resolve().parent
 DATA_ROOT = _DIR.parent.parent / "data" / "plantvillage"
 API = "https://api.github.com/repos/spMohanty/PlantVillage-Dataset/contents/raw/color/"
 
-# PlantVillage sinif klasoru -> bizim etiketimiz (classifier/treatments ile ayni)
+# PlantVillage sinif klasoru -> bizim Turkce etiketimiz (classifier/treatments ile ayni).
+# 38 sinif / 14 urun. <urun> daima tek kelime (yabanmersini).
 CLASS_MAP = {
-    "Tomato___healthy": "domates_saglikli",
-    "Tomato___Early_blight": "domates_erken_yaniklik",
-    "Tomato___Late_blight": "domates_gec_yaniklik",
-    "Tomato___Bacterial_spot": "domates_bakteriyel_leke",
+    # Elma
+    "Apple___healthy": "elma_saglikli",
+    "Apple___Apple_scab": "elma_kara_leke",
+    "Apple___Black_rot": "elma_siyah_curukluk",
+    "Apple___Cedar_apple_rust": "elma_sedir_pas",
+    # Yaban mersini
+    "Blueberry___healthy": "yabanmersini_saglikli",
+    # Kiraz
+    "Cherry_(including_sour)___healthy": "kiraz_saglikli",
+    "Cherry_(including_sour)___Powdery_mildew": "kiraz_kulleme",
+    # Misir
+    "Corn_(maize)___healthy": "misir_saglikli",
+    "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": "misir_gri_yaprak_lekesi",
+    "Corn_(maize)___Common_rust_": "misir_yaygin_pas",
+    "Corn_(maize)___Northern_Leaf_Blight": "misir_yaprak_yanikligi",
+    # Uzum
+    "Grape___healthy": "uzum_saglikli",
+    "Grape___Black_rot": "uzum_kara_curukluk",
+    "Grape___Esca_(Black_Measles)": "uzum_esca",
+    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": "uzum_yaprak_yanikligi",
+    # Narenciye
+    "Orange___Haunglongbing_(Citrus_greening)": "narenciye_yesillenme",
+    # Seftali
+    "Peach___healthy": "seftali_saglikli",
+    "Peach___Bacterial_spot": "seftali_bakteriyel_leke",
+    # Biber
     "Pepper,_bell___healthy": "biber_saglikli",
     "Pepper,_bell___Bacterial_spot": "biber_bakteriyel_leke",
+    # Patates
     "Potato___healthy": "patates_saglikli",
     "Potato___Early_blight": "patates_erken_yaniklik",
     "Potato___Late_blight": "patates_gec_yaniklik",
+    # Ahududu
+    "Raspberry___healthy": "ahududu_saglikli",
+    # Soya
+    "Soybean___healthy": "soya_saglikli",
+    # Kabak
+    "Squash___Powdery_mildew": "kabak_kulleme",
+    # Cilek
+    "Strawberry___healthy": "cilek_saglikli",
+    "Strawberry___Leaf_scorch": "cilek_yaprak_yanigi",
+    # Domates
+    "Tomato___healthy": "domates_saglikli",
+    "Tomato___Bacterial_spot": "domates_bakteriyel_leke",
+    "Tomato___Early_blight": "domates_erken_yaniklik",
+    "Tomato___Late_blight": "domates_gec_yaniklik",
+    "Tomato___Leaf_Mold": "domates_yaprak_kufu",
+    "Tomato___Septoria_leaf_spot": "domates_septoria_leke",
+    "Tomato___Spider_mites Two-spotted_spider_mite": "domates_orumcek_akari",
+    "Tomato___Target_Spot": "domates_hedef_leke",
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": "domates_sari_yaprak_virusu",
+    "Tomato___Tomato_mosaic_virus": "domates_mozaik_virusu",
 }
 
 TRAIN_PER_CLASS = 300

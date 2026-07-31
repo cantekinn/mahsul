@@ -1,0 +1,2706 @@
+/* ---------------------------------------------------------------------------
+   Yazi tipi: Inter, KENDI SUNUCUMUZDAN.
+
+   Google Fonts CDN'i KULLANILMIYOR: ikinci bir kokene bagimlilik, ucuncu taraf
+   istegi ve ag kesildiginde bozulan bir sayfa demekti. Bu uygulama tarlada,
+   zayif baglantida aciliyor.
+
+   YALNIZCA IKI ALTKUME aliniyor, paketin index.css'i degil. index.css kiril,
+   yunan ve vietnam altkumelerini de getirir (~600 KB); bu arayuz Turkce.
+   Turkce harfler iki altkumeye dagilmis durumda: latin temel harfleri, ı (U+0131),
+   ğ (U+011F), ş (U+015F), İ (U+0130) ise latin-ext icinde. Ikisi de gerekli,
+   toplam 133 KB.
+
+   font-display: swap - yazi tipi inene kadar metin sistem yazi tipiyle GORUNUR.
+   Alternatifi (block) tarlada 3 saniye bos ekran demekti.
+--------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/inter/files/inter-latin-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2")
+    format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --yesil: #2f7a3e;
+  --yesil-koyu: #1f5228;
+  --toprak: #8a6d3b;
+  --metin: #1c2321;
+  --soluk: #6b7671;
+  --cizgi: #e2e6e3;
+  --zemin: #f6f7f5;
+  --kart: #ffffff;
+  --uyari: #9a6b00;
+  --hata: #b23b2e;
+  --isaret: #d94f3d;
+
+  /* Renkli zemin uzerine yazilan metin. Kart zemini (--kart) ile ayni deger
+     ama AYNI SEY DEGIL: biri yuzey, digeri o yuzeyin uzerindeki murekkep.
+     Ayri tutuluyorlar ki koyu tema eklendiginde biri degisip digeri kalabilsin. */
+  --uzeri: #ffffff;
+
+  /* UC AYRI OLCEK VAR VE BIRLESTIRILMEDILER. Ayni yesil-sari-gri gecisini
+     kullansalar da farkli seyleri olcuyorlar:
+       skor  = urun bu toprakta NE KADAR IYI yetisir
+       guven = model teshisinden NE KADAR EMIN
+       risk  = hava kosulu NE KADAR TEHLIKELI  (yonu ters: yesil yok, kirmizi var)
+     Tek olcege indirilirse "yuksek risk" ile "yuksek skor" ayni rengi alir ve
+     kullanici iyi haberi kotu haberden ayiramaz. */
+
+  /* Skor basamaklari (urun onerisi kart kenarligi) */
+  --skor-cok-iyi: #2f7a3e;
+  --skor-iyi: #7aa832;
+  --skor-orta: #d1a02a;
+  --skor-zayif: #b0aca4;
+
+  /* Guven basamaklari (hastalik teshisi rozeti ve cubugu) */
+  --guven-kesin: #2f7a3e;
+  --guven-olasi: #d4a017;
+  --guven-belirsiz: #d97706;
+  --guven-tanimsiz: #6b7280;
+
+  /* Bilgi kutulari ve rozetler icin acik zeminler. Uyari tonu ONCE IKIYDI
+     (#fff8e6 ve #fdf1d8); ayni anlami tasiyip farkli goruntu verdikleri icin
+     tek degere indirildi. */
+  --uyari-zemin: #fdf1d8;
+  --basari-zemin: #e8f5ea;
+  --hata-zemin: #fbe6e2;
+
+  /* -------------------------------------------------------------------------
+     YAZI OLCEGI. Once olculdu: 11 farkli px degeri vardi (9.5, 11, 12, 13, 14,
+     15, 16, 17, 18, 26, 34). 13 ile 14 arasindaki fark hiyerarsi kurmuyor,
+     sadece hizasizlik uretiyordu. Alti basamaga indirildi ve basamaklar
+     yaklasik 1.2 oraninda buyuyor; bu oran her adimi gozle secilebilir yapar,
+     komsu iki basamak "yanlislikla farkli" gorunmez.
+
+     Satir yuksekligi her basamakla BIRLIKTE tanimli: kucuk yazi orantili olarak
+     daha ferah, buyuk baslik daha sikidir. Tek bir global line-height, 12 px
+     etikette sikisik, 32 px baslikta dagilmis gorunurdu. */
+  --yazi-xs: 12px;
+  --yazi-xs-satir: 16px;
+  --yazi-s: 13px;
+  --yazi-s-satir: 18px;
+  --yazi-m: 15px;
+  --yazi-m-satir: 22px;
+  --yazi-l: 18px;
+  --yazi-l-satir: 24px;
+  --yazi-xl: 24px;
+  --yazi-xl-satir: 30px;
+  --yazi-2xl: 32px;
+  --yazi-2xl-satir: 36px;
+
+  /* -------------------------------------------------------------------------
+     BOSLUK RITMI, 4 px taban. Olcumde 16 farkli deger vardi (1,2,3,4,5,6,7,8,
+     9,10,11,12,14,16,18,20 px). 10 ile 12 arasindaki fark bir karar degil, bir
+     kazaydi. Alti basamak kaldi.
+
+     TABAN 8 DEGIL 4: 8'e cikarilinca rozet ic boslugu ya 4 px (sikisik) ya
+     8 px (sisik) olabiliyordu, arasi yoktu. 4 taban, 8 ana adim. */
+  --bos-1: 4px;
+  --bos-2: 8px;
+  --bos-3: 12px;
+  --bos-4: 16px;
+  --bos-5: 24px;
+  --bos-6: 32px;
+
+  /* Kose yariciplari: 9 farkli degerden 4'e. Kural, yariCap yuzeyin BOYUTUYLA
+     buyur: kucuk rozet keskin, buyuk kart yumusak. Ayni yariCapi her yerde
+     kullanmak kucuk ogeleri sisirir. */
+  --yuvarlak-s: 6px;
+  --yuvarlak-m: 10px;
+  --yuvarlak-l: 14px;
+  --yuvarlak-tam: 999px;
+
+  /* -------------------------------------------------------------------------
+     YUZEY SIRASI (elevation). Uc basamak var ve HER BIRI BIR ANLAM tasiyor:
+       golge-0 : sayfa zeminine yapisik yuzey (form alani, ic kutu) - golge yok
+       golge-1 : sayfadan kalkmis yuzey (kart) - okunur bir blok oldugunu soyler
+       golge-2 : gecici olarak ustte duran yuzey (acilir liste, ipucu)
+     Golge iki katmanli: genis+yumusak olan derinligi, dar+koyu olan kenari
+     verir. Tek katmanli golge ya bulanik ya sert gorunur. */
+  --golge-1: 0 1px 2px rgba(28, 35, 33, 0.04), 0 2px 8px rgba(28, 35, 33, 0.06);
+  --golge-2: 0 2px 4px rgba(28, 35, 33, 0.06), 0 8px 24px rgba(28, 35, 33, 0.12);
+
+  /* Odak halkasi. Renk yesilin kendisi degil daha koyu tonu: acik yesil
+     dugmenin uzerinde yesil halka gorunmezdi. */
+  --odak: var(--yesil-koyu);
+
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+  color: var(--metin);
+
+  /* Rakamlarin hepsi ayni genislikte olsun: sulama "7.6 mm" ile "12.4 mm"
+     arasinda gecerken sayilar ziplamasin. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* KLAVYE ODAGI HER YERDE GORUNUR. Tarayici varsayilani hem soluk hem de
+   :focus (fareyle tiklayinca da) tetikleniyordu. :focus-visible sadece klavye
+   ile gezerken cizer; boylece fare kullanicisi halka gormez, klavye kullanicisi
+   nerede oldugunu HER ZAMAN bilir. outline kullaniliyor (box-shadow degil)
+   cunku outline yerlesimi bozmaz ve yuksek kontrast modunda korunur. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+  border-radius: var(--yuvarlak-s);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------------------
+   FORM DENETIMLERI: her isletim sisteminde AYNI gorunum.
+
+   Onceki halde <select>'ler tarayicinin kendi cizimiyle geliyordu: Windows'ta
+   gri gradyanli kutu ve kucuk siyah ucgen, Android'de baska bir kutu, iOS'ta
+   baska. Ayni ekranda bizim cizdiğimiz yuvarlak kartlarin yaninda durunca
+   arayuz "yarim bitmiş" gorunuyordu.
+
+   appearance: none SADECE select'e uygulaniyor. Sayi girisine (input[number])
+   uygulanmadi cunku o zaman Firefox artir/azalt oklarini da kaldirir ve
+   masaustunde alani fareyle ayarlamak imkansiz hale gelir.
+
+   Ok isareti arka plan gorseli olarak veriliyor (data URI, SVG). Ayri bir dosya
+   ya da ikon kutuphanesi eklenmedi: tek bir ok icin ag istegi ve bagimlilik
+   gereksiz. Rengi --soluk (#6b7671) elle yazili, cunku SVG data URI icinden
+   CSS degiskeni okunamaz; --soluk degisirse bu da degismeli.
+--------------------------------------------------------------------------- */
+.alan,
+.tarla-secim select,
+.tarla-secim input,
+.filtre-secim {
+  font: inherit;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--metin);
+  background-color: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-m);
+  padding: var(--bos-2) var(--bos-3);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tarla-secim select,
+.filtre-secim {
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%236b7671' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--bos-3) center;
+  /* Ok ile metnin ustuste binmemesi icin sag ic bosluk genis. */
+  padding-right: var(--bos-6);
+}
+
+.tarla-secim select:hover,
+.tarla-secim input:hover,
+.filtre-secim:hover {
+  border-color: var(--yesil);
+}
+
+/* Acilan listenin ic yazisi: tarayici <option>'lari isletim sistemi ciziyor,
+   oraya bicim uygulanamaz. En azindan yazi tipi ve boyut miras alsin. */
+.tarla-secim option,
+.tarla-secim optgroup {
+  font: inherit;
+}
+
+/* Sayfa zemini duz gri idi ve kartlar zeminden yalnizca golgeyle ayriliyordu;
+   ekranin tamami tek bir tonda kaliyordu. Ustten asagi soluk bir yesil hale
+   ekleniyor: kaynagi baslikta, dolayisiyla goz once oraya gidiyor.
+
+   GORSEL DOSYA YOK, tek bir gradyan. Alfa 0.09'da: daha yuksek degerde kart
+   kenarliklarinin (--cizgi) kontrasti dusuyor ve kartin nerede bittigi
+   belirsizlesiyor.
+
+   fixed ekleme: sayfa kaydiginda hale yerinde kalir, yoksa uzun oneri
+   listesinde asagida ikinci bir renk bandi gibi gorunurdu. */
+body {
+  margin: 0;
+  background-color: var(--zemin);
+  background-image: radial-gradient(
+    1100px 420px at 50% -140px,
+    rgba(47, 122, 62, 0.09),
+    rgba(47, 122, 62, 0) 70%
+  );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.kabuk {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--bos-5);
+}
+
+/* Telefonda 24 px kenar boslugu 375 px ekranin %13'unu yiyordu. Icerik zaten
+   dar; bosluk 12 px'e iniyor ve kartlara 24 px daha genislik kaliyor. */
+@media (max-width: 600px) {
+  .kabuk {
+    padding: var(--bos-3);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Sekme seridi: YAPISKAN kap.
+
+   Yapiskan olan sekme cubugunun KENDISI degil, altindaki kap. Cubuk tam
+   yuvarlak kenarli ve dar; tek basina yapistirilsaydi sayfa metni onun
+   yuvarlak koselerinin yanindan ve altindan gorunerek kayardi. Kap, ekran
+   kenarindan kenarina uzanan opak bir zemin veriyor.
+
+   z-index 1050 SECILDI: Leaflet kendi denetimlerini 1000'e koyuyor (serit
+   altta kalirsa yakinlastirma dugmeleri seridin uzerine cizilir), soru
+   kutusu 1100'de (o seridin ustunde kalmali, cunku acikken sayfanin geri
+   kalanini gecici olarak orter).
+
+   Bulaniklik (backdrop-filter) DESTEKLENMEYEN tarayicida sessizce dusuyor;
+   bu yuzden zemin rengi ayrica yariopak veriliyor, yoksa serit saydam kalip
+   altindaki metin uzerine binerdi.
+
+   Negatif yan bosluk: serit .kabuk'un ic boslugunu asip icerik kutusunun
+   kenarina kadar uzansin, yoksa yapisip durdugunda sagindan ve solundan
+   kayan metin gorunurdu. */
+.ust-serit {
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+  margin: 0 calc(var(--bos-5) * -1) var(--bos-4);
+  padding: var(--bos-2) var(--bos-5);
+  background: rgba(246, 247, 245, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--cizgi);
+}
+
+@media (max-width: 600px) {
+  .ust-serit {
+    margin: 0 calc(var(--bos-3) * -1) var(--bos-3);
+    padding: var(--bos-2) var(--bos-3);
+  }
+}
+
+.baslik {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bos-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--bos-3);
+}
+
+/* Isaret ve yazi tek blok: sarmalandiginda dugme alta iner, marka bolunmez. */
+.marka {
+  display: flex;
+  align-items: center;
+  gap: var(--bos-3);
+  min-width: 0;
+}
+
+.marka-isaret {
+  flex: 0 0 auto;
+  border-radius: var(--yuvarlak-m);
+  box-shadow: var(--golge-1);
+}
+
+.baslik h1 {
+  margin: 0;
+  font-size: var(--yazi-xl);
+  line-height: var(--yazi-xl-satir);
+  color: var(--yesil-koyu);
+  /* Buyuk puntoda harfler arasi bosluk optik olarak buyur; -0.02em o
+     genislemeyi geri alir ve baslik tek bir kelime kutlesi gibi okunur. */
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+/* Telefonda 40 px'lik isaret + 24 px baslik iki satira tasiyordu. */
+@media (max-width: 480px) {
+  .marka-isaret {
+    width: 32px;
+    height: 32px;
+  }
+
+  .baslik h1 {
+    font-size: var(--yazi-l);
+    line-height: var(--yazi-l-satir);
+  }
+}
+
+.alt {
+  margin: var(--bos-1) 0 0;
+  color: var(--soluk);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
+/* Acik olan sekmenin ne ise yaradigini anlatan cumle. Genislik 68ch ile
+   sinirli: tam genislikte 1400 px'lik ekranda satir 200 karaktere ciKiyor ve
+   goz satir sonundan satir basina donerken yerini kaybediyor. */
+.gorunum-alt {
+  margin: 0 0 var(--bos-4);
+  max-width: 68ch;
+  color: var(--soluk);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
+.dugme {
+  background: var(--yesil);
+  color: var(--uzeri);
+  /* Kenarlik SAYDAM ama VAR: yalin (.yalin) surumunde 1 px kenarlik cikiyor
+     ve kenarliksiz surumle yan yana durduklarinda ikisi 2 px farkli
+     yukseklikte oluyordu. */
+  border: 1px solid transparent;
+  border-radius: var(--yuvarlak-m);
+  padding: var(--bos-3) var(--bos-5);
+  /* Dokunma hedefi tavsiye edilen 44 px'in altina dusmesin. 15 px yazi +
+     2x12 px dolgu = 46 px, yani su an saglaniyor; alt sinir yine de yazili
+     ki ilerde dolgu kisilirsa dugme sessizce kucukmesin. */
+  min-height: 44px;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(28, 35, 33, 0.12);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.06s;
+}
+
+.dugme:hover:not(:disabled) {
+  background: var(--yesil-koyu);
+}
+
+/* Basili tutulurken dugme 1 px asagi iner ve golgesini birakir: tiklamanin
+   islendigi, cevap gelmeden once gorunur. Yavas baglantida (tarla) bu tek
+   geri bildirim, kullanicinin ikinci kez tiklamasini onluyor. */
+.dugme:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.dugme:disabled {
+  opacity: 0.6;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* Dokunmatik ekranda :hover TAKILI KALIR (parmak kalktiktan sonra da koyu
+   yesil durur). Gecis ve donusum bu yuzden yalnizca fare olan cihazlarda
+   anlamli; ama :hover kuralini kaldirmak masaustunde geri bildirimi
+   siliyordu, o yuzden sadece "hover yok" durumunda geri aliniyor. */
+@media (hover: none) {
+  .dugme:hover:not(:disabled) {
+    background: var(--yesil);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Alt bilgi. Sayfanin BITTIGINI soyleyen tek oge; onceden icerik son kartta
+   kesiliyordu ve kullanici asagida devam eden bir sey olup olmadigini
+   bilemiyordu.
+
+   Genislik 78ch ile sinirli: 1400 px'lik ekranda kaynak listesi tek satirda
+   200 karaktere ciKiyor ve okunmuyor.
+   -------------------------------------------------------------------------- */
+.alt-bilgi {
+  margin-top: var(--bos-6);
+  padding-top: var(--bos-4);
+  border-top: 1px solid var(--cizgi);
+  max-width: 78ch;
+  color: var(--soluk);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+}
+
+.alt-bilgi p {
+  margin: 0 0 var(--bos-2);
+}
+
+.alt-bilgi strong {
+  color: var(--metin);
+  font-weight: 600;
+}
+
+.alt-bilgi-imza {
+  margin-bottom: 0;
+  letter-spacing: 0.04em;
+}
+
+/* Hizli erisim kisayollari.
+   Serit YATAY KAYAR, sarmalanmaz: 37 dugme alt alta sarmalandiginda haritayi
+   asagi itip ekranin buyuk kismini yiyordu. Kaydirmali seritte yukseklik
+   tek satirda kaliyor. */
+.kisayollar {
+  margin-bottom: var(--bos-4);
+}
+
+.kisayol-baslik {
+  display: block;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  font-weight: 600;
+  color: var(--soluk);
+  margin-bottom: var(--bos-2);
+}
+
+.kisayol-serit {
+  display: flex;
+  gap: var(--bos-2);
+  overflow-x: auto;
+  padding-bottom: var(--bos-2);
+  scrollbar-width: thin;
+}
+
+.kisayol {
+  flex: 0 0 auto;
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-tam);
+  padding: var(--bos-2) var(--bos-4);
+  /* 13 px yazi + 2x8 px dolgu = 34 px idi; serit yatay kaydigi icin parmagin
+     yanlis dugmeye degmesi kolaydi. 40 px, ustune 8 px'lik serit araligiyla
+     birlikte komsu hedefi ayirmaya yetiyor. */
+  min-height: 40px;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--metin);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.kisayol:hover {
+  border-color: var(--yesil);
+  color: var(--yesil-koyu);
+  box-shadow: var(--golge-1);
+}
+
+/* Bir katmani eksik kalan nokta. Gizlemiyoruz, listeden de cikarmiyoruz:
+   dugme calisiyor, sadece o katman icin beklenecek. Soluk gosterip ipucunda
+   hangi katmanin eksik oldugunu yaziyoruz. */
+.kisayol.yarim {
+  color: var(--soluk);
+  border-style: dashed;
+}
+
+.kisayol.secili {
+  background: var(--yesil);
+  border-color: var(--yesil);
+  color: var(--uzeri);
+}
+
+.kisayol-alt {
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+}
+
+/* Harita sekmesindeki tapu secici. Kisayollarla AYNI ISI yapiyor (noktayi
+   secmek) ve hemen altinda duruyor; ayri bir yere koysaydik kullanicinin
+   "nokta nasil secilir" sorusunun cevabi ekranin iki ucuna dagilirdi.
+   Aciklama satiri secicinin YANINDA, altinda degil: kutu tek satir yuksekligi
+   ve iki satira cikmasi haritayi asagi iterdi. */
+.parsel-satir {
+  align-items: flex-end;
+  gap: var(--bos-3);
+}
+
+.parsel-satir label.parsel-alan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-2);
+  flex: 0 1 320px;
+  min-width: 0;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--soluk);
+}
+
+.parsel-alt {
+  flex: 1 1 220px;
+  padding-bottom: var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+}
+
+.govde {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
+  gap: var(--bos-4);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .govde {
+    grid-template-columns: 1fr;
+  }
+}
+
+.harita {
+  height: 560px;
+  width: 100%;
+  border-radius: var(--yuvarlak-l);
+  border: 1px solid var(--cizgi);
+}
+
+.isaretci {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--isaret);
+  border: 3px solid var(--uzeri);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+.yan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-3);
+}
+
+/* Kart: sayfa zemininden BIR basamak yukarida duran yuzey.
+   Kenarlik ve golge BIRLIKTE var, biri digerinin yerine degil: golge derinlik
+   verir ama bu acik temada neredeyse gorunmez, kenarlik ise kartin nerede
+   bittigini kesin soyler. Yalniz kenarlikla kart kagit gibi duz, yalniz
+   golgeyle sinirsiz gorunuyordu. */
+.kart {
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-l);
+  padding: var(--bos-4);
+  box-shadow: var(--golge-1);
+}
+
+.kart-bas {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  margin-bottom: var(--bos-2);
+}
+
+/* Kart basligi 15 px BUYUK KAPITAL idi: kartin icindeki govde metniyle ayni
+   punto, ustune buyuk harf. Baslik govdeden daha guclu gorunuyor ve gozu
+   iceriden alip etikete cekiyordu. Punto iki kademe dusuruldu, agirlik ve
+   harf araligi artirildi: etiket artik "burasi ne karti" sorusunu cevapliyor,
+   okunacak metin olmaya calismiyor. */
+.kart-bas h2 {
+  margin: 0;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 700;
+  color: var(--soluk);
+}
+
+.rozet {
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+  background: var(--zemin);
+  border-radius: var(--yuvarlak-l);
+  padding: var(--bos-1) var(--bos-3);
+  white-space: nowrap;
+}
+
+.yer {
+  margin: 0;
+  font-size: var(--yazi-l);
+  line-height: var(--yazi-l-satir);
+  font-weight: 600;
+}
+
+.satirlar {
+  margin: var(--bos-3) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-2);
+}
+
+.satirlar > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  border-bottom: 1px dashed var(--cizgi);
+  padding-bottom: var(--bos-2);
+}
+
+.satirlar dt {
+  color: var(--soluk);
+}
+
+.satirlar dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.yok {
+  color: var(--soluk);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.bekleyen {
+  color: var(--soluk);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  margin: var(--bos-2) 0 0;
+}
+
+/* Yukleme iskeleti. Satir genislikleri kasitli olarak esit degil: hepsi ayni
+   boyda olursa tablo gibi gorunur, gelen veri ise duz metin. */
+.iskelet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-3);
+  padding: var(--bos-1) 0 var(--bos-1);
+}
+
+.iskelet-satir {
+  height: 12px;
+  border-radius: var(--yuvarlak-s);
+  /* Parlama, acik bir seridin zemin uzerinde saga kaymasiyla olusuyor.
+     Iki uc renk de mevcut tokenlar: yeni gri tonu uretilmiyor. */
+  background: linear-gradient(
+    90deg,
+    var(--cizgi) 0%,
+    var(--zemin) 40%,
+    var(--cizgi) 80%
+  );
+  background-size: 300% 100%;
+  animation: iskelet-kay 1.4s ease-in-out infinite;
+}
+
+.iskelet-satir.kisa {
+  width: 62%;
+}
+
+@keyframes iskelet-kay {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Surekli hareket bas donmesi tetikleyebiliyor. Isletim sisteminde "hareketi
+   azalt" acikken iskelet DURUR ama GORUNUR kalir: yer ayirma isini
+   animasyonsuz da yapiyor. */
+@media (prefers-reduced-motion: reduce) {
+  .iskelet-satir {
+    animation: none;
+    background: var(--cizgi);
+  }
+}
+
+.hata {
+  color: var(--hata);
+  font-size: var(--yazi-s);
+  margin: var(--bos-2) 0 0;
+  line-height: 1.45;
+}
+
+.uyari {
+  color: var(--uyari);
+  font-size: var(--yazi-s);
+  margin: var(--bos-2) 0 0;
+  line-height: 1.45;
+}
+
+.eksik {
+  margin: var(--bos-2) 0 0;
+  padding-left: var(--bos-5);
+  color: var(--uyari);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
+.bos-mesaj {
+  color: var(--soluk);
+}
+
+.parsel-liste {
+  list-style: none;
+  margin: var(--bos-2) 0 0;
+  padding: 0;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
+.parsel-liste li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  padding: var(--bos-1) 0;
+  border-bottom: 1px dashed var(--cizgi);
+}
+
+.oneri-alan {
+  margin-top: var(--bos-4);
+}
+
+.grup h3 {
+  margin: var(--bos-4) 0 var(--bos-2);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--toprak);
+}
+
+.urunler {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: var(--bos-3);
+}
+
+.urun {
+  border: 1px solid var(--cizgi);
+  border-left: 4px solid var(--cizgi);
+  border-radius: var(--yuvarlak-m);
+  padding: var(--bos-3) var(--bos-3);
+  background: var(--zemin);
+}
+
+.urun.cok-iyi {
+  border-left-color: var(--skor-cok-iyi);
+}
+.urun.iyi {
+  border-left-color: var(--skor-iyi);
+}
+.urun.orta {
+  border-left-color: var(--skor-orta);
+}
+.urun.zayif {
+  border-left-color: var(--skor-zayif);
+}
+
+.urun-bas {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.urun-ad {
+  font-weight: 600;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+}
+
+.urun-skor {
+  font-weight: 700;
+  font-size: var(--yazi-l);
+  line-height: var(--yazi-l-satir);
+  color: var(--yesil-koyu);
+}
+
+.urun-alt {
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--soluk);
+}
+
+/* Merkezlik cumlesi. Puanin YANINDA degil ALTINDA ve soluk duruyor:
+   puan degildir, puani aciklar. Ayni goruntu agirliginda olsaydi ikinci bir
+   puan sanilirdi. */
+.urun-merkez {
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-xs);
+  color: var(--soluk);
+  line-height: 1.35;
+}
+
+/* Ekim penceresi seridi: 12 ay, tam yil.
+   UYGUN OLMAYAN AYLAR DA CIZILIYOR. Sadece uygun aylar gosterilseydi "Mart,
+   Nisan, Ağustos" ile "Mart, Nisan, Mayıs" ayni uzunlukta gorunur, oysa
+   birincisi ikiye bolunmus bir pencere. Bosluk burada bilgi tasiyor. */
+.ay-serit {
+  display: flex;
+  gap: var(--bos-1);
+  margin-top: var(--bos-2);
+}
+
+.ay-hucre {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  font-size: var(--yazi-xs);
+  line-height: 16px;
+  border-radius: var(--yuvarlak-s);
+  background: var(--zemin);
+  color: var(--soluk);
+  overflow: hidden;
+}
+
+.ay-hucre.uygun {
+  background: var(--yesil);
+  color: var(--uzeri);
+}
+
+/* Icinde bulunulan ay. Renkle DEGIL cerceveyle isaretleniyor: renk zaten
+   "ekilebilir mi" sorusuna ayrilmis, ustune ikinci bir anlam bindirilirse
+   yesil hucrenin neyi soyledigi belirsizlesir. */
+.ay-hucre.simdi {
+  outline: 2px solid var(--metin);
+  outline-offset: -2px;
+  font-weight: 700;
+}
+
+.urun-aylar {
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-xs);
+  color: var(--yesil-koyu);
+  line-height: 1.35;
+}
+
+/* Puanin faktor kirilimi (detay bloğunda). Cubuk dolgusu skor olceginin ayni
+   basamaklarini kullanir; gerekce OneriListesi.tsx > SkorKirilimi icinde. */
+.kirilim {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-2);
+  margin-bottom: var(--bos-3);
+}
+
+.kirilim-bas {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+}
+
+.kirilim-ad {
+  color: var(--metin);
+}
+
+.kirilim-deger {
+  color: var(--soluk);
+  white-space: nowrap;
+}
+
+.kirilim-uyum {
+  font-variant-numeric: tabular-nums;
+}
+
+.kirilim-yol {
+  height: 6px;
+  border-radius: var(--yuvarlak-s);
+  background: var(--cizgi);
+  margin-top: var(--bos-1);
+  overflow: hidden;
+}
+
+.kirilim-dolu {
+  display: block;
+  height: 100%;
+  border-radius: var(--yuvarlak-s);
+}
+
+.kirilim-dolu.cok-iyi {
+  background: var(--skor-cok-iyi);
+}
+.kirilim-dolu.iyi {
+  background: var(--skor-iyi);
+}
+.kirilim-dolu.orta {
+  background: var(--skor-orta);
+}
+.kirilim-dolu.zayif {
+  background: var(--skor-zayif);
+}
+
+.kirilim-not {
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+}
+
+/* GAEZ satiri detay bloguna dusuk gorunum agirligiyla giriyor: puan degil,
+   puanin kaynak sinyali. Ana puanla karistirilmasin diye kucuk ve soluk. */
+.urun-gaez {
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-xs);
+  color: var(--soluk);
+  line-height: 1.35;
+}
+
+/* Filtre cubugu. Sarmalanir (wrap), yatay kaymaz: kisayol seridinin aksine
+   burada oge sayisi sabit ve az, kaydirmali serit gizlenen bir denetim
+   birakirdi. Filtre gizlenirse kullanici listenin neden kisa oldugunu
+   anlamaz. */
+.filtre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bos-2);
+  margin: var(--bos-3) 0 var(--bos-1);
+  padding-bottom: var(--bos-3);
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.filtre-secim {
+  font: inherit;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  padding: var(--bos-2) var(--bos-2);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-m);
+  background: var(--kart);
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.filtre-kutu {
+  display: flex;
+  align-items: center;
+  gap: var(--bos-2);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  cursor: pointer;
+}
+
+.filtre-kutu input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--yesil);
+  cursor: pointer;
+}
+
+/* Kac urunun elendigini soyleyen sayac. SADECE filtre acikken cikar: filtre
+   kapaliyken "29 üründen 29 tanesi" yazmak bilgi degil gurultu olurdu. */
+.filtre-sayi {
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+  margin-left: auto;
+}
+
+.filtre .dugme.yalin {
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  padding: var(--bos-2) var(--bos-3);
+}
+
+@media (pointer: coarse) {
+  .filtre-secim,
+  .filtre-kutu {
+    min-height: 44px;
+  }
+  .filtre-kutu input {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   KARSILASTIRMA
+--------------------------------------------------------------------------- */
+
+/* Kart icindeki secim kutusu. Kartin EN ALTINDA ve ust cizgiyle ayrilmis:
+   yukarisi urunun kendi bilgisi, burasi kullanicinin isi. Basliga bitisik
+   olsaydi puanin bir parcasi gibi okunurdu. */
+.urun-sec {
+  display: flex;
+  align-items: center;
+  gap: var(--bos-2);
+  margin-top: var(--bos-3);
+  padding-top: var(--bos-2);
+  border-top: 1px solid var(--cizgi);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.urun-sec input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--yesil);
+  cursor: pointer;
+}
+
+/* Sinira gelindiginde kutu SILINMIYOR, sonuyor. Kaybolan kutu "bu urun
+   karsilastirilamaz" izlenimi verirdi; oysa dogrusu "once birini birak". */
+.urun-sec:has(input:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.urun-sec input:disabled {
+  cursor: not-allowed;
+}
+
+/* Secili kartin kendisi de isaretli: tablo yukarida, kart asagida. Isaret
+   olmasa kullanici hangi ucunu sectigini bulmak icin listeyi tarardi. */
+.urun.secili {
+  border-color: var(--yesil);
+  box-shadow: 0 0 0 1px var(--yesil);
+}
+
+.karsilastir-ipucu {
+  margin: var(--bos-3) 0 0;
+  padding: var(--bos-2) var(--bos-3);
+  border-radius: var(--yuvarlak-m);
+  background: var(--basari-zemin);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--yesil-koyu);
+}
+
+.karsilastir {
+  margin-top: var(--bos-3);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-l);
+  background: var(--kart);
+  padding: var(--bos-3);
+  box-shadow: var(--golge-1);
+}
+
+.karsilastir-bas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  margin-bottom: var(--bos-2);
+}
+
+.karsilastir-bas h3 {
+  margin: 0;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+}
+
+/* Iki sutun en dar telefonda bile sigiyor (olculdu), yani bu kaydirma normal
+   kullanimda hic tetiklenmez. Yine de duruyor: cok uzun bir urun adi tabloyu
+   tasirirsa hucre kirilmak yerine kaysin. */
+.karsilastir-sar {
+  overflow-x: auto;
+}
+
+/* table-layout: fixed. Otomatik yerlesimde sutun genisligini ICERIK belirliyor
+   ve "893 mm" gibi bolunemez bir hucre tabloyu kabin disina itiyordu (olculdu:
+   375 px telefonda 268 px'lik kutuya 271 px'lik tablo). Sabit yerlesimde
+   genislikler asagidaki yuzdelerden okunur, icerik sarilir. */
+.karsilastir-tablo {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  overflow-wrap: break-word;
+}
+
+.karsilastir-tablo th,
+.karsilastir-tablo td {
+  border: 1px solid var(--cizgi);
+  padding: var(--bos-2);
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Olcut sutununun genisligi BURADA duruyor, tbody th'de degil: sabit
+   yerlesimde tarayici sutun genisliklerini yalnizca ILK satirdan okur. */
+.karsilastir-kose {
+  width: 32%;
+  border: 0 !important;
+  background: none;
+}
+
+.karsilastir-tablo tbody th {
+  font-weight: 600;
+  color: var(--soluk);
+  background: var(--zemin);
+}
+
+.karsilastir-tablo thead th {
+  background: var(--zemin);
+}
+
+/* Baslik hucresinin ICINDE flex. th'nin kendisine display:flex verilemez:
+   hucre tablo yerlesiminden cikar ve sutun genislikleri hesaplanmaz olur. */
+.karsilastir-sutun-bas {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--bos-1);
+}
+
+.karsilastir-ad {
+  font-weight: 700;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--metin);
+}
+
+.karsilastir-kaldir {
+  flex: none;
+  background: none;
+  border: 0;
+  padding: 0 var(--bos-1);
+  font: inherit;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-s-satir);
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.karsilastir-kaldir:hover {
+  color: var(--hata);
+}
+
+.karsilastir-puan {
+  font-weight: 700;
+  font-size: var(--yazi-l);
+  line-height: var(--yazi-l-satir);
+}
+.karsilastir-puan.cok-iyi {
+  color: var(--skor-cok-iyi);
+}
+.karsilastir-puan.iyi {
+  color: var(--skor-iyi);
+}
+.karsilastir-puan.orta {
+  color: var(--skor-orta);
+}
+.karsilastir-puan.zayif {
+  color: var(--skor-zayif);
+}
+
+.karsilastir-deger {
+  display: block;
+  color: var(--metin);
+}
+
+.karsilastir-uyum {
+  display: block;
+  margin-top: var(--bos-1);
+  color: var(--soluk);
+  font-variant-numeric: tabular-nums;
+}
+
+.karsilastir-yok {
+  color: var(--soluk);
+  font-style: italic;
+}
+
+.karsilastir-yol {
+  display: block;
+  height: 4px;
+  margin-top: var(--bos-1);
+  border-radius: var(--yuvarlak-s);
+  background: var(--cizgi);
+  overflow: hidden;
+}
+
+.karsilastir-dolu {
+  display: block;
+  height: 100%;
+  border-radius: var(--yuvarlak-s);
+}
+.karsilastir-dolu.cok-iyi {
+  background: var(--skor-cok-iyi);
+}
+.karsilastir-dolu.iyi {
+  background: var(--skor-iyi);
+}
+.karsilastir-dolu.orta {
+  background: var(--skor-orta);
+}
+.karsilastir-dolu.zayif {
+  background: var(--skor-zayif);
+}
+
+/* Satirin en iyisi. Renk TEK BASINA tasiyici degil: hucrenin sol kenarinda
+   ayrica bir kalinlik var, boylece renk goremeyen kullanici da hangi hucrenin
+   isaretli oldugunu gorur. */
+.karsilastir-tablo td.ust {
+  background: var(--basari-zemin);
+  border-left: 3px solid var(--yesil);
+}
+
+.karsilastir-not {
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+}
+
+@media (pointer: coarse) {
+  .urun-sec {
+    min-height: 44px;
+  }
+  .urun-sec input {
+    width: 22px;
+    height: 22px;
+  }
+  .karsilastir-kaldir {
+    padding: var(--bos-2);
+  }
+}
+
+.oneri-bolum {
+  margin-top: var(--bos-5);
+  border-top: 1px solid var(--cizgi);
+  padding-top: var(--bos-3);
+}
+
+.bolum-bas {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--bos-3);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.bolum-ad {
+  font-weight: 700;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+}
+
+.bolum-sayi {
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  font-weight: 700;
+  color: var(--yesil-koyu);
+  background: rgba(47, 122, 62, 0.1);
+  border-radius: var(--yuvarlak-tam);
+  padding: var(--bos-1) var(--bos-2);
+}
+
+.bolum-ok {
+  margin-left: auto;
+  font-size: var(--yazi-l);
+  line-height: var(--yazi-l-satir);
+  color: var(--soluk);
+}
+
+.bolum-alt {
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--soluk);
+}
+
+.urun-detay {
+  margin-top: var(--bos-2);
+  padding-top: var(--bos-2);
+  border-top: 1px dashed var(--cizgi);
+  font-size: var(--yazi-s);
+  line-height: 1.5;
+}
+
+.urun-detay p {
+  margin: 0 0 var(--bos-2);
+}
+
+.bilimsel {
+  font-style: italic;
+  color: var(--soluk);
+}
+
+/* --------------------------------------------------------------------------
+   Sekme cubugu (harita / teshis arasi anahtar)
+   -------------------------------------------------------------------------- */
+/* Cubuk alt cizgili sekmelerden BOLMELI DENETIME (segmented control) gecti.
+   Alt cizgili halde uc dugme sayfa zeminine yapisik duruyordu ve aralarindaki
+   tek fark 3 px'lik bir cizgiydi; hangisinin acik oldugunu anlamak icin ince
+   bir detaya bakmak gerekiyordu. Bolmeli denette acik olan sekme BEYAZ BIR
+   YUZEY olarak yukari kalkiyor, yani fark rengin yaninda yuzey sirasindan da
+   okunuyor.
+
+   SARMA KALDIRILDI, yerine cubugun KENDI ICINDE yatay kaydirma kondu.
+   Sarma, bolmeli denetin cercevesini iki satira boluyor ve tek bir denetim
+   gorunumunu bozuyordu. Kaydirmada en kotu ihtimal ucuncu sekmenin bir
+   parmak hareketi uzakta kalmasi; sayfanin KENDISI yana kaymiyor, cunku
+   tasma cerceve icinde sinirli.
+   Olcum: 375 px ekranda (12 px kenar boslugu ile) uculu 316 px, siginiyor;
+   320 px ekranda sigmiyor ve cubuk kaydiriliyor. */
+.sekme-cubugu {
+  display: flex;
+  gap: var(--bos-1);
+  padding: var(--bos-1);
+  /* Alt bosluk YOK: cubuk artik .ust-serit kabinin icinde ve bosluk kaba
+     verildi. Ikisinde birden olsaydi serit bos bir seride donerdi. */
+  margin: 0;
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-tam);
+  /* Denetim ICERIGI KADAR genis. Tam genislikte birakildiginda 1440 px'lik
+     ekranda 1352 px'lik bos bir cerceve ve sol basinda uc kucuk dugme
+     goruluyordu; cerceve neyi cevreledigini soylemez hale geliyordu.
+     max-width ile dar ekranda yine kaba sigiyor ve tasma kaydiriliyor. */
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  /* Kaydirma cubugu GIZLI: 4 px'lik cerceve icinde cizilince denetin alt
+     kenarini yiyordu. Kaydirilabildigi zaten tasan sekmeden anlasiliyor. */
+  scrollbar-width: none;
+}
+
+.sekme-cubugu::-webkit-scrollbar {
+  display: none;
+}
+
+.sekme {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 0;
+  border-radius: var(--yuvarlak-tam);
+  padding: var(--bos-2) var(--bos-4);
+  min-height: 40px;
+  /* Etiket ORTASINDAN bolunmesin: "Ürün / önerisi" diye ikiye kirilan bir
+     sekme adini bir bakista taramak zor. */
+  white-space: nowrap;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+  font-weight: 600;
+  color: var(--soluk);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.sekme:hover:not(.aktif) {
+  color: var(--metin);
+  background: var(--zemin);
+}
+
+/* Acik sekme: DOLU YESIL DEGIL, acik yesil zemin + koyu yesil yazi.
+   Dolu yesil denendi; sayfadaki tek dolu yesil oge "Rastgele nokta"
+   dugmesiydi ve sekme onunla ayni gorununce tiklanip bir is yapacak bir
+   dugme gibi duruyordu. Oysa acik sekme bir dugme degil, bulunulan yer.
+
+   Fark UC KANALDAN birden okunuyor: zemin rengi, yazi rengi ve kenar halkasi.
+   Yalniz renk birakilsaydi kirmizi-yesil ayirt edemeyen kullanici hangi
+   sekmede oldugunu goremezdi. */
+.sekme.aktif {
+  color: var(--yesil-koyu);
+  background: var(--basari-zemin);
+  box-shadow: inset 0 0 0 1px rgba(47, 122, 62, 0.28);
+}
+
+/* Telefonda uculu 392 px isterdi. Yazi bir kademe kuculup nefes payi
+   daralinca 316 px'e iniyor ve 375 px ekranda tek satirda kaliyor.
+   Dikey olcu 44 px'te tutuluyor: dokunma hedefi kucultulmedi. */
+@media (max-width: 480px) {
+  .sekme {
+    font-size: var(--yazi-s);
+    line-height: var(--yazi-s-satir);
+    padding: var(--bos-3) var(--bos-3);
+    min-height: 44px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Hastalik teshis paneli
+   -------------------------------------------------------------------------- */
+/* teshis-govde: tek kolon, orta hizala. Harita gorunumundeki iki-kolon
+   .govde ile ayni container ama grid disi (tek panel). */
+.teshis-govde {
+  display: block;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.teshis-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-4);
+}
+
+.teshis-tanit {
+  color: var(--soluk);
+  font-size: var(--yazi-s);
+  line-height: 1.5;
+  margin: 0 0 var(--bos-3);
+}
+
+.teshis-yukleme {
+  display: flex;
+  gap: var(--bos-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Native input gizleniyor, label dugme gorunumunde. Erisilebilirlik icin
+   input DOM'da kaliyor (klavye + ekran okuyucu label htmlFor ile erisir). */
+.teshis-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.teshis-sec-dugme {
+  display: inline-block;
+}
+
+.dugme.yalin {
+  background: transparent;
+  color: var(--soluk);
+  border: 1px solid var(--cizgi);
+}
+
+.dugme.yalin:hover:not(:disabled) {
+  background: var(--zemin);
+  color: var(--metin);
+}
+
+.dugme.birincil {
+  background: var(--yesil-koyu);
+}
+
+.teshis-analiz-dugme {
+  align-self: flex-start;
+  margin-top: var(--bos-1);
+}
+
+.teshis-onizleme {
+  margin-top: var(--bos-3);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-m);
+  overflow: hidden;
+  background: var(--zemin);
+}
+
+/* Kanvasin fotografa gore konumlanabilmesi icin sarmalayici. Kanvasi
+   dogrudan .teshis-onizleme'ye baglasaydik alt bilgi seridi de referans
+   kutuya girer ve isi asagi kayardi. */
+.teshis-gorsel {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+.teshis-onizleme img {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  background: #000;
+}
+
+/* Fotografin uzerinde duruyor ama tiklamayi yutmuyor: kullanici resme uzun
+   basip kaydetmek isteyebilir. */
+.teshis-isi {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.teshis-isi-satir {
+  margin-top: var(--bos-3);
+}
+
+.teshis-isi-not {
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--soluk);
+}
+
+.teshis-onizleme-alt {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--bos-2) var(--bos-3);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--soluk);
+}
+
+.dosya-ad {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+/* Rozet: seviye renkleri semantik. kesin=yesil (var(--yesil)), olasi=sari,
+   belirsiz=turuncu, tanimsiz=gri. Guven cubugu ile ayni palet. */
+/* Kucultme bildirimi: bilgi tonunda, uyari degil. Yapilan islem gizlenmiyor. */
+.teshis-kazanc {
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-xs);
+  color: var(--soluk);
+  line-height: 1.45;
+}
+
+.teshis-rozet {
+  display: inline-block;
+  padding: var(--bos-1) var(--bos-3);
+  border-radius: var(--yuvarlak-l);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--uzeri);
+}
+
+.teshis-rozet.kesin {
+  background: var(--guven-kesin);
+}
+
+.teshis-rozet.olasi {
+  background: var(--guven-olasi);
+}
+
+.teshis-rozet.belirsiz {
+  background: var(--guven-belirsiz);
+}
+
+.teshis-rozet.tanimsiz {
+  background: var(--guven-tanimsiz);
+}
+
+.teshis-guven-satiri {
+  display: flex;
+  align-items: center;
+  gap: var(--bos-3);
+  margin: var(--bos-2) 0 var(--bos-3);
+}
+
+.teshis-guven-cubugu {
+  flex: 1;
+  height: 10px;
+  background: var(--cizgi);
+  border-radius: var(--yuvarlak-s);
+  overflow: hidden;
+}
+
+.teshis-guven-doldu {
+  height: 100%;
+  transition: width 0.4s ease-out;
+}
+
+.teshis-guven-doldu.kesin {
+  background: var(--guven-kesin);
+}
+
+.teshis-guven-doldu.olasi {
+  background: var(--guven-olasi);
+}
+
+.teshis-guven-doldu.belirsiz {
+  background: var(--guven-belirsiz);
+}
+
+.teshis-guven-doldu.tanimsiz {
+  background: var(--guven-tanimsiz);
+}
+
+.teshis-guven-yazi {
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--soluk);
+  min-width: 80px;
+  text-align: right;
+}
+
+.teshis-urun {
+  margin: 0 0 var(--bos-2);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--soluk);
+}
+
+.teshis-urun strong {
+  color: var(--metin);
+}
+
+.teshis-uyari {
+  background: var(--uyari-zemin);
+  border-left: 3px solid var(--uyari);
+  padding: var(--bos-3) var(--bos-3);
+  margin: var(--bos-2) 0;
+  border-radius: var(--yuvarlak-s);
+  font-size: var(--yazi-s);
+  line-height: 1.5;
+  color: var(--metin);
+}
+
+/* Tekrar kutusu UYARI DEGIL: rengi bilerek notr. Ayni hastaligin ikinci kez
+   cikmasi kotu haber olabilir de olmayabilir de; sari/kirmizi bir kutu, veri
+   yalnizca "bu tarih daha once yazilmis" derken kullaniciya bir hukum okutur. */
+.teshis-tekrar {
+  background: var(--zemin);
+  border-left: 3px solid var(--toprak);
+  padding: var(--bos-3);
+  margin: var(--bos-2) 0;
+  border-radius: var(--yuvarlak-s);
+  font-size: var(--yazi-s);
+  line-height: 1.5;
+  color: var(--metin);
+}
+
+.teshis-gunluk-dugme {
+  margin-bottom: var(--bos-3);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
+.teshis-saglikli {
+  background: var(--basari-zemin);
+  border-left: 3px solid var(--yesil);
+  padding: var(--bos-3) var(--bos-3);
+  border-radius: var(--yuvarlak-s);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--yesil-koyu);
+  margin: var(--bos-2) 0;
+}
+
+.teshis-tedavi {
+  border-top: 1px solid var(--cizgi);
+  padding-top: var(--bos-3);
+  margin-top: var(--bos-3);
+}
+
+.teshis-tedavi h3 {
+  margin: 0 0 var(--bos-3);
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+  color: var(--yesil-koyu);
+}
+
+.tedavi-bolum {
+  margin-bottom: var(--bos-3);
+}
+
+.tedavi-bolum h4 {
+  margin: 0 0 var(--bos-1);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--soluk);
+}
+
+.tedavi-bolum p {
+  margin: 0;
+  font-size: var(--yazi-s);
+  line-height: 1.55;
+  color: var(--metin);
+}
+
+.teshis-alt-tahminler {
+  border-top: 1px dashed var(--cizgi);
+  padding-top: var(--bos-3);
+  margin-top: var(--bos-3);
+}
+
+.teshis-alt-tahminler h4 {
+  margin: 0 0 var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--soluk);
+}
+
+.teshis-alt-tahminler ol {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.teshis-alt-tahminler li {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--bos-2) 0;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  border-bottom: 1px dotted var(--cizgi);
+}
+
+.teshis-alt-tahminler li:last-child {
+  border-bottom: 0;
+}
+
+.alt-guven {
+  color: var(--soluk);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   Tarla takvimi (sulama / iklim riski / zararli)
+   -------------------------------------------------------------------------- */
+
+.tarla-govde {
+  display: block;
+}
+
+.tarla-panel {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Kayitli tarlalar seridi. Secim kutusunun USTUNDE duruyor cunku sirasi bu:
+   once hangi tarla, sonra o tarlada ne. Alta konsaydi kullanici dort kutuyu
+   doldurduktan sonra "zaten kayitliymis" diye gorurdu. */
+.tarlalarim {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bos-2);
+  margin-bottom: var(--bos-3);
+}
+
+/* Ad ve silme TEK CERCEVE icinde iki ayri dugme: silme ayri bir cerceve
+   olsaydi hangi tarlaya ait oldugu dar ekranda kopabilirdi. */
+.tarlam {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-tam);
+  background: var(--kart);
+  overflow: hidden;
+}
+
+.tarlam-ad,
+.tarlam-sil {
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tarlam-ad {
+  padding: var(--bos-2) var(--bos-3);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--yesil-koyu);
+}
+
+.tarlam-ad:hover {
+  background: var(--basari-zemin);
+}
+
+/* Silme yikici: acik durur ama SOLUK durur. Ad kadar goze carpsaydi yanlis
+   dugmeye basmak kolay olurdu; ustune gelince kirmiziya donup niyetini
+   soyluyor. */
+.tarlam-sil {
+  padding: 0 var(--bos-3);
+  border-left: 1px solid var(--cizgi);
+  font-size: var(--yazi-m);
+  line-height: 1;
+  color: var(--soluk);
+}
+
+.tarlam-sil:hover {
+  background: var(--hata-zemin);
+  color: var(--hata);
+}
+
+.tarlam-ad:focus-visible,
+.tarlam-sil:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: -2px;
+}
+
+.tarla-secim {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bos-4);
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-l);
+  padding: var(--bos-4) var(--bos-4);
+  margin-bottom: var(--bos-4);
+}
+
+.tarla-secim label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--soluk);
+}
+
+/* 44 px dokunma hedefi: bu ekran tarlada telefonla aciliyor. Gorunumun geri
+   kalani yukaridaki ortak form denetimi blogundan geliyor. */
+.tarla-secim select,
+.tarla-secim input {
+  min-height: 44px;
+}
+
+/* Urun listesi 116 secenek, tapu etiketi ("Aksu - ada 2422 parsel 2") daha da
+   uzun: bu ikisi dar ekranda tam genislik alsin, adlar kesilmesin.
+   NEDEN :first-child DEGIL: kutunun ilk alani parsel seciciydi, sonra urun
+   oldu, tapu listesi bos donerse yine degisiyor. Konuma bagli bir kural her
+   siralama degisikliginde sessizce yanlis alani genisletirdi. */
+.tarla-secim label.genis {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.tarla-secim input {
+  width: 150px;
+}
+
+/* Uc kart yan yana; dar ekranda alt alta. Kartlar bagimsiz yuklendigi icin
+   biri beklerken digeri okunabilir kaliyor. */
+.tarla-kartlar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: var(--bos-4);
+  align-items: start;
+}
+
+.tarla-olcum {
+  padding: var(--bos-2) 0 var(--bos-3);
+  border-bottom: 1px solid var(--cizgi);
+  margin-bottom: var(--bos-3);
+}
+
+.tarla-buyuk {
+  font-size: var(--yazi-2xl);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--yesil-koyu);
+}
+
+.tarla-birim {
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+  font-weight: 400;
+  color: var(--soluk);
+  margin-left: var(--bos-2);
+}
+
+.tarla-alt {
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--soluk);
+  margin-top: var(--bos-1);
+}
+
+.tarla-satirlar {
+  margin: 0;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
+.tarla-satirlar > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  padding: var(--bos-1) 0;
+}
+
+.tarla-satirlar dt {
+  color: var(--soluk);
+}
+
+.tarla-satirlar dd {
+  margin: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tarla-uyari {
+  margin: var(--bos-3) 0 0;
+  padding-top: var(--bos-3);
+  border-top: 1px solid var(--cizgi);
+  font-size: var(--yazi-xs);
+  line-height: 1.5;
+  color: var(--soluk);
+}
+
+.tarla-temiz {
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-s);
+  line-height: 1.45;
+  color: var(--soluk);
+}
+
+.risk-liste {
+  list-style: none;
+  margin: var(--bos-1) 0 0;
+  padding: 0;
+}
+
+.risk {
+  display: flex;
+  gap: var(--bos-3);
+  align-items: flex-start;
+  padding: var(--bos-3) 0;
+  border-bottom: 1px solid var(--cizgi);
+  font-size: var(--yazi-s);
+  line-height: 1.45;
+}
+
+.risk:last-child {
+  border-bottom: none;
+}
+
+.risk-rozet {
+  flex: none;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--yuvarlak-l);
+  padding: var(--bos-1) var(--bos-3);
+  margin-top: var(--bos-1);
+}
+
+/* Seviye rengi METINLE BIRLIKTE gider, tek basina anlam tasimaz: renk korligi
+   olan kullanici seviyeyi aciklamadan okur. */
+.risk-yuksek .risk-rozet {
+  background: var(--hata-zemin);
+  color: var(--hata);
+}
+
+.risk-orta .risk-rozet {
+  background: var(--uyari-zemin);
+  color: var(--uyari);
+}
+
+.risk-dusuk .risk-rozet {
+  background: var(--zemin);
+  color: var(--soluk);
+}
+
+.zararli-liste {
+  list-style: none;
+  margin: var(--bos-1) 0 0;
+  padding: 0;
+}
+
+.zararli-liste > li {
+  padding: var(--bos-3) 0;
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.zararli-liste > li:last-child {
+  border-bottom: none;
+}
+
+.zararli-bas {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+}
+
+.zararli-gdd {
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--soluk);
+  margin-top: var(--bos-1);
+}
+
+.zararli-not {
+  margin: var(--bos-2) 0 0;
+  font-size: var(--yazi-s);
+  line-height: 1.45;
+}
+
+/* --------------------------------------------------------------------------
+   Karbon ayak izi karti
+
+   Bes kalem var (gubre uretimi, dogrudan N2O, dolayli N2O, yakit, pompa) ve
+   ciftci icin ONEMLI OLAN SAYI DEGIL SIRALAMA: hangi kalem digerlerini
+   ezyiyor. Sadece rakam yazsaydik "429 mi buyuk 550 mi" diye okumak gerekirdi.
+   Cubuk bunu tek bakista veriyor, rakam da yaninda duruyor.
+   -------------------------------------------------------------------------- */
+
+.karbon-kalemler,
+.karbon-azaltim {
+  list-style: none;
+  margin: var(--bos-1) 0 0;
+  padding: 0;
+}
+
+.karbon-kalemler > li {
+  padding: var(--bos-2) 0;
+}
+
+.karbon-azaltim > li {
+  padding: var(--bos-2) 0;
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.karbon-azaltim > li:last-child {
+  border-bottom: none;
+}
+
+.karbon-kalem-bas {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
+.karbon-kalem-bas strong {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Oluk her zaman tam genislikte duruyor, dolan kisim icerideki span.
+   Boylece kalemler AYNI OLCEKTE okunuyor; her cubuk kendi kutusunu
+   doldursaydi en kucuk kalem de en buyugu kadar uzun gorunurdu. */
+.karbon-cubuk {
+  height: 6px;
+  margin-top: var(--bos-1);
+  border-radius: var(--yuvarlak-tam);
+  background: var(--zemin);
+  overflow: hidden;
+}
+
+.karbon-cubuk span {
+  display: block;
+  height: 100%;
+  border-radius: var(--yuvarlak-tam);
+  background: var(--yesil);
+}
+
+.karbon-kaynak {
+  margin: var(--bos-1) 0 0;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+}
+
+.karbon-baslik {
+  margin: var(--bos-4) 0 0;
+  padding-top: var(--bos-3);
+  border-top: 1px solid var(--cizgi);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  font-weight: 600;
+}
+
+/* Azaltim kazanci YESIL degil: yesil "iyi durumdasin" der, oysa bu sayi
+   "su kadarini henuz kazanmadin" demek. Koyu metin, isaret rengi yok. */
+.karbon-kazanc {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--yesil-koyu);
+}
+
+/* Hesabin sinirlari VARSAYILAN KAPALI ama silinmiyor: kapsam disi kalemler
+   (toprak organik karbonu, kirecleme) sonucun dogru okunmasi icin gerekli,
+   fakat karti acan ilk sey olmamali. */
+.karbon-detay {
+  margin-top: var(--bos-3);
+  padding-top: var(--bos-3);
+  border-top: 1px solid var(--cizgi);
+}
+
+.karbon-detay summary {
+  cursor: pointer;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.karbon-detay summary:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+  border-radius: var(--yuvarlak-s);
+}
+
+/* Detay icindeki uyarilar zaten ayrilmis bir bolumun icinde: her birine
+   ayrica ust cizgi cizmek kutuyu cizgi yiginina cevirirdi. */
+.karbon-detay .tarla-uyari {
+  border-top: none;
+  padding-top: 0;
+  margin-top: var(--bos-2);
+}
+
+/* --------------------------------------------------------------------------
+   Toprak besin karnesi
+
+   DIGER KARTLARDAN FARKLI DIZILIYOR. Otekiler "etiket solda deger sagda"
+   satirlari kullaniyor (.satirlar); burada her satirin altinda BIR CUMLE
+   aciklama var, cunku sayinin kendisi karar verdirmiyor: 811 kg/da toplam
+   azot, aciklamasi olmadan "gubre atmama gerek yok" diye okunur. Yan yana
+   dizim o cumleye yer birakmiyordu, o yuzden dt/dd alt alta.
+
+   Kilit ve laboratuvar kutulari AYRI CERCEVELI, cunku ucu farkli sey soyluyor:
+   olculenden cikan sonuc / toprakta var ama alinamiyor / hic olculemedi. Ayni
+   gorunselde toplansalar "eksik element" ile "alinamayan element" ayni
+   sanilirdi; oysa cozumleri zit yonde (gubre atmak / kireclemek).
+   -------------------------------------------------------------------------- */
+.besin-bolumler {
+  margin: var(--bos-3) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-3);
+}
+
+.besin-bolumler > div {
+  border-bottom: 1px dashed var(--cizgi);
+  padding-bottom: var(--bos-3);
+}
+
+.besin-bolumler > div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.besin-bolumler dt {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+}
+
+.besin-bolumler dd {
+  margin: 2px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.besin-bolumler dd strong {
+  font-size: var(--yazi-m);
+  line-height: 1.3;
+}
+
+.besin-sinif {
+  background: var(--zemin);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-s);
+  padding: 1px 6px;
+  font-size: var(--yazi-xs);
+  color: var(--metin);
+}
+
+.besin-not {
+  font-size: var(--yazi-xs);
+  line-height: 1.5;
+  color: var(--soluk);
+}
+
+.besin-kilit,
+.besin-lab,
+.besin-urun {
+  margin-top: var(--bos-3);
+  padding: var(--bos-3);
+  background: var(--zemin);
+  border-radius: var(--yuvarlak-s);
+}
+
+/* pH kilidi bir UYARIDIR: toprakta var olan besinin bitkiye ulasmamasi, eksik
+   besinden daha kolay gozden kacar cunku analiz raporunda "yeterli" yazar. */
+.besin-kilit {
+  background: var(--uyari-zemin);
+}
+
+.besin-kilit h4,
+.besin-lab h4,
+.besin-urun h4 {
+  margin: 0 0 var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--soluk);
+}
+
+.besin-kilit h4 {
+  color: var(--uyari);
+}
+
+.besin-kilit ul,
+.besin-lab ul,
+.besin-urun ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-2);
+  font-size: var(--yazi-s);
+  line-height: 1.5;
+}
+
+.besin-lab li {
+  display: flex;
+  flex-direction: column;
+}
+
+.besin-kilit .besin-not {
+  margin: var(--bos-2) 0 0;
+}
+
+/* --------------------------------------------------------------------------
+   Sezon gunlugu
+
+   KART, DIGERLERINDEN FARKLI OLARAK HEM GIRDI HEM CIKTI icerir. Otekiler
+   yalnizca sonuc gosterir; burada kullanici once yazar, sonra sonucu gorur.
+   Bu yuzden ust blok (tarih + tur dugmeleri) form gorunumunde, alt blok
+   (su acigi) oteki kartlarla ayni olcum gorunumunde: kullanici hangisinin
+   kendi yazdigi hangisinin hesaplanan oldugunu ayirt edebilsin.
+
+   DUGMELER 44 px: bu ekran tarlada, elde telefonla, muhtemelen eldivenle
+   aciliyor. "Sulama yaptim" dugmesine basmak, uygulamanin en sik tekrar
+   edilen isi olacak. */
+.gunluk-ekle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--bos-3);
+  padding-bottom: var(--bos-3);
+  border-bottom: 1px solid var(--kenar);
+}
+
+.gunluk-ekle label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-1);
+}
+
+.gunluk-tarih-etiket {
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--soluk);
+}
+
+.gunluk-dugmeler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bos-2);
+}
+
+.gunluk-dugmeler button {
+  min-height: 44px;
+  padding: 0 var(--bos-3);
+  font: inherit;
+  font-size: var(--yazi-s);
+  color: var(--metin);
+  background: var(--zemin);
+  border: 1px solid var(--kenar);
+  border-radius: var(--yuvarlak-tam);
+  cursor: pointer;
+}
+
+.gunluk-dugmeler button:hover {
+  border-color: var(--yesil);
+  color: var(--yesil-koyu);
+}
+
+/* Kayit yokken bos bir kutu degil, NEDEN bos oldugunu ve doldurulunca ne
+   olacagini soyleyen bir cumle. */
+.gunluk-bos {
+  margin: var(--bos-3) 0 0;
+  font-size: var(--yazi-s);
+  line-height: 1.55;
+  color: var(--soluk);
+}
+
+.gunluk-acik {
+  margin-top: var(--bos-3);
+}
+
+.gunluk-yorum {
+  margin: var(--bos-3) 0 0;
+  padding: var(--bos-3);
+  background: var(--basari-zemin);
+  border-radius: var(--yuvarlak-s);
+  font-size: var(--yazi-s);
+  line-height: 1.55;
+  color: var(--metin);
+}
+
+.gunluk-liste {
+  margin: var(--bos-3) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-1);
+}
+
+.gunluk-liste li {
+  display: flex;
+  align-items: center;
+  gap: var(--bos-2);
+  padding: var(--bos-2) 0;
+  border-top: 1px solid var(--kenar);
+  font-size: var(--yazi-s);
+}
+
+.gunluk-gun {
+  font-variant-numeric: tabular-nums;
+  color: var(--soluk);
+}
+
+.gunluk-tur {
+  font-weight: 600;
+}
+
+.gunluk-etiket {
+  color: var(--soluk);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gunluk-sil {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  font-size: var(--yazi-l);
+  line-height: 1;
+  color: var(--soluk);
+  background: none;
+  border: none;
+  border-radius: var(--yuvarlak-s);
+  cursor: pointer;
+}
+
+.gunluk-sil:hover {
+  color: var(--hata-metin, #b3261e);
+  background: var(--hata-zemin);
+}
+
+/* --------------------------------------------------------------------------
+   Soru kutusu (serbest metin -> dogru uzman)
+
+   SAG ALT KOSEDE, KAPALI DURUYOR. Once sekme cubugunun altinda her zaman acik
+   duruyordu; orada uc sekmenin de ustunden dikey alan yiyordu ve akla sonradan
+   gelen bir sorunun kutusu, ekrandaki ilk sey olmamali.
+
+   position: fixed SECILDI cunku kutu bir SAYFA OGESI degil, uygulama boyunca
+   ayni yerde duran bir arac. Akisa yerlestirseydik her sekmede farkli bir
+   yukseklige duser, kullanicinin "nerede olduğunu" her seferinde yeniden
+   ogrenmesi gerekirdi.
+
+   z-index HARITADAN YUKSEK olmali: Leaflet kendi katmanlarina 400'e kadar
+   deger veriyor, denetimlere 1000. 1100 ikisinin de ustunde.
+   -------------------------------------------------------------------------- */
+
+/* Kapali hal: tek dugme. Ikon + yazi birlikte; yalniz "?" isareti, her gun
+   yazilim kullanmayan bir kullanicidan tahmin beklemek olurdu. */
+.soru-acici {
+  position: fixed;
+  right: var(--bos-4);
+  bottom: var(--bos-4);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: var(--bos-2);
+  min-height: 44px;
+  padding: var(--bos-2) var(--bos-4);
+  border: 1px solid var(--yesil-koyu);
+  border-radius: var(--yuvarlak-tam);
+  background: var(--yesil);
+  color: #fff;
+  font: inherit;
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--golge-2);
+}
+
+.soru-acici:hover {
+  background: var(--yesil-koyu);
+}
+
+.soru-acici:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+}
+
+.soru-kutusu {
+  position: fixed;
+  right: var(--bos-4);
+  bottom: var(--bos-4);
+  z-index: 1100;
+  width: min(420px, calc(100vw - var(--bos-4) * 2));
+  /* Cevap uzun olabiliyor (sulama karti madde madde yaziyor). Tavan ekran
+     yuksekligine bagli: sabit bir piksel degeri, alcak ekranlarda paneli
+     tarayici cubugunun altina sokardi. */
+  max-height: min(560px, calc(100vh - var(--bos-4) * 2));
+  overflow-y: auto;
+  padding: var(--bos-4);
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-l);
+  box-shadow: var(--golge-2);
+}
+
+.soru-bas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  margin-bottom: var(--bos-3);
+}
+
+.soru-baslik {
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  font-weight: 600;
+}
+
+.soru-kapat {
+  border: none;
+  background: none;
+  padding: var(--bos-1) var(--bos-2);
+  font: inherit;
+  font-size: var(--yazi-l);
+  line-height: 1;
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.soru-kapat:hover {
+  color: var(--metin);
+}
+
+.soru-kapat:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+  border-radius: var(--yuvarlak-s);
+}
+
+/* DAR EKRANDA DA YAZI DURUYOR. Once burada yaziyi gizleyip dugmeyi 44 px'lik
+   bir "?" dairesine indirmistim; olculdu, sigiyordu. Ama sigmasi dogru
+   oldugu anlamina gelmiyor: bu uygulama tarlada, yazilimla arasi olmayan bir
+   kullanicinin telefonunda aciliyor ve kosedeki cikplak soru isaretinin ne
+   yaptigini tahmin etmesini beklemek, kazanilan 66 px'ten pahali. */
+/* Kose boslugu panelle AYNI kaliyor: dugmeye basildiginda panel dugmenin
+   yerinde aciliyor, bir yana kaymiyor. */
+@media (max-width: 480px) {
+  .soru-acici {
+    padding: var(--bos-2) var(--bos-3);
+  }
+}
+
+.soru-satir {
+  display: flex;
+  gap: var(--bos-2);
+}
+
+.soru-satir .alan {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+}
+
+.soru-satir .dugme {
+  flex: none;
+}
+
+.soru-ornekler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bos-2);
+  margin-top: var(--bos-2);
+}
+
+/* Ornekler DUGME degil ipucu gorunumunde: tiklanabilir olduklari bellidir ama
+   "Sor" dugmesiyle ayni agirlikta olsalardi asil eylem hangisi belirsizlesirdi. */
+.soru-ornek {
+  border: 1px solid var(--cizgi);
+  background: var(--kart);
+  border-radius: var(--yuvarlak-tam);
+  padding: var(--bos-2) var(--bos-3);
+  font: inherit;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.soru-ornek:hover {
+  border-color: var(--yesil);
+  color: var(--yesil-koyu);
+}
+
+.soru-ornek:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+}
+
+.soru-hata {
+  margin: var(--bos-2) 0 0;
+  padding: var(--bos-3);
+  border-radius: var(--yuvarlak-m);
+  background: var(--hata-zemin);
+  color: var(--hata);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
+.soru-yanit {
+  margin-top: var(--bos-2);
+  padding: var(--bos-4);
+  background: var(--kart);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-l);
+  box-shadow: var(--golge-1);
+}
+
+.soru-yanit-bas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bos-3);
+  margin-bottom: var(--bos-3);
+}
+
+/* Cevabi kapatmak PANELI kapatmak degildir: kullanici cevabi okuyup ikinci
+   bir soru sormak isteyebilir. Bu yuzden ayri bir dugme ve ayri bir gorunum
+   (yazi, koşedeki × degil). */
+.soru-yanit-kapat {
+  border: none;
+  background: none;
+  padding: var(--bos-1) var(--bos-2);
+  font: inherit;
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.soru-yanit-kapat:hover {
+  color: var(--metin);
+}
+
+.soru-yanit-kapat:focus-visible {
+  outline: 2px solid var(--odak);
+  outline-offset: 2px;
+  border-radius: var(--yuvarlak-s);
+}
+
+/* pre-wrap ZORUNLU: uzmanlarin cevabi satir satir kuruluyor (madde
+   listeleri, "- 3 gun sonra don riski" gibi). Varsayilan katlamada hepsi tek
+   paragrafa yapisir ve maddeler kaybolur. */
+.soru-cevap {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: var(--yazi-m);
+  line-height: var(--yazi-m-satir);
+}
+
+.soru-yanit .dugme {
+  margin-top: var(--bos-3);
+}
+
+@media (pointer: coarse) {
+  .soru-ornek,
+  .soru-kapat,
+  .soru-yanit-kapat,
+  .tarlam-ad,
+  .tarlam-sil {
+    min-height: 44px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Dokunmatik hedef boyutlari.
+
+   NEDEN (pointer: coarse), NEDEN (max-width) DEGIL: sorun ekranin dar olmasi
+   degil, PARMAGIN FARE IMLECINDEN KALIN olmasi. Genislige bakan bir kural
+   dokunmatik dizustunde hicbir sey buyutmez, dar pencerede acilmis masaustu
+   tarayicida ise gereksiz buyutur. "coarse" tam olarak "hassas isaretleyici
+   yok" demek, olculmesi gereken sey bu.
+
+   Olcum (375x812, degisiklikten once): 44 pikselin altinda 54 ogen vardi.
+   .kisayol 31, .dugme 40, .bolum-bas 24, .urun-bas 22, leaflet zoom 30 piksel.
+   Hedef 44: WCAG 2.2 asgarisi 24 piksel ama Apple ve Google'in ikisi de 44
+   oneriyor; tarlada eldivenli parmakla kullanilacak bir arayuzde asgari degil
+   onerilen deger alindi.
+
+   Sekmeler (.sekme, 62 piksel) zaten geciyordu, o yuzden burada yok.
+   Leaflet'in kaynak atif baglantilari (14 piksel) BILEREK buyutulmedi: onlar
+   yasal kaynak kunyesi, tiklanmasi beklenen bir eylem degil; buyutulmeleri
+   haritanin altini kaplar.
+   --------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+  .dugme,
+  .kisayol {
+    min-height: 44px;
+  }
+
+  /* Bu ikisi ic ice metinden ibaret satir dugmeleri; yukseklikleri iceriginden
+     geliyordu. Dikey dolgu yerine min-height + ortalama: dolgu verilseydi
+     kartin ic bosluklari dokunmatikte masaustundekinden farkli gorunurdu. */
+  .urun-bas,
+  .bolum-bas {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  /* Leaflet kendi 30 piksellik dokunma boyutunu (.leaflet-touch) uyguluyor.
+     Ikonun kendisi buyumesin diye sadece kutu buyutuluyor, satir yuksekligi
+     ile "+" ve "-" isaretleri ortada tutuluyor. */
+  .leaflet-touch .leaflet-control-zoom a,
+  .leaflet-control-zoom a {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+  }
+}

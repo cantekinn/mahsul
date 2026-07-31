@@ -24,6 +24,9 @@ SQLAlchemy>=2.0.0
 # Arayuz
 streamlit>=1.36.0
 
+# Test (yalnizca gelistirme; api/requirements.txt'ye GIRMEZ, canliya cikmaz)
+pytest>=8.0.0
+
 # Ortak
 pydantic>=2.7.0
 python-dotenv>=1.0.0

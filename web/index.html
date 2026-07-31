@@ -1,0 +1,38 @@
+<!doctype html>
+<!-- lang="tr": ekran okuyucu Turkce sesletim kullansin, tarayici "ceviri?"
+     diye sormasin. Vite sablonu "en" birakiyordu. -->
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <title>Tarım Asistanı</title>
+    <meta
+      name="description"
+      content="Toprak ve iklim verisinden ürün önerisi, yaprak fotoğrafından hastalık teşhisi, sulama ve zararlı takvimi."
+    />
+
+    <!-- Ikonlar: favicon.svg tek kaynak, PNG'ler scripts/ikon_uret.py ciktisi.
+         SVG once yazili: destekleyen tarayici onu secer, her boyutta net kalir. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <!-- iOS manifest ikonlarini KULLANMIYOR, ana ekrana eklerken sadece buna
+         bakiyor. Bu satir silinirse iPhone'da ikon yerine sayfa ekran goruntusu
+         cikar. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- Android'de adres cubugu, iOS'ta durum cubugu bu renge boyanir. Deger
+         stil.css'teki --yesil ile ayni; CSS degiskeni HTML'den okunamadigi icin
+         tekrarlaniyor, degistirilirse ikisi birlikte degismeli. -->
+    <meta name="theme-color" content="#2f7a3e" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Tarım" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

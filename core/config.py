@@ -26,5 +26,11 @@ class Settings:
     region: str = "Antalya"
     target_crops: tuple[str, ...] = ("domates", "biber", "patates")
 
+    # NOT: burada bir zamanlar agent_crops adinda 6 urunluk ortak bir liste
+    # vardi ve sulama/iklim/zararli uculu birden onu kullaniyordu. Kaldirildi:
+    # uc hesabin siniri ayni degil (iklim 116, sulama 84, zararli 5 urun) ve
+    # ortak liste en dara gore kesildigi icin elde olan bilgiyi atiyordu.
+    # Kapsam artik tablolardan turetiliyor: knowledge/kapsam.py.
+
 
 settings = Settings()

@@ -6,6 +6,18 @@ Akis:
 
 Urun sorguda gecerse (ornegin "domates") sadece o urun; yoksa bolge hedef
 urunleri (config.settings.target_crops) icin plan uretilir.
+
+IKI GIRIS KAPISI VAR, SEBEBI:
+  sulama_plani()   : saf hesap. Parametreleri acik alir, hata YUTMAZ, mesaj
+                     kurmaz. HTTP uc noktasi bunu cagirir; boylece Open-Meteo
+                     susunca kullaniciya 200 + "ulasilamadi" metni degil, 503 +
+                     sunucunun kendi gerekcesi doner (projenin /oneri'de
+                     yerlesik davranisi).
+  irrigation_node(): LangGraph adaptoru. Serbest metinden urun/asama cikarir,
+                     hatayi yutup sohbet cumlesi kurar, cunku grafik ortasinda
+                     patlayan bir dugum tum akisi durdurur.
+Hesap tek yerde (sulama_plani) duruyor; iki kapinin ayrisip farkli sayi
+uretmesi mumkun degil.
 """
 from __future__ import annotations
 
@@ -13,9 +25,11 @@ from agents.state import AgentState
 from core.config import settings
 from data.open_meteo import get_irrigation_inputs
 from knowledge import fao56
+from knowledge.kapsam import sulama_urunleri
 
-# sorguda urun/asama tespiti
-_CROPS = ("domates", "biber", "patates", "narenciye", "zeytin", "muz")
+# sorguda urun/asama tespiti. Kaynak: Kc tablosunun kendisi (bkz kapsam.py) -
+# elle tutulan bir liste, tablo genisleyince sessizce geride kalirdi.
+_CROPS = sulama_urunleri
 _STAGE_KEYWORDS = {
     "ini": ("fide", "ekim", "dikim", "baslangic", "cimlen"),
     "end": ("hasat", "olgun", "son donem"),
@@ -30,8 +44,47 @@ def _detect_stage(query: str) -> str:
 
 
 def _detect_crops(query: str) -> tuple[str, ...]:
-    found = tuple(c for c in _CROPS if c in query)
+    found = tuple(sorted(c for c in _CROPS() if c in query))
     return found or tuple(settings.target_crops)
+
+
+class ET0Yok(RuntimeError):
+    """Open-Meteo cevap verdi ama bu konum icin ET0 uretmedi (deniz, kutup)."""
+
+
+def sulama_plani(
+    lat: float,
+    lon: float,
+    urunler: tuple[str, ...],
+    asama: str = "mid",
+    alan_m2: float | None = None,
+) -> dict:
+    """Bir konum icin FAO-56 sulama plani. Saf hesap: hata YUTMAZ.
+
+    Open-Meteo erisilemezse cagiranin gormesi icin istisna yukari gider.
+    ET0 uretilemezse ET0Yok atar. Urunun FAO-56 Kc katsayisi yoksa fao56.KcYok
+    atar; burada yakalanmaz cunku "Kc'siz urune yaklasik bir sayi uretmek" bu
+    modulun yapmayacagi tek sey.
+    """
+    inputs = get_irrigation_inputs(lat, lon)
+    et0 = inputs.get("et0_mm_gun")
+    if et0 is None:
+        raise ET0Yok("Bu konum için ET0 verisi üretilemedi.")
+
+    # tahmin doneminin ORTALAMA gunluk yagisi (aya olceklemeden; yagisli bir
+    # haftayi tum aya yaymak net sulamayi yaniltir).
+    gun = max(inputs.get("gun", 7), 1)
+    rain_daily = inputs.get("yagis_mm_donem", 0.0) / gun
+
+    return {
+        "et0_mm_gun": et0,
+        "yagis_mm_donem": inputs["yagis_mm_donem"],
+        "gun": gun,
+        "asama": asama,
+        "planlar": [
+            fao56.irrigation_plan(et0, c, asama, rain_daily, alan_m2) for c in urunler
+        ],
+    }
 
 
 def irrigation_node(state: AgentState) -> AgentState:
@@ -48,8 +101,21 @@ def irrigation_node(state: AgentState) -> AgentState:
             "data": {},
         }}
 
+    stage = _detect_stage(query)
     try:
-        inputs = get_irrigation_inputs(lat, lon)
+        sonuc = sulama_plani(lat, lon, _detect_crops(query), stage, area)
+    except ET0Yok as exc:
+        return {"result": {"agent": "irrigation", "message": str(exc), "data": {}}}
+    except fao56.KcYok as exc:
+        # Ag hatasi degil kapsam sorunu; asagidaki genel dala dusup "hava
+        # servisine ulasilamadi" demesi kullaniciyi yanlis yere bakmaya iterdi.
+        return {"result": {
+            "agent": "irrigation",
+            "message": f"{exc.args[0].capitalize()} için FAO-56 su tüketim "
+                       "katsayısı (Kc) tanımlı değil, sulama miktarı "
+                       "hesaplanamıyor.",
+            "data": {},
+        }}
     except Exception as exc:  # ag/servis hatasi - agent cokmesin
         return {"result": {
             "agent": "irrigation",
@@ -57,22 +123,9 @@ def irrigation_node(state: AgentState) -> AgentState:
             "data": {},
         }}
 
-    et0 = inputs.get("et0_mm_gun")
-    if et0 is None:
-        return {"result": {
-            "agent": "irrigation",
-            "message": "Bu konum için ET0 verisi alınamadı.",
-            "data": {},
-        }}
-
-    # tahmin doneminin ORTALAMA gunluk yagisi (aya olceklemeden; yagisli bir
-    # haftayi tum aya yaymak net sulamayi yaniltir).
-    gun = max(inputs.get("gun", 7), 1)
-    rain_daily = inputs.get("yagis_mm_donem", 0.0) / gun
-
-    stage = _detect_stage(query)
-    crops = _detect_crops(query)
-    plans = [fao56.irrigation_plan(et0, c, stage, rain_daily, area) for c in crops]
+    et0 = sonuc["et0_mm_gun"]
+    gun = sonuc["gun"]
+    plans = sonuc["planlar"]
 
     lines = []
     for p in plans:
@@ -84,12 +137,12 @@ def irrigation_node(state: AgentState) -> AgentState:
     asama = {"ini": "başlangıç", "mid": "gelişme", "end": "hasat"}[stage]
     msg = (
         f"FAO-56 sulama planı (ET0={et0} mm/gün, {asama} aşaması, "
-        f"beklenen yağış {inputs['yagis_mm_donem']} mm/{gun} gün):\n"
+        f"beklenen yağış {sonuc['yagis_mm_donem']} mm/{gun} gün):\n"
         + "\n".join(lines)
     )
     return {"result": {"agent": "irrigation", "message": msg, "data": {
         "et0_mm_gun": et0,
-        "yagis_mm_donem": inputs["yagis_mm_donem"],
+        "yagis_mm_donem": sonuc["yagis_mm_donem"],
         "stage": stage,
         "planlar": plans,
     }}}

@@ -1,0 +1,65 @@
+# crop_params_global.yaml urun keyi -> GAEZ v4 3-harfli urun kodu
+#
+# Kaynak: FAO GAEZ v4 crop list (51 urun, 8110H high-input baseline).
+# Bizim ekilebilir 115 urunumuzun 43'u GAEZ'de bire bir eslesiyor. Geriye kalan
+# 72 urun (meyve agaclari, sebzeler, baharatlar, cerezlikler) GAEZ'de bu isimle
+# yok; onlar icin skor sadece EcoCrop katkisi ile hesaplanir (verimlilik puani
+# 0.3 skala, GAEZ katkisi 0 olur).
+#
+# guven degerleri:
+#   yuksek: bilimsel_ad tam eslesiyor (ornek: bugday=Triticum aestivum=whe)
+#   orta:   grup eslesmesi (ornek: portakal/limon/mandalina hepsi = cit)
+#
+# GAEZ kod acilimlari (referans):
+#   whe wheat, mze maize, rcw rice wetland, brl barley, oat oat, rye rye,
+#   srg sorghum, pml pearl millet, bck buckwheat, soy soybean, phb phaseolus
+#   bean, chk chickpea, pea dry pea, cow cowpea, grm green gram, pig pigeonpea,
+#   grd groundnut, alf alfalfa, wpo white potato, spo sweet potato, csv cassava,
+#   yam yam, sub sugar beet, car carrot, tom tomato, oni onion, cab cabbage,
+#   olv olive, cit citrus, ban banana, sfl sunflower, rsd rapeseed, flx flax,
+#   olp oil palm, con coconut, suc sugar cane, cot cotton, tob tobacco,
+#   cof coffee, tea tea, coc cocoa
+
+bugday:            {gaez: whe, guven: yuksek}
+misir:             {gaez: mze, guven: yuksek}
+celtik:            {gaez: rcw, guven: yuksek}
+arpa:              {gaez: brl, guven: yuksek}
+yulaf:             {gaez: oat, guven: yuksek}
+cavdar:            {gaez: rye, guven: yuksek}
+sorgum:            {gaez: srg, guven: yuksek}
+inci_dari:         {gaez: pml, guven: yuksek}
+karabugday:        {gaez: bck, guven: yuksek}
+soya:              {gaez: soy, guven: yuksek}
+fasulye:           {gaez: phb, guven: yuksek}
+nohut:             {gaez: chk, guven: yuksek}
+bezelye:           {gaez: pea, guven: yuksek}
+borulce:           {gaez: cow, guven: yuksek}
+mas_fasulyesi:     {gaez: grm, guven: yuksek}
+guvercin_bezelyesi: {gaez: pig, guven: yuksek}
+yer_fistigi:       {gaez: grd, guven: yuksek}
+yonca:             {gaez: alf, guven: yuksek}
+patates:           {gaez: wpo, guven: yuksek}
+tatli_patates:     {gaez: spo, guven: yuksek}
+manyok:            {gaez: csv, guven: yuksek}
+yam:               {gaez: yam, guven: yuksek}
+seker_pancari:     {gaez: sub, guven: yuksek}
+havuc:             {gaez: car, guven: yuksek}
+domates:           {gaez: tom, guven: yuksek}
+sogan:             {gaez: oni, guven: yuksek}
+lahana:            {gaez: cab, guven: yuksek}
+zeytin:            {gaez: olv, guven: yuksek}
+portakal:          {gaez: cit, guven: orta}
+limon:             {gaez: cit, guven: orta}
+mandalina:         {gaez: cit, guven: orta}
+muz:               {gaez: ban, guven: yuksek}
+aycicegi:          {gaez: sfl, guven: yuksek}
+kanola:            {gaez: rsd, guven: yuksek}
+keten:             {gaez: flx, guven: yuksek}
+yag_palmiyesi:     {gaez: olp, guven: yuksek}
+hindistan_cevizi:  {gaez: con, guven: yuksek}
+seker_kamisi:      {gaez: suc, guven: yuksek}
+pamuk:             {gaez: cot, guven: yuksek}
+tutun:             {gaez: tob, guven: yuksek}
+kahve:             {gaez: cof, guven: yuksek}
+cay:               {gaez: tea, guven: yuksek}
+kakao:             {gaez: coc, guven: yuksek}

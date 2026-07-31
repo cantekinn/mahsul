@@ -16,11 +16,13 @@ Bu sprintin en yüksek efor gerektiren işi olan görüntü tabanlı hastalık t
 
 | İş / Görev | SP | Sorumlu | Durum |
 | :--- | :---: | :---: | :---: |
-| Hastalık Teşhis Modeli (EfficientNetV2-S + Grad-CAM, PlantVillage + PlantDoc saha verisi, "diğer" OOD sınıfı) | 8 | Sıla | Done |
-| Teşhis Agent + Tedavi Bilgi Tabanı (treatments.yaml) Entegrasyonu | 5 | Sıla & Can | Done |
-| İklim Riski (kural tabanlı) ve Sulama Agent (FAO-56 Penman-Monteith) | 5 | Özlem | Done |
-| Zararlı Agent (Derece-Gün / GDD Fenoloji Modeli) | 5 | Can | Done |
-| Tüm Agent'ların LangGraph Orkestratöre Bağlanması + Arayüz | 5 | Can & Özlem | Done |
+| Hastalık Teşhis Modeli Eğitimi (EfficientNetV2-S + Grad-CAM) | 8 | Sıla | Done |
+| Yabancı Yaprak Reddi için "Diğer" OOD Sınıfı | 3 | Sıla | Done |
+| Teşhis Agent + Tedavi Bilgi Tabanı (treatments.yaml) | 4 | Sıla & Can | Done |
+| Sulama Agent (FAO-56 Penman-Monteith) | 3 | Özlem | Done |
+| Kural Tabanlı İklim Riski Agent | 2 | Özlem | Done |
+| Zararlı Agent (Derece-Gün / GDD Fenoloji) | 4 | Can | Done |
+| LangGraph Orkestratör Bağlama + Arayüz | 4 | Can & Özlem | Done |
 
 **Toplam planlanan:** 28 SP &nbsp;|&nbsp; **Tamamlanan:** 28 SP &nbsp;|&nbsp; **Sprint hedefine ulaşma:** %100
 

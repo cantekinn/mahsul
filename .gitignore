@@ -21,6 +21,28 @@ data/plantvillage/
 data/plantdoc/
 data/ood_holdout/
 
+# Saha dogrulama seti (236 foto / 71 MB). Ayni gerekce: ucuncu taraf acik
+# veri kumelerinden turetildi, depoya konsa lisans zinciri bizden gecmeye
+# baslar ve depo boyutu kodun 20 katina cikar. models/disease/eval_field.py
+# bu klasoru yeniden kurabiliyor.
+data/field_benchmark/
+
+# Arayuz derleme ciktilari
+web/node_modules/
+web/dist/
+
+# Dagitim dizini. scripts/yayin_hazirla.py bunu her calistiginda SIFIRDAN
+# uretiyor ve kendi git deposu var (Render'in kurdugu GitHub deposu).
+# Bu depoya da girseydi ayni dosyalar iki yerde durur, biri guncellenip digeri
+# unutuldugunda hangisinin dogru oldugu belirsiz kalirdi.
+_yayin/
+
+# ONBELLEK BILEREK DEPOYA GIRIYOR (data/_onbellek yok sayilmaz).
+# Ucretsiz barindirmada disk kalici degil: servis uykudan kalkinca calisma
+# anindaki onbellek silinir ve her nokta yeniden soguk acilir. Depoya gomulu
+# kopya (155 dosya / 463 KB) her acilista geri gelir. Kucuk ve tekrar
+# uretilebilir; scripts/onbellek_isit.py ile yeniden olusturulabiliyor.
+
 # IDE / OS
 .vscode/
 .idea/

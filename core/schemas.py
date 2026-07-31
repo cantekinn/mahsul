@@ -19,13 +19,24 @@ class Parcel(BaseModel):
 
 
 class SoilData(BaseModel):
-    """SoilGrids'ten gelen toprak ozellikleri (koordinattan)."""
+    """SoilGrids'ten gelen toprak ozellikleri (koordinattan).
+
+    bulk_density ve cec besin karnesi icin eklendi (bkz. knowledge/besin.py):
+    yigin yogunlugu olmadan "kac kg azot var" sorusu HESAPLANAMAZ, sadece
+    tahmin edilebilir; KDK ise topragin besini tutma kapasitesinin dogrudan
+    olcumudur, kil yuzdesinden cikarilan bir vekil degil.
+
+    Eski onbellek kayitlarinda bu iki alan YOK; None kalirlar ve besin karnesi
+    o hesabi yapmadigini soyler. Sessizce varsayilan deger konmaz.
+    """
     ph: float | None = None
     nitrogen: float | None = None
     clay: float | None = None
     sand: float | None = None
     silt: float | None = None
     organic_carbon: float | None = None
+    bulk_density: float | None = None   # g/cm3 (SoilGrids bdod)
+    cec: float | None = None            # cmol(c)/kg (katyon degisim kapasitesi)
 
 
 class ClimateData(BaseModel):

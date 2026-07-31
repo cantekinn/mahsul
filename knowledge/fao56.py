@@ -148,20 +148,165 @@ def effective_rainfall_daily(rainfall_mm_daily: float) -> float:
     return _RAIN_EFFECTIVE_FRAC * max(0.0, rainfall_mm_daily)
 
 
+# ---------------------------------------------------------------------------
 # FAO-56 tek bitki katsayisi Kc (ini / mid / end asamalari)
+#
+# KAYNAK: FAO Irrigation and Drainage Paper 56, Tablo 12 ("Single crop
+# coefficients Kc and mean maximum plant heights for non stressed, well-managed
+# crops in subhumid climates"). Degerler oradan aynen alindi, hicbiri
+# hesaplanmadi veya benzetilerek turetilmedi.
+#
+# ARALIK VERILEN HUCRELERDE ILK DEGER ALINDI. Tablo bazi hucrelerde aralik
+# yazar (ornek bugday Kc_end "0.25-0.4"). Bu bir belirsizlik araligi DEGIL, iki
+# farkli tanimli durumdur: ilk deger hasadin tam olgunlukta/kuru yapildigi
+# standart durum, ikinci deger yuksek artik nemde yesil hasat ya da ozellikle
+# uzun boylu cesitler icindir. Standart durum secildi ve kural TUM tabloda ayni
+# uygulandi. Ortalama alinmadi: ortalama, tabloda tanimi olmayan bir ucuncu
+# durum uydurmak olurdu.
+#
+# TABLODA OLMAYAN URUN BURAYA YAZILMADI. crop_params_global.yaml'da 115 urun
+# var, burada 84 tane; eksik 31'i (kekik, nane, incir, nar, mango, ayva, dut,
+# findik, kestane, kinoa, karabugday, bamya, fig...) FAO-56 Tablo 12'de
+# bulunmuyor. Benzer bir urunun katsayisini onlara kopyalamak sayiyi
+# buyuturdu ama sulama miktarini uydururdu; bunun yerine crop_coefficient()
+# HATA FIRLATIYOR ve arayuz "bu urun icin Kc yok" diyor.
+#
+# ONCEKI DAVRANIS BIR TUZAKTI: tanimsiz urunde sessizce 1.0 (referans cim)
+# donuluyordu. 1.0 gecerli bir Kc degeri oldugu icin hata hicbir yerde
+# gorunmuyordu; kullanici zeytin yerine kekik secse ETc'yi %43 fazla gorup
+# gereginden cok sulardi. Artik tanimsiz urun sessiz gecmiyor.
+# ---------------------------------------------------------------------------
 KC_TABLE: dict[str, dict[str, float]] = {
-    "domates":   {"ini": 0.60, "mid": 1.15, "end": 0.80},
-    "biber":     {"ini": 0.60, "mid": 1.05, "end": 0.90},
-    "patates":   {"ini": 0.50, "mid": 1.15, "end": 0.75},
-    "narenciye": {"ini": 0.70, "mid": 0.65, "end": 0.70},  # yer ortusu yok
-    "zeytin":    {"ini": 0.65, "mid": 0.70, "end": 0.70},
-    "muz":       {"ini": 0.50, "mid": 1.10, "end": 1.00},
+    # --- Tahil ---
+    "bugday":        {"ini": 0.30, "mid": 1.15, "end": 0.25},
+    "arpa":          {"ini": 0.30, "mid": 1.15, "end": 0.25},
+    "yulaf":         {"ini": 0.30, "mid": 1.15, "end": 0.25},
+    "misir":         {"ini": 0.30, "mid": 1.20, "end": 0.35},
+    "celtik":        {"ini": 1.05, "mid": 1.20, "end": 0.90},
+    "sorgum":        {"ini": 0.30, "mid": 1.00, "end": 0.55},
+    # Tablo 12 tek bir "Millet" satiri verir; uc dari turu de o satiri kullanir.
+    "dari":          {"ini": 0.30, "mid": 1.00, "end": 0.30},
+    "inci_dari":     {"ini": 0.30, "mid": 1.00, "end": 0.30},
+    "parmak_dari":   {"ini": 0.30, "mid": 1.00, "end": 0.30},
+
+    # --- Baklagil ---
+    "soya":          {"ini": 0.40, "mid": 1.15, "end": 0.50},
+    "fasulye":       {"ini": 0.40, "mid": 1.15, "end": 0.35},  # kuru tane
+    "nohut":         {"ini": 0.40, "mid": 1.00, "end": 0.35},
+    "mercimek":      {"ini": 0.40, "mid": 1.10, "end": 0.30},
+    "bezelye":       {"ini": 0.50, "mid": 1.15, "end": 0.30},  # kuru tane
+    "bakla":         {"ini": 0.50, "mid": 1.15, "end": 0.30},  # kuru tane
+    "borulce":       {"ini": 0.40, "mid": 1.05, "end": 0.60},
+    "mas_fasulyesi": {"ini": 0.40, "mid": 1.05, "end": 0.60},
+    "yer_fistigi":   {"ini": 0.40, "mid": 1.15, "end": 0.60},
+
+    # --- Kok / yumru ---
+    "patates":       {"ini": 0.50, "mid": 1.15, "end": 0.75},
+    "tatli_patates": {"ini": 0.50, "mid": 1.15, "end": 0.65},
+    "manyok":        {"ini": 0.30, "mid": 1.10, "end": 0.50},  # ikinci yil, kok almis
+    "seker_pancari": {"ini": 0.35, "mid": 1.20, "end": 0.70},
+    "havuc":         {"ini": 0.70, "mid": 1.05, "end": 0.95},
+    "turp":          {"ini": 0.70, "mid": 0.90, "end": 0.85},
+    "yaban_havucu":  {"ini": 0.50, "mid": 1.05, "end": 0.95},
+
+    # --- Sebze ---
+    "domates":       {"ini": 0.60, "mid": 1.15, "end": 0.80},
+    "biber":         {"ini": 0.60, "mid": 1.05, "end": 0.90},
+    "patlican":      {"ini": 0.60, "mid": 1.05, "end": 0.90},
+    "salatalik":     {"ini": 0.60, "mid": 1.00, "end": 0.75},  # taze tuketim
+    "kabak":         {"ini": 0.50, "mid": 0.95, "end": 0.75},
+    "karpuz":        {"ini": 0.40, "mid": 1.00, "end": 0.75},
+    "kavun":         {"ini": 0.50, "mid": 1.05, "end": 0.75},
+    "sogan":         {"ini": 0.70, "mid": 1.05, "end": 0.75},  # kuru sogan
+    "sarimsak":      {"ini": 0.70, "mid": 1.00, "end": 0.70},
+    "lahana":        {"ini": 0.70, "mid": 1.05, "end": 0.95},
+    "karnabahar":    {"ini": 0.70, "mid": 1.05, "end": 0.95},
+    "brokoli":       {"ini": 0.70, "mid": 1.05, "end": 0.95},
+    "marul":         {"ini": 0.70, "mid": 1.00, "end": 0.95},
+    "ispanak":       {"ini": 0.70, "mid": 1.00, "end": 0.95},
+    "enginar":       {"ini": 0.50, "mid": 1.00, "end": 0.95},
+    "kereviz":       {"ini": 0.70, "mid": 1.05, "end": 1.00},
+    "kuskonmaz":     {"ini": 0.50, "mid": 0.95, "end": 0.30},
+
+    # --- Meyve ---
+    # Narenciyede Kc yer ortusune baglidir; Tablo 12'nin "yer ortusu yok,
+    # %70 tac kapaligi" satiri alindi (Akdeniz'de yaygin durum).
+    "narenciye":     {"ini": 0.70, "mid": 0.65, "end": 0.70},
+    "portakal":      {"ini": 0.70, "mid": 0.65, "end": 0.70},
+    "limon":         {"ini": 0.70, "mid": 0.65, "end": 0.70},
+    "mandalina":     {"ini": 0.70, "mid": 0.65, "end": 0.70},
+    "zeytin":        {"ini": 0.65, "mid": 0.70, "end": 0.70},  # %40-60 yer kaplama
+    "uzum":          {"ini": 0.30, "mid": 0.85, "end": 0.45},  # sofralik/kurutmalik
+    "elma":          {"ini": 0.45, "mid": 0.95, "end": 0.70},
+    "armut":         {"ini": 0.45, "mid": 0.95, "end": 0.70},
+    "kiraz":         {"ini": 0.45, "mid": 0.95, "end": 0.70},
+    "visne":         {"ini": 0.45, "mid": 0.95, "end": 0.70},
+    "seftali":       {"ini": 0.45, "mid": 0.90, "end": 0.65},
+    "kayisi":        {"ini": 0.45, "mid": 0.90, "end": 0.65},
+    "erik":          {"ini": 0.45, "mid": 0.90, "end": 0.65},
+    "muz":           {"ini": 0.50, "mid": 1.10, "end": 1.00},  # birinci yil
+    "avokado":       {"ini": 0.60, "mid": 0.85, "end": 0.75},
+    "ananas":        {"ini": 0.50, "mid": 0.30, "end": 0.30},  # ciplak toprak
+    "kivi":          {"ini": 0.40, "mid": 1.05, "end": 1.05},
+    "hurma":         {"ini": 0.90, "mid": 0.95, "end": 0.95},  # hurma palmiyesi
+    # Tablo 12 tek bir "Berries (bushes)" satiri verir; calilarin hepsi ondan.
+    "yabanmersini":  {"ini": 0.30, "mid": 1.05, "end": 0.50},
+    "ahududu":       {"ini": 0.30, "mid": 1.05, "end": 0.50},
+    "frenk_uzumu":   {"ini": 0.30, "mid": 1.05, "end": 0.50},
+    "bektasi_uzumu": {"ini": 0.30, "mid": 1.05, "end": 0.50},
+
+    # --- Sert kabuklu ---
+    "ceviz":         {"ini": 0.50, "mid": 1.10, "end": 0.65},
+    "antep_fistigi": {"ini": 0.40, "mid": 1.10, "end": 0.45},
+    "badem":         {"ini": 0.40, "mid": 0.90, "end": 0.65},
+
+    # --- Yag bitkisi ---
+    "aycicegi":      {"ini": 0.35, "mid": 1.00, "end": 0.35},
+    "kanola":        {"ini": 0.35, "mid": 1.00, "end": 0.35},
+    "aspir":         {"ini": 0.35, "mid": 1.00, "end": 0.25},
+    "susam":         {"ini": 0.35, "mid": 1.10, "end": 0.25},
+    "keten":         {"ini": 0.35, "mid": 1.10, "end": 0.25},
+    # Tablo 12'nin genel "Palm trees" satiri.
+    "yag_palmiyesi":     {"ini": 0.95, "mid": 1.00, "end": 1.00},
+    "hindistan_cevizi":  {"ini": 0.95, "mid": 1.00, "end": 1.00},
+
+    # --- Endustriyel ---
+    "pamuk":         {"ini": 0.35, "mid": 1.15, "end": 0.70},
+    "seker_kamisi":  {"ini": 0.40, "mid": 1.25, "end": 0.75},
+    "tutun":         {"ini": 0.35, "mid": 1.10, "end": 0.85},
+    "serbetciotu":   {"ini": 0.30, "mid": 1.05, "end": 0.85},
+
+    # --- Icecek ---
+    "kahve":         {"ini": 0.90, "mid": 0.95, "end": 0.95},  # yer ortusu yok
+    "cay":           {"ini": 0.95, "mid": 1.00, "end": 1.00},  # golgesiz
+    "kakao":         {"ini": 1.00, "mid": 1.05, "end": 1.05},
+
+    # --- Yem bitkisi (bicim etkisi ortalamasi alinmis satirlar) ---
+    "yonca":         {"ini": 0.40, "mid": 0.95, "end": 0.90},
+    "ucgul":         {"ini": 0.40, "mid": 0.90, "end": 0.85},
+    "ingiliz_cimi":  {"ini": 0.95, "mid": 1.05, "end": 1.00},
 }
 
 
+class KcYok(KeyError):
+    """Bu urun FAO-56 Tablo 12'de yok, sulama hesabi yapilamaz.
+
+    Ayri bir tip cunku cagiran taraf bunu "sunucu hatasi" degil "kapsam
+    disinda" diye gostermeli: 500 degil, urunun desteklenmedigini soyleyen bir
+    cevap.
+    """
+
+
+def kc_var_mi(crop: str) -> bool:
+    """Bu urun icin Kc tanimli mi. Arayuz listeyi buna gore isaretler."""
+    return crop in KC_TABLE
+
+
 def crop_coefficient(crop: str, stage: str = "mid") -> float:
-    """Urun ve asama icin Kc. Bilinmiyorsa 1.0 (referans cim)."""
-    return KC_TABLE.get(crop, {}).get(stage, 1.0)
+    """Urun ve asama icin Kc. Tanimsiz urunde KcYok firlatir (bkz KC_TABLE)."""
+    if crop not in KC_TABLE:
+        raise KcYok(crop)
+    return KC_TABLE[crop][stage]
 
 
 def crop_water_need(et0: float, crop: str, stage: str = "mid") -> float:
