@@ -22,6 +22,8 @@ export type Zararli = components["schemas"]["ZararliYanit"];
 export type Kapsam = components["schemas"]["KapsamYanit"];
 export type Karbon = components["schemas"]["KarbonYanit"];
 export type Soru = components["schemas"]["SoruYanit"];
+export type Besin = components["schemas"]["BesinYanit"];
+export type GunlukSu = components["schemas"]["GunlukYanit"];
 export type TkgmParsel = components["schemas"]["TkgmParsel"];
 
 /**
@@ -118,8 +120,26 @@ export const api = {
   ) => al<Karbon>("/karbon", { lat, lon, urun, alan_m2, ...ek }),
   // Serbest metin sorusu. Nokta secili degilse de cagrilabilir: sunucu o zaman
   // cevap yerine "once nokta secin" yonlendirmesi doner (yonlendirme=true).
-  sor: (soru: string, lat?: number | null, lon?: number | null, alan_m2?: number) =>
-    al<Soru>("/sor", { soru, lat, lon, alan_m2 }),
+  // sonSulama VARSA sulama cevabina biriken acik cumlesi eklenir; yoksa cevap
+  // eskisi gibi doner. Bu yuzden istege bagli: gunlugu bos olan kullanici da
+  // ayni soruyu sorabilmeli.
+  sor: (
+    soru: string,
+    lat?: number | null,
+    lon?: number | null,
+    alan_m2?: number,
+    sonSulama?: string | null,
+  ) => al<Soru>("/sor", { soru, lat, lon, alan_m2, son_sulama: sonSulama }),
+  // Toprak besin karnesi. /toprak'tan AYRI bir olcumdur: bu 0-30 cm surum
+  // katmanini sorar, /toprak 0-5 cm yuzeyi. Ilk cagri ~5 s surer (uc derinlik
+  // ayri ayri cekiliyor), sonrasi sunucu diskinden gelir.
+  besin: (lat: number, lon: number, urun?: string) =>
+    al<Besin>("/besin", { lat, lon, urun }),
+  // Sezon gunlugunden gelen son sulama tarihiyle biriken su acigi.
+  // /sulama'dan farki yon: o ONUMUZDEKI 7 gunun tahminine bakar, bu GECMISE.
+  // Tarih olmadan cagrilamaz; hafizanin cevabi degistirdigi tek uc nokta bu.
+  gunlukSu: (lat: number, lon: number, urun: string, sonSulama: string, asama: string) =>
+    al<GunlukSu>("/gunluk", { lat, lon, urun, son_sulama: sonSulama, asama }),
   // Kayitli TKGM parselleri. Tek seferlik, konumdan bagimsiz liste.
   tkgmParselleri: () => al<TkgmParsel[]>("/parseller/tkgm"),
 };

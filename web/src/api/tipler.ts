@@ -70,6 +70,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/besin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Toprak besin karnesi (0-30 cm sürüm katmanı)
+         * @description Ölçülen toprak değerlerinden ne çıkarılabileceğini, ne çıkarılamayacağını
+         *     birlikte verir.
+         *
+         *     İlk sorgu ~5 saniye sürer: üç derinlik ayrı ayrı çekilir. Sonuç diske
+         *     yazılır, aynı hücre bir daha beklemez.
+         */
+        get: operations["besin_karnesi_uc_besin_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/parseller": {
         parameters: {
             query?: never;
@@ -230,6 +254,10 @@ export interface paths {
          * @description Yaprak fotoğrafı yükle, hastalık etiketi + tedavi kaydı al.
          *
          *     Boyut sınırı 6 MB, MIME tipi image/* olmalıdır. Yanıt sözleşmesi TeshisYanit.
+         *
+         *     Günlük gönderilirse teşhisin kendisi DEĞİŞMEZ; yalnızca `tekrar` alanı
+         *     dolar. Modelin çıktısını geçmiş kayda göre kaydırmak, aynı fotoğrafın
+         *     iki farklı çiftçide iki farklı sonuç vermesi demek olurdu.
          */
         post: operations["teshis_teshis_post"];
         delete?: never;
@@ -277,6 +305,29 @@ export interface paths {
          *     yoktur.
          */
         get: operations["sulama_sulama_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gunluk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Son sulamadan bu yana biriken su açığı
+         * @description Sezon günlüğündeki son sulama tarihi + ölçülen hava verisi.
+         *
+         *     Sulama gününün kendisi hesaba katılmaz (toprak o gün zaten ıslaktır),
+         *     ertesi günden başlanır. Yağışın %80'i etkili sayılır (FAO-56).
+         */
+        get: operations["gunluk_su_acigi_gunluk_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -372,6 +423,10 @@ export interface paths {
          *     Anahtar kelime eşleşmesi Türkçe karakterden bağımsızdır ('böcek' ve
          *     'bocek' aynı yere gider). Hiçbir eşleşme olmazsa genel danışmana düşer;
          *     'anlamadım' denmez.
+         *
+         *     `son_sulama` verilirse sulama cevabına, o günden bu yana biriken net su
+         *     açığı eklenir. Plan DEĞİŞMEZ; eklenen şey, planın çiftçinin kendi
+         *     geçmişiyle birlikte okunmasını sağlayan ikinci bir cümledir.
          */
         get: operations["sor_sor_get"];
         put?: never;
@@ -412,6 +467,99 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** BesinBolumu */
+        BesinBolumu: {
+            /** Anahtar */
+            anahtar: string;
+            /** Baslik */
+            baslik: string;
+            /** Deger */
+            deger: number;
+            /**
+             * Birim
+             * @default
+             */
+            birim: string;
+            /** Sinif */
+            sinif?: string | null;
+            /** Aciklama */
+            aciklama: string;
+        };
+        /** BesinEksik */
+        BesinEksik: {
+            /** Anahtar */
+            anahtar: string;
+            /** Sebep */
+            sebep: string;
+        };
+        /** BesinUrunu */
+        BesinUrunu: {
+            /** Ad */
+            ad?: string | null;
+            /**
+             * Verimlilik
+             * @description EcoCrop FER alanı: low | moderate | high.
+             */
+            verimlilik?: string | null;
+            /** Ph Araligi */
+            ph_araligi?: {
+                [key: string]: unknown;
+            } | null;
+            /** Notlar */
+            notlar?: string[];
+        };
+        /**
+         * BesinYanit
+         * @description Toprak besin karnesi.
+         *
+         *     GÜBRE DOZU İÇERMEZ ve bu bir eksiklik değil, bilerek verilmiş bir karardır:
+         *     doz hesabı ürünün kaldırdığı azot tablosunu ve toprağın mineralizasyon
+         *     hızını ister; ikisi de ölçülemiyor. Uydurulmuş bir doz, tarlaya gerçek
+         *     gübre attırırdı. Bunun yerine ölçülenden kesin çıkanlar verilir ve
+         *     ölçülemeyenler için hangi laboratuvar testinin isteneceği yazılır.
+         */
+        BesinYanit: {
+            /** Lat */
+            lat: number;
+            /** Lon */
+            lon: number;
+            /**
+             * Durum
+             * @description "ok" ise sonuç kesindir.
+             */
+            durum: string;
+            /** Kesin */
+            kesin: boolean;
+            /**
+             * Derinlik Cm
+             * @description Ölçümün derinliği. Laboratuvar raporlarıyla aynı sürüm katmanı olsun diye üç SoilGrids katmanı kalınlıkla ağırlıklandırılır; 0-5 cm tek başına organik maddeyi ölçülen üç Türk tarım noktasında 1.79-1.80 kat fazla gösteriyordu.
+             */
+            derinlik_cm: number;
+            /** Olculen */
+            olculen: {
+                [key: string]: components["schemas"]["OlculenDeger"];
+            };
+            /** Bolumler */
+            bolumler: components["schemas"]["BesinBolumu"][];
+            /**
+             * Eksik
+             * @description Ölçümü gelmediği için HESAPLANMAYAN bölümler ve sebebi.
+             */
+            eksik: components["schemas"]["BesinEksik"][];
+            /**
+             * Kilitli
+             * @description Toprakta bulunsa bile bu pH'ta bitkinin alamayacağı elementler.
+             */
+            kilitli: components["schemas"]["KilitliElement"][];
+            /**
+             * Laboratuvar
+             * @description Uydu verisinden ölçülemeyen elementler için istenecek test.
+             */
+            laboratuvar: components["schemas"]["LabTesti"][];
+            urun?: components["schemas"]["BesinUrunu"] | null;
+            /** Sure S */
+            sure_s: number;
+        };
         /** Body_teshis_teshis_post */
         Body_teshis_teshis_post: {
             /**
@@ -419,6 +567,11 @@ export interface components {
              * @description Yaprak fotoğrafı (JPG/PNG).
              */
             dosya: string;
+            /**
+             * Gunluk
+             * @description Sezon günlüğü kayıtları, JSON dizisi: [{"tarih":"2026-07-05","tur":"teshis","etiket":"..."}]. Verilirse aynı hastalığın tekrarı yanıtta bildirilir.
+             */
+            gunluk?: string | null;
         };
         /**
          * ClimateData
@@ -431,6 +584,63 @@ export interface components {
             humidity?: number | null;
             /** Rainfall */
             rainfall?: number | null;
+        };
+        /**
+         * GunlukYanit
+         * @description Son sulamadan bu yana biriken net su açığı.
+         *
+         *     /sulama'dan FARKI, ve bu fark özelliğin varlık sebebidir: /sulama
+         *     ÖNÜMÜZDEKİ 7 günün tahminine bakar ve "günde kaç mm ver" der. Burası
+         *     GEÇMİŞE bakar ve "en son suladığın günden bu yana ne kadar borç
+         *     birikti" der. İkincisi tarlanın kendi geçmişi olmadan hesaplanamaz;
+         *     hafızanın cevabı değiştirdiği tek yer budur.
+         *
+         *     Açık, toprakta o kadar su EKSİK demek değildir: toprağın tuttuğu nem
+         *     bu hesapta yok (ölçülmüyor). Bitkinin o günlerde tükettiği su ile o
+         *     günlerde düşen yağışın farkıdır.
+         */
+        GunlukYanit: {
+            /** Lat */
+            lat: number;
+            /** Lon */
+            lon: number;
+            /** Urun */
+            urun: string;
+            /** Urun Tr */
+            urun_tr: string;
+            /** Asama */
+            asama: string;
+            /** Asama Tr */
+            asama_tr: string;
+            /** Son Sulama */
+            son_sulama: string;
+            /** Gecen Gun */
+            gecen_gun: number;
+            /** Kc */
+            kc: number;
+            /**
+             * Etc Mm
+             * @description Geçen günlerin toplam bitki su tüketimi.
+             */
+            etc_mm: number;
+            /**
+             * Yagis Mm
+             * @description Aynı günlerin ölçülen ham yağışı.
+             */
+            yagis_mm: number;
+            /**
+             * Etkili Yagis Mm
+             * @description Yağışın bitkiye ulaşan kısmı (%80).
+             */
+            etkili_yagis_mm: number;
+            /** Acik Mm */
+            acik_mm: number;
+            /** Litre Dekar */
+            litre_dekar: number;
+            /** Yorum */
+            yorum: string;
+            /** Uyari */
+            uyari: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -572,6 +782,13 @@ export interface components {
             /** Aciklama */
             aciklama: string;
         };
+        /** KilitliElement */
+        KilitliElement: {
+            /** Element */
+            element: string;
+            /** Sebep */
+            sebep: string;
+        };
         /**
          * Kirpma
          * @description Modelin gercekte gordugu kare, ORIJINAL fotografin pikselinde.
@@ -665,6 +882,24 @@ export interface components {
             eksik?: string[];
             /** Sure S */
             sure_s: number;
+        };
+        /** LabTesti */
+        LabTesti: {
+            /** Element */
+            element: string;
+            /** Test */
+            test: string;
+            /** Gerekce */
+            gerekce: string;
+        };
+        /** OlculenDeger */
+        OlculenDeger: {
+            /** Ad */
+            ad: string;
+            /** Deger */
+            deger: number;
+            /** Birim */
+            birim: string;
         };
         /** OneriKumesi */
         OneriKumesi: {
@@ -837,6 +1072,14 @@ export interface components {
         /**
          * SoilData
          * @description SoilGrids'ten gelen toprak ozellikleri (koordinattan).
+         *
+         *     bulk_density ve cec besin karnesi icin eklendi (bkz. knowledge/besin.py):
+         *     yigin yogunlugu olmadan "kac kg azot var" sorusu HESAPLANAMAZ, sadece
+         *     tahmin edilebilir; KDK ise topragin besini tutma kapasitesinin dogrudan
+         *     olcumudur, kil yuzdesinden cikarilan bir vekil degil.
+         *
+         *     Eski onbellek kayitlarinda bu iki alan YOK; None kalirlar ve besin karnesi
+         *     o hesabi yapmadigini soyler. Sessizce varsayilan deger konmaz.
          */
         SoilData: {
             /** Ph */
@@ -851,6 +1094,10 @@ export interface components {
             silt?: number | null;
             /** Organic Carbon */
             organic_carbon?: number | null;
+            /** Bulk Density */
+            bulk_density?: number | null;
+            /** Cec */
+            cec?: number | null;
         };
         /** SoruYanit */
         SoruYanit: {
@@ -966,6 +1213,30 @@ export interface components {
             korunma: string;
         };
         /**
+         * TekrarKaydi
+         * @description Ayni hastaligin gunlukte daha once yazilmis olmasi.
+         *
+         *     HUKUM ICERMEZ. "Ilac ise yaramadi" demiyoruz: ayni hastaligin tekrar
+         *     gorulmesinin ilacin etkisizligi, yanlis doz, yeniden bulasma veya komsu
+         *     tarladan tasinma gibi ayirt edemedigimiz sebepleri olabilir. Yan yana
+         *     konan iki olgu, gunluge bakan ciftcinin zaten gorecegi seydir.
+         */
+        TekrarKaydi: {
+            /** Onceki Tarih */
+            onceki_tarih: string;
+            /** Gecen Gun */
+            gecen_gun: number;
+            /**
+             * Ilac Sayisi
+             * @description İki teşhis arasında kayıtlı ilaçlama sayısı.
+             */
+            ilac_sayisi: number;
+            /** Ilac Son */
+            ilac_son?: string | null;
+            /** Cumle */
+            cumle: string;
+        };
+        /**
          * TeshisYanit
          * @description Yaprak fotografindan hastalik teshis sonucu.
          *
@@ -1030,6 +1301,8 @@ export interface components {
             isi?: number[][] | null;
             /** @description Isi haritasinin oturdugu kare. */
             kirpma?: components["schemas"]["Kirpma"] | null;
+            /** @description Sezon günlüğü gönderildiyse ve aynı hastalık daha önce de teşhis edildiyse dolar. Fotoğraftan çıkmaz; geçmiş kayıttan çıkar. */
+            tekrar?: components["schemas"]["TekrarKaydi"] | null;
         };
         /** TkgmParsel */
         TkgmParsel: {
@@ -1242,6 +1515,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToprakYanit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    besin_karnesi_uc_besin_get: {
+        parameters: {
+            query: {
+                /** @description Enlem */
+                lat: number;
+                /** @description Boylam */
+                lon: number;
+                /** @description Bilgi tabanındaki ürün anahtarı. Verilirse ürünün pH aralığı ve verimlilik ihtiyacı toprakla karşılaştırılır. */
+                urun?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BesinYanit"];
                 };
             };
             /** @description Validation Error */
@@ -1535,6 +1844,46 @@ export interface operations {
             };
         };
     };
+    gunluk_su_acigi_gunluk_get: {
+        parameters: {
+            query: {
+                /** @description Enlem */
+                lat: number;
+                /** @description Boylam */
+                lon: number;
+                /** @description Kc gerektiği için zorunlu. */
+                urun: string;
+                /** @description Son sulama tarihi (YYYY-AA-GG). */
+                son_sulama: string;
+                /** @description ini=başlangıç, mid=gelişme, end=hasat */
+                asama?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GunlukYanit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     iklim_risk_iklim_riski_get: {
         parameters: {
             query: {
@@ -1661,6 +2010,8 @@ export interface operations {
                 lat?: number | null;
                 lon?: number | null;
                 alan_m2?: number | null;
+                /** @description Sezon günlüğündeki son sulama tarihi (YYYY-AA-GG). Yalnızca sulama sorularında kullanılır. */
+                son_sulama?: string | null;
             };
             header?: never;
             path?: never;

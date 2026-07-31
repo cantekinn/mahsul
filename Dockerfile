@@ -183,13 +183,13 @@ COPY --from=arayuz --chown=kullanici /kaynak/dist  web/dist
 RUN python -c "\
 from api.main import app, kisayollar, tkgm_parselleri; \
 from models.disease.classifier_onnx import is_available as teshis_hazir, _session, _cam_agirlik; \
-from knowledge import kapsam, karbon; \
+from knowledge import kapsam, karbon, besin, gunluk; \
 from agents.router import route; \
 yollar = {r.path for r in app.routes}; \
 [__import__('sys').exit(f'uc nokta eksik: {y}') for y in \
  ('/saglik', '/konum', '/toprak', '/parseller', '/oneri', '/kisayollar', '/teshis', \
-  '/sulama', '/iklim-riski', '/zararli', '/kapsam', '/karbon', '/sor', \
-  '/parseller/tkgm') \
+  '/sulama', '/iklim-riski', '/zararli', '/kapsam', '/karbon', '/sor', '/besin', \
+  '/gunluk', '/parseller/tkgm') \
  if y not in yollar]; \
 iklim = len(kapsam.kapsam('iklim')); \
 assert iklim >= 100, f'iklim kapsami {iklim} urun: crop_params_global.yaml imaja girmemis'; \
@@ -213,6 +213,13 @@ assert route('domatese kac litre su vermeliyim') == 'irrigation'; \
 assert route('karbon ayak izim ne kadar') == 'carbon'; \
 c = karbon.ayak_izi(1000.0)['toplam_kg_co2e']; \
 assert c > 0, 'karbon envanteri sifir dondu'; \
+assert abs(besin.organik_madde(23.28) - 4.0135) < 1e-3, \
+       'besin karnesi hesabi bozuk: knowledge/besin.py imaja girmemis olabilir'; \
+d = __import__('datetime').date; \
+g = gunluk.birikmis_acik(['2026-07-30'], [10.0], [0.0], d(2026, 7, 29), 'domates', \
+                         bugun=d(2026, 7, 30)); \
+assert (g['acik_mm'], g['litre_dekar']) == (11.5, 11500.0), \
+       f'sezon gunlugu su acigi hesabi bozuk: {g}'; \
 print(f'duman testi tamam: {len(k)} kisayol, {h} tam hazir, {len(p)} tapu parseli, teshis modeli yuklu')"
 
 EXPOSE 7860

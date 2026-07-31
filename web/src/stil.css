@@ -1459,6 +1459,26 @@ body {
   color: var(--metin);
 }
 
+/* Tekrar kutusu UYARI DEGIL: rengi bilerek notr. Ayni hastaligin ikinci kez
+   cikmasi kotu haber olabilir de olmayabilir de; sari/kirmizi bir kutu, veri
+   yalnizca "bu tarih daha once yazilmis" derken kullaniciya bir hukum okutur. */
+.teshis-tekrar {
+  background: var(--zemin);
+  border-left: 3px solid var(--toprak);
+  padding: var(--bos-3);
+  margin: var(--bos-2) 0;
+  border-radius: var(--yuvarlak-s);
+  font-size: var(--yazi-s);
+  line-height: 1.5;
+  color: var(--metin);
+}
+
+.teshis-gunluk-dugme {
+  margin-bottom: var(--bos-3);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+}
+
 .teshis-saglikli {
   background: var(--basari-zemin);
   border-left: 3px solid var(--yesil);
@@ -1937,6 +1957,259 @@ body {
   border-top: none;
   padding-top: 0;
   margin-top: var(--bos-2);
+}
+
+/* --------------------------------------------------------------------------
+   Toprak besin karnesi
+
+   DIGER KARTLARDAN FARKLI DIZILIYOR. Otekiler "etiket solda deger sagda"
+   satirlari kullaniyor (.satirlar); burada her satirin altinda BIR CUMLE
+   aciklama var, cunku sayinin kendisi karar verdirmiyor: 811 kg/da toplam
+   azot, aciklamasi olmadan "gubre atmama gerek yok" diye okunur. Yan yana
+   dizim o cumleye yer birakmiyordu, o yuzden dt/dd alt alta.
+
+   Kilit ve laboratuvar kutulari AYRI CERCEVELI, cunku ucu farkli sey soyluyor:
+   olculenden cikan sonuc / toprakta var ama alinamiyor / hic olculemedi. Ayni
+   gorunselde toplansalar "eksik element" ile "alinamayan element" ayni
+   sanilirdi; oysa cozumleri zit yonde (gubre atmak / kireclemek).
+   -------------------------------------------------------------------------- */
+.besin-bolumler {
+  margin: var(--bos-3) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-3);
+}
+
+.besin-bolumler > div {
+  border-bottom: 1px dashed var(--cizgi);
+  padding-bottom: var(--bos-3);
+}
+
+.besin-bolumler > div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.besin-bolumler dt {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  color: var(--soluk);
+}
+
+.besin-bolumler dd {
+  margin: 2px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.besin-bolumler dd strong {
+  font-size: var(--yazi-m);
+  line-height: 1.3;
+}
+
+.besin-sinif {
+  background: var(--zemin);
+  border: 1px solid var(--cizgi);
+  border-radius: var(--yuvarlak-s);
+  padding: 1px 6px;
+  font-size: var(--yazi-xs);
+  color: var(--metin);
+}
+
+.besin-not {
+  font-size: var(--yazi-xs);
+  line-height: 1.5;
+  color: var(--soluk);
+}
+
+.besin-kilit,
+.besin-lab,
+.besin-urun {
+  margin-top: var(--bos-3);
+  padding: var(--bos-3);
+  background: var(--zemin);
+  border-radius: var(--yuvarlak-s);
+}
+
+/* pH kilidi bir UYARIDIR: toprakta var olan besinin bitkiye ulasmamasi, eksik
+   besinden daha kolay gozden kacar cunku analiz raporunda "yeterli" yazar. */
+.besin-kilit {
+  background: var(--uyari-zemin);
+}
+
+.besin-kilit h4,
+.besin-lab h4,
+.besin-urun h4 {
+  margin: 0 0 var(--bos-2);
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--soluk);
+}
+
+.besin-kilit h4 {
+  color: var(--uyari);
+}
+
+.besin-kilit ul,
+.besin-lab ul,
+.besin-urun ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-2);
+  font-size: var(--yazi-s);
+  line-height: 1.5;
+}
+
+.besin-lab li {
+  display: flex;
+  flex-direction: column;
+}
+
+.besin-kilit .besin-not {
+  margin: var(--bos-2) 0 0;
+}
+
+/* --------------------------------------------------------------------------
+   Sezon gunlugu
+
+   KART, DIGERLERINDEN FARKLI OLARAK HEM GIRDI HEM CIKTI icerir. Otekiler
+   yalnizca sonuc gosterir; burada kullanici once yazar, sonra sonucu gorur.
+   Bu yuzden ust blok (tarih + tur dugmeleri) form gorunumunde, alt blok
+   (su acigi) oteki kartlarla ayni olcum gorunumunde: kullanici hangisinin
+   kendi yazdigi hangisinin hesaplanan oldugunu ayirt edebilsin.
+
+   DUGMELER 44 px: bu ekran tarlada, elde telefonla, muhtemelen eldivenle
+   aciliyor. "Sulama yaptim" dugmesine basmak, uygulamanin en sik tekrar
+   edilen isi olacak. */
+.gunluk-ekle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--bos-3);
+  padding-bottom: var(--bos-3);
+  border-bottom: 1px solid var(--kenar);
+}
+
+.gunluk-ekle label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-1);
+}
+
+.gunluk-tarih-etiket {
+  font-size: var(--yazi-xs);
+  line-height: var(--yazi-xs-satir);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--soluk);
+}
+
+.gunluk-dugmeler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bos-2);
+}
+
+.gunluk-dugmeler button {
+  min-height: 44px;
+  padding: 0 var(--bos-3);
+  font: inherit;
+  font-size: var(--yazi-s);
+  color: var(--metin);
+  background: var(--zemin);
+  border: 1px solid var(--kenar);
+  border-radius: var(--yuvarlak-tam);
+  cursor: pointer;
+}
+
+.gunluk-dugmeler button:hover {
+  border-color: var(--yesil);
+  color: var(--yesil-koyu);
+}
+
+/* Kayit yokken bos bir kutu degil, NEDEN bos oldugunu ve doldurulunca ne
+   olacagini soyleyen bir cumle. */
+.gunluk-bos {
+  margin: var(--bos-3) 0 0;
+  font-size: var(--yazi-s);
+  line-height: 1.55;
+  color: var(--soluk);
+}
+
+.gunluk-acik {
+  margin-top: var(--bos-3);
+}
+
+.gunluk-yorum {
+  margin: var(--bos-3) 0 0;
+  padding: var(--bos-3);
+  background: var(--basari-zemin);
+  border-radius: var(--yuvarlak-s);
+  font-size: var(--yazi-s);
+  line-height: 1.55;
+  color: var(--metin);
+}
+
+.gunluk-liste {
+  margin: var(--bos-3) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bos-1);
+}
+
+.gunluk-liste li {
+  display: flex;
+  align-items: center;
+  gap: var(--bos-2);
+  padding: var(--bos-2) 0;
+  border-top: 1px solid var(--kenar);
+  font-size: var(--yazi-s);
+}
+
+.gunluk-gun {
+  font-variant-numeric: tabular-nums;
+  color: var(--soluk);
+}
+
+.gunluk-tur {
+  font-weight: 600;
+}
+
+.gunluk-etiket {
+  color: var(--soluk);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gunluk-sil {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  font-size: var(--yazi-l);
+  line-height: 1;
+  color: var(--soluk);
+  background: none;
+  border: none;
+  border-radius: var(--yuvarlak-s);
+  cursor: pointer;
+}
+
+.gunluk-sil:hover {
+  color: var(--hata-metin, #b3261e);
+  background: var(--hata-zemin);
 }
 
 /* --------------------------------------------------------------------------

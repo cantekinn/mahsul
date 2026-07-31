@@ -291,7 +291,11 @@ export default function App() {
 
       {gorunum === "teshis" && (
         <main className="govde teshis-govde">
-          <TeshisPaneli />
+          {/* Nokta VERILIR ama zorunlu degildir: teshis fotograftan cikar,
+              konum bilmeyi gerektirmez. Nokta yalnizca sezon gunlugu icin
+              lazim (hangi tarlanin gunlugu). Nokta secilmemisse teshis yine
+              calisir, sadece gunluk yazma ve tekrar uyarisi kapali kalir. */}
+          <TeshisPaneli nokta={nokta} />
         </main>
       )}
     </div>

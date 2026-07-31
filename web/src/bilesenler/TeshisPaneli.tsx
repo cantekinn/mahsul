@@ -23,7 +23,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiHatasi } from "../api/istemci";
 import { teshisEt, type Teshis } from "../api/teshis";
 import { kucult } from "../gorsel";
+import { bugunISO, useGunluk } from "../gunluk";
 import { Kart } from "./Durum";
+
+type Nokta = { lat: number; lon: number };
 
 type Durum =
   | { tur: "bos" }
@@ -168,8 +171,12 @@ function IsiBindirme({
   return <canvas ref={tuval} className="teshis-isi" aria-hidden="true" />;
 }
 
-export default function TeshisPaneli() {
+export default function TeshisPaneli({ nokta }: { nokta: Nokta | null }) {
   const [durum, setDurum] = useState<Durum>({ tur: "bos" });
+  // Sezon gunlugu, teshisin GECMISLE karsilastirilabilmesi icin. Nokta yoksa
+  // hook bos liste doner ve gunluk ozellikleri sessizce kapali kalir; teshis
+  // fotograftan cikan bir sonuc, konuma bagli degil.
+  const gunluk = useGunluk(nokta?.lat ?? null, nokta?.lon ?? null);
   // Isi haritasi varsayilan olarak ACIK: kullanicinin sormadan once merak
   // ettigi sey "neye bakti". Kapatma secenegi lekenin kendisini gormek
   // isteyen icin duruyor.
@@ -229,7 +236,9 @@ export default function TeshisPaneli() {
     const { dosya, onizlemeUrl, kazanc } = durum;
     setDurum({ tur: "yukleniyor", dosya, onizlemeUrl, kazanc });
     try {
-      const t = await teshisEt(dosya);
+      // Gunluk gonderilir; sunucu yalnizca "bu hastalik daha once de var mi"
+      // sorusunu cevaplar, teshisin kendisini degistirmez.
+      const t = await teshisEt(dosya, gunluk.sunucuIcin());
       setDurum({ tur: "sonuc", dosya, onizlemeUrl, kazanc, teshis: t });
     } catch (e) {
       setDurum({
@@ -356,14 +365,40 @@ export default function TeshisPaneli() {
         {durum.tur === "hata" && <p className="hata">{durum.mesaj}</p>}
       </Kart>
 
-      {durum.tur === "sonuc" && <SonucKarti teshis={durum.teshis} />}
+      {durum.tur === "sonuc" && (
+        <SonucKarti teshis={durum.teshis} gunluk={gunluk} />
+      )}
     </div>
   );
 }
 
-function SonucKarti({ teshis }: { teshis: Teshis }) {
+function SonucKarti({
+  teshis,
+  gunluk,
+}: {
+  teshis: Teshis;
+  gunluk: ReturnType<typeof useGunluk>;
+}) {
   const renk = seviyeRenk(teshis.seviye);
   const yuzde = Math.round(teshis.guven * 100);
+  const [yazildi, setYazildi] = useState(false);
+
+  // Gunluge KENDILIGINDEN yazilmaz, kullanici basar.
+  //
+  // Sebep: teshis her zaman dogru degil (seviye "belirsiz" bile olabilir) ve
+  // yanlis bir etiketi sessizce gunluge yazmak, sonraki sezonlarda o tarlanin
+  // gecmisini bozardi. Ustelik kullanici deneme amacli birkac fotograf
+  // yukleyebilir; her denemenin gunluge dusmesi kaydi kullanilamaz hale
+  // getirirdi. Yazma karari, kaydin sahibine ait.
+  const gunlugeYaz = () => {
+    gunluk.ekle({
+      tarih: bugunISO(),
+      tur: "teshis",
+      etiket: teshis.etiket,
+      not: teshis.etiket_tr,
+    });
+    setYazildi(true);
+  };
 
   return (
     <Kart
@@ -389,6 +424,25 @@ function SonucKarti({ teshis }: { teshis: Teshis }) {
       )}
 
       {teshis.uyari && <p className="teshis-uyari">{teshis.uyari}</p>}
+
+      {/* TEKRAR, fotograftan degil GECMIS KAYITTAN cikar. Ayni fotografi
+          gunluksuz gonderen bir kullanici bu kutuyu gormez ve teshis yine
+          ayni cikar; degisen sey, cevabin kullanicinin kendi gecmisiyle
+          birlikte okunmasi. */}
+      {teshis.tekrar && (
+        <p className="teshis-tekrar">{teshis.tekrar.cumle}</p>
+      )}
+
+      {gunluk.yerVar && (
+        <button
+          type="button"
+          className="dugme yalin teshis-gunluk-dugme"
+          onClick={gunlugeYaz}
+          disabled={yazildi}
+        >
+          {yazildi ? "Günlüğe yazıldı" : "Bu teşhisi sezon günlüğüne yaz"}
+        </button>
+      )}
 
       {teshis.tedavi && (
         <div className="teshis-tedavi">

@@ -27,6 +27,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiHatasi } from "../api/istemci";
 import type { Soru } from "../api/istemci";
+import { useGunluk } from "../gunluk";
 
 type Nokta = { lat: number; lon: number };
 
@@ -54,6 +55,10 @@ export default function SoruKutusu({
   const [hata, setHata] = useState<string | null>(null);
   const [bekliyor, setBekliyor] = useState(false);
   const alan = useRef<HTMLInputElement>(null);
+  // Gunluk BURADAN okunuyor, App'ten prop olarak gecirilmiyor: kutu her
+  // sekmede duruyor ve noktayi zaten biliyor; ayni veriyi bir de yukaridan
+  // tasimak, iki kaynagin birbirinden sapabilecegi ikinci bir yol acardi.
+  const gunluk = useGunluk(nokta?.lat ?? null, nokta?.lon ?? null);
 
   // Acilinca imlec kutuya gidiyor: kullanici dugmeye zaten "yazacagim" diye
   // basti, ikinci bir tiklama istemek o niyeti bosa cikarir.
@@ -78,7 +83,11 @@ export default function SoruKutusu({
     setBekliyor(true);
     setHata(null);
     try {
-      setYanit(await api.sor(s, nokta?.lat, nokta?.lon, alanM2));
+      // Son sulama tarihi HER soruda gonderiliyor, yalnizca sulama sorusunda
+      // degil: hangi cumlenin sulama niyetine gidecegine sunucudaki router
+      // karar veriyor, burada ikinci bir tahmin yurutmek ayni kurali iki yerde
+      // tutmak olurdu. Tarih ilgisizse sunucu zaten kullanmaz.
+      setYanit(await api.sor(s, nokta?.lat, nokta?.lon, alanM2, gunluk.sonSulama));
     } catch (e) {
       setYanit(null);
       setHata(e instanceof ApiHatasi ? e.message : "Sunucuya ulaşılamadı");

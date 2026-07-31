@@ -297,3 +297,55 @@ def get_irrigation_inputs(lat: float, lon: float, days: int = 7, timeout: int = 
         "yagis_mm_donem": round(sum(rains), 1) if rains else 0.0,
         "gun": len(et0s),
     }
+
+
+# Open-Meteo'nun past_days ust siniri 92. Sezon gunlugu icin 60 fazlasiyla
+# yeter (iki aydan once sulanmis bir tarlanin su acigini hesaplamak zaten
+# anlamsiz), ama siniri burada acikca yaziyoruz ki cagiran taraf sessizce
+# kirpilmis bir pencereyle dogru sanilan bir toplam almasin.
+GECMIS_GUN_TAVANI = 60
+
+
+def get_gunluk_su_serisi(
+    lat: float, lon: float, gecmis_gun: int = 30, timeout: int = 20
+) -> dict:
+    """Gecmis gunlerin GUN GUN ET0 ve yagisi (tarih etiketleriyle).
+
+    get_irrigation_inputs'tan farki iki tane ve ikisi de sezon gunlugu icin
+    zorunlu:
+      1. GECMISE bakar (past_days), tahmine degil. Ciftci "en son ne zaman
+         suladim" diyorsa cevap gecmis gunlerin gercek olcumunde.
+      2. ORTALAMA DEGIL, DIZI dondurur. Ortalama alsaydik sulama tarihinden
+         onceki gunler de toplama karisirdi; oysa acik yalnizca sulamadan
+         SONRAKI gunlerde birikir. Tarih etiketi bu yuzden dondurulur:
+         kesme noktasini cagiran taraf gunun kendisine bakarak koyar.
+
+    Donen: {"tarih": ["2026-07-21", ...], "et0": [...], "yagis": [...]}
+    Uc liste de ayni uzunluktadir; bir gunun et0'i veya yagisi eksikse O GUN
+    hic dondurulmez (yarim gunu sifir saymak acigi oldugundan kucuk gosterir).
+    """
+    gecmis_gun = max(1, min(int(gecmis_gun), GECMIS_GUN_TAVANI))
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "daily": "et0_fao_evapotranspiration,precipitation_sum",
+        "past_days": gecmis_gun,
+        # 1: bugunu de kapsasin. past_days yalnizca dunu ve oncesini verir.
+        "forecast_days": 1,
+        "timezone": "auto",
+    }
+    resp = requests.get(FORECAST_URL, params=params, timeout=timeout)
+    resp.raise_for_status()
+    daily = resp.json().get("daily", {})
+    tarihler = daily.get("time", []) or []
+    et0s = daily.get("et0_fao_evapotranspiration", []) or []
+    yagislar = daily.get("precipitation_sum", []) or []
+
+    t, e, y = [], [], []
+    for i in range(min(len(tarihler), len(et0s), len(yagislar))):
+        if et0s[i] is None or yagislar[i] is None:
+            continue
+        t.append(tarihler[i])
+        e.append(float(et0s[i]))
+        y.append(float(yagislar[i]))
+    return {"tarih": t, "et0": e, "yagis": y}

@@ -22,9 +22,13 @@ const KOK =
  * "multipart/form-data; boundary=..." dizisini kendisi olusturur. Elle
  * "multipart/form-data" yazsaydik boundary eksik kalirdi ve sunucu 400 donerdi.
  */
-export async function teshisEt(dosya: File): Promise<Teshis> {
+export async function teshisEt(dosya: File, gunluk?: unknown[]): Promise<Teshis> {
   const form = new FormData();
   form.append("dosya", dosya);
+  // Sezon gunlugu VARSA gonderilir. Teshisin kendisini degistirmez; sunucu
+  // yalnizca "bu hastalik daha once de kayitli mi" sorusunu cevaplar. Alan
+  // bos gecilirse sunucu tekrar aramasini hic yapmaz, hata vermez.
+  if (gunluk && gunluk.length > 0) form.append("gunluk", JSON.stringify(gunluk));
   const yanit = await fetch(`${KOK}/teshis`, { method: "POST", body: form });
   if (!yanit.ok) {
     let mesaj = `Sunucu ${yanit.status} dondu`;

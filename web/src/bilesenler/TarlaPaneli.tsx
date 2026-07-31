@@ -25,6 +25,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiHatasi } from "../api/istemci";
 import type {
+  Besin,
+  GunlukSu,
   IklimRisk,
   Kapsam,
   Karbon,
@@ -33,6 +35,8 @@ import type {
   TkgmParsel,
   Zararli,
 } from "../api/istemci";
+import { bugunISO, TUR_TR, useGunluk } from "../gunluk";
+import type { GunlukTur } from "../gunluk";
 import { Kart, KatmanKabugu } from "./Durum";
 import type { Katman } from "./Durum";
 import ParselSecici from "./ParselSecici";
@@ -303,6 +307,241 @@ function ZararliKarti({ katman }: { katman: Katman<Zararli> }) {
   );
 }
 
+/** Sezon gunlugu ve ondan cikan su acigi.
+ *
+ *  BU KART UYGULAMANIN HAFIZASIDIR. Otekiler koordinata bakip cevap veriyor;
+ *  bu, ciftcinin KENDI tarlasinda ne yaptigina bakiyor. Ayni koordinatta iki
+ *  ciftci ayni sulama tavsiyesini alir, ama biri dun sulamissa ve oteki on
+ *  gun once sulamissa birikmis su acigi ayni DEGILDIR.
+ *
+ *  /sulama ILE KARISTIRILMAMALI ve ayni kartta olmamasinin sebebi bu: /sulama
+ *  "onumuzdeki gunlerde gunde kac mm ver" der (ileriye bakar), burasi "en son
+ *  suladigin gunden bu yana ne kadar borc birikti" der (geriye bakar). Ikisi
+ *  ayni sayi degildir ve yan yana konsa toplanabilir sanilirdi.
+ *
+ *  KAYIT YOKSA HESAP DA YOK. Sulama kaydi girilmemisken varsayilan bir tarih
+ *  (ornek "7 gun once") uydurmak, ekranda gercek gibi duran ama tamamen
+ *  uydurulmus bir litre sayisi uretirdi. */
+function GunlukKarti({
+  gunluk,
+  suAcigi,
+  urunTr,
+}: {
+  gunluk: ReturnType<typeof useGunluk>;
+  suAcigi: Katman<GunlukSu>;
+  urunTr: string;
+}) {
+  const [tarih, setTarih] = useState(bugunISO);
+
+  if (!gunluk.yerVar) return null;
+
+  const ekle = (tur: GunlukTur) => gunluk.ekle({ tarih, tur });
+
+  return (
+    <Kart
+      baslik="Sezon günlüğü"
+      etiket={<span className="rozet yalin">bu cihazda</span>}
+    >
+      <div className="gunluk-ekle">
+        <label>
+          <span className="gunluk-tarih-etiket">Tarih</span>
+          <input
+            type="date"
+            value={tarih}
+            max={bugunISO()}
+            onChange={(e) => setTarih(e.target.value)}
+          />
+        </label>
+        <div className="gunluk-dugmeler">
+          {(["sulama", "gubre", "ilac", "ekim", "hasat"] as GunlukTur[]).map((t) => (
+            <button key={t} type="button" onClick={() => ekle(t)}>
+              {TUR_TR[t]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Su acigi, gunlugun ISE YARADIGI yer. Sulama kaydi yoksa kart bunu
+          bir hata gibi degil, eksik girdi olarak yazar. */}
+      {gunluk.sonSulama === null ? (
+        <p className="gunluk-bos">
+          Sulama kaydı girildiğinde, o günden bugüne biriken su açığı ölçülen
+          ET0 ve yağıştan hesaplanır.
+        </p>
+      ) : (
+        <KatmanKabugu
+          baslik="Sezon günlüğü"
+          katman={suAcigi}
+          bekleyen="Geçmiş günlerin ET0 ve yağışı alınıyor..."
+        >
+          {(v) => (
+            <div className="gunluk-acik">
+              <div className="tarla-olcum">
+                <div className="tarla-buyuk">
+                  {v.acik_mm.toFixed(1)}
+                  <span className="tarla-birim">mm açık</span>
+                </div>
+                <div className="tarla-alt">
+                  {v.urun_tr} · son sulama {v.son_sulama} · {v.gecen_gun} gün
+                </div>
+              </div>
+              <dl className="tarla-satirlar">
+                <div>
+                  <dt>Bitki su tüketimi (ETc)</dt>
+                  <dd>
+                    {v.etc_mm.toFixed(1)} mm · Kc {v.kc.toFixed(2)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Düşen yağış</dt>
+                  <dd>
+                    {v.yagis_mm.toFixed(1)} mm · etkili {v.etkili_yagis_mm.toFixed(1)} mm
+                  </dd>
+                </div>
+                <div>
+                  <dt>Dekar başına</dt>
+                  <dd>{v.litre_dekar.toLocaleString("tr-TR")} litre</dd>
+                </div>
+              </dl>
+              <p className="gunluk-yorum">{v.yorum}</p>
+              <p className="tarla-uyari">{v.uyari}</p>
+            </div>
+          )}
+        </KatmanKabugu>
+      )}
+
+      {gunluk.liste.length > 0 && (
+        <ul className="gunluk-liste">
+          {gunluk.liste.map((k) => (
+            <li key={k.id}>
+              <span className="gunluk-gun">{k.tarih}</span>
+              <span className="gunluk-tur">{TUR_TR[k.tur]}</span>
+              {k.etiket && <span className="gunluk-etiket">{k.etiket}</span>}
+              <button
+                type="button"
+                className="gunluk-sil"
+                aria-label={`${k.tarih} ${TUR_TR[k.tur]} kaydını sil`}
+                onClick={() => gunluk.sil(k.id)}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="tarla-uyari">
+        Günlük yalnızca bu tarayıcıda durur, sunucuya kaydedilmez; başka
+        cihazda görünmez. Kayıtlar {urunTr} seçiminden bağımsızdır, seçili
+        noktaya bağlıdır.
+      </p>
+    </Kart>
+  );
+}
+
+/** Toprak besin karnesi.
+ *
+ *  BU KART GUBRE DOZU YAZMAZ ve yazmadigini SOYLER. Sebep arka ucta yazili
+ *  (knowledge/besin.py): doz, urunun kaldirdigi azot ile topragin verdigi
+ *  azotun farki; ikisi de olculemiyor. Ekranda bos birakmak "unutulmus" gibi
+ *  gorunurdu, o yuzden bosluk gerekcesiyle birlikte gosteriliyor.
+ *
+ *  UC BOLGE UC AYRI ANLAM tasiyor ve bilerek ayri kutularda:
+ *    bolumler   -> olculenden KESIN cikan sonuc
+ *    kilitli    -> toprakta VAR ama bu pH'ta alinamayan element
+ *    laboratuvar-> uydudan hic olculemeyen, testi istenmesi gereken element
+ *  Ucunu tek listede toplamak "eksik" ile "alinamaz"i ayni sey gibi
+ *  gosterirdi; cozumleri farkli (gubre atmak / kireclemek / once olcturmek).
+ */
+function BesinKarti({ katman }: { katman: Katman<Besin> }) {
+  return (
+    <KatmanKabugu
+      baslik="Toprak besin karnesi"
+      katman={katman}
+      bekleyen="Sürüm katmanı ölçülüyor (0-30 cm, üç derinlik)..."
+    >
+      {(v) => (
+        <Kart
+          baslik="Toprak besin karnesi"
+          etiket={<span className="rozet">0-{v.derinlik_cm.toFixed(0)} cm</span>}
+        >
+          <dl className="besin-bolumler">
+            {v.bolumler.map((b) => (
+              <div key={b.anahtar}>
+                <dt>
+                  {b.baslik}
+                  {b.sinif && <span className="besin-sinif">{b.sinif}</span>}
+                </dt>
+                <dd>
+                  <strong>
+                    {b.deger}
+                    {b.birim && ` ${b.birim}`}
+                  </strong>
+                  <span className="besin-not">{b.aciklama}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          {v.kilitli.length > 0 && (
+            <div className="besin-kilit">
+              <h4>Bu pH&apos;ta alınamayan elementler</h4>
+              <ul>
+                {v.kilitli.map((k, i) => (
+                  <li key={`${k.element}-${i}`}>
+                    <strong>{k.element}</strong> · {k.sebep}
+                  </li>
+                ))}
+              </ul>
+              <p className="besin-not">
+                Bunlar toprakta bulunuyor olabilir; sorun miktar değil,
+                çözünmüyor olmaları. Gübre atmak yerine pH&apos;ı düzeltmek ya da
+                yapraktan vermek gerekir.
+              </p>
+            </div>
+          )}
+
+          {v.urun?.notlar && v.urun.notlar.length > 0 && (
+            <div className="besin-urun">
+              <h4>{v.urun.ad} için</h4>
+              <ul>
+                {v.urun.notlar.map((n, i) => (
+                  <li key={i}>{n}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {v.eksik.length > 0 && (
+            <p className="tarla-uyari">
+              Ölçümü gelmediği için hesaplanamayan bölümler:{" "}
+              {v.eksik.map((e) => e.sebep).join("; ")}.
+            </p>
+          )}
+
+          <div className="besin-lab">
+            <h4>Uydudan ölçülemeyenler</h4>
+            <ul>
+              {v.laboratuvar.map((t) => (
+                <li key={t.element}>
+                  <strong>{t.element}</strong> · {t.test}
+                  <span className="besin-not">{t.gerekce}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <p className="tarla-uyari">
+            Bu karne gübre dozu vermez. Doz, ürünün kaldırdığı azot ile toprağın
+            verdiği azotun farkıdır; ikisi de bu ölçümlerden hesaplanamaz.
+            Uydurulmuş bir doz tarlaya gerçek gübre attırırdı.
+          </p>
+        </Kart>
+      )}
+    </KatmanKabugu>
+  );
+}
+
 /** Karbon ayak izi karti.
  *
  *  ALAN ZORUNLU, ve bu bilerek boyle: envanterin her kalemi dekar basina
@@ -534,6 +773,22 @@ export default function TarlaPaneli({
     [nokta, urun, alanM2, yontem],
   );
 
+  const besinCagri = useCallback(
+    () => (nokta ? api.besin(nokta.lat, nokta.lon, urun) : Promise.reject()),
+    [nokta, urun],
+  );
+
+  // Sezon gunlugu (tarayicida) ve ondan cikan su acigi (sunucuda).
+  const gunluk = useGunluk(nokta?.lat ?? null, nokta?.lon ?? null);
+  const sonSulama = gunluk.sonSulama;
+  const suAcigiCagri = useCallback(
+    () =>
+      nokta && sonSulama
+        ? api.gunlukSu(nokta.lat, nokta.lon, urun, sonSulama, asama)
+        : Promise.reject(),
+    [nokta, urun, sonSulama, asama],
+  );
+
   // Kapsam disi ise cagri null: istek HIC atilmaz. Atip 422 yakalamak da
   // olurdu ama o zaman kullaniciya kirmizi bir hata gorunurdu; oysa bu bir
   // hata degil, bilginin sinirlari.
@@ -541,6 +796,15 @@ export default function TarlaPaneli({
   const risk = useIstek<IklimRisk>(nokta && !iklimDisi ? riskCagri : null);
   const zararli = useIstek<Zararli>(nokta && !zararliDisi ? zararliCagri : null);
   const karbon = useIstek<Karbon>(nokta && !sulamaDisi && alanM2 ? karbonCagri : null);
+  // Besin karnesinin KAPSAMI YOK: hesabin tamami topragin kendi olcumunden
+  // cikiyor, urun sadece pH araligi ve verimlilik ihtiyaciyla kiyas icin
+  // giriyor. Bu yuzden kapsam disi bir urunde bile karne uretilebilir.
+  const besin = useIstek<Besin>(nokta ? besinCagri : null);
+  // Su acigi SULAMA KAPSAMINA baglidir (Kc gerekiyor) ve sulama kaydi
+  // olmadan hic cagrilmaz: tarihi olmayan bir gecmis hesaplanamaz.
+  const suAcigi = useIstek<GunlukSu>(
+    nokta && !sulamaDisi && sonSulama ? suAcigiCagri : null,
+  );
 
   // Secici iki yerde de ayni: nokta yokken baslangic yolu, nokta varken
   // parsel degistirme yolu. Tek tanim, iki kullanim.
@@ -675,6 +939,16 @@ export default function TarlaPaneli({
         ) : (
           <KarbonKarti katman={karbon} alanVar={Boolean(alanM2)} />
         )}
+        <BesinKarti katman={besin} />
+        <GunlukKarti
+          gunluk={gunluk}
+          suAcigi={suAcigi}
+          urunTr={
+            onerilen.find((o) => o.anahtar === urun)?.ad ??
+            digerleri.find((o) => o.anahtar === urun)?.ad ??
+            urun
+          }
+        />
       </div>
     </div>
   );

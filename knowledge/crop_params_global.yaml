@@ -27,6 +27,7 @@ bugday:
   don_buyume_c: 0
   don_dinlenme_c: -20
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "90-250 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -39,6 +40,7 @@ misir:
   yagis_mm: {min: 400, opt_min: 600, opt_max: 1200, max: 1800}
   dongu_gun: {min: 65, max: 365}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "65-365 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -51,6 +53,7 @@ celtik:
   yagis_mm: {min: 1000, opt_min: 1500, opt_max: 2000, max: 4000}
   dongu_gun: {min: 80, max: 180}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "80-180 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -67,6 +70,7 @@ arpa:
   don_buyume_c: 0
   don_dinlenme_c: -4
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "90-240 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -83,6 +87,7 @@ yulaf:
   don_buyume_c: -1
   don_dinlenme_c: -15
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "110-270 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -99,6 +104,7 @@ cavdar:
   don_buyume_c: -1
   don_dinlenme_c: -18
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "110-270 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -112,6 +118,7 @@ sorgum:
   doku: [kil, killi_tin, tin, siltli_tin]
   dongu_gun: {min: 90, max: 300}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "90-300 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -128,6 +135,7 @@ inci_dari:
   don_buyume_c: 0
   don_dinlenme_c: 2
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "60-120 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -141,6 +149,7 @@ dari:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 55, max: 280}
   cok_yillik: false
+  verimlilik: "moderate"
   sezon: "55-280 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -154,6 +163,7 @@ parmak_dari:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 75, max: 180}
   cok_yillik: false
+  verimlilik: "moderate"
   sezon: "75-180 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -167,6 +177,7 @@ karabugday:
   doku: [tin, siltli_tin, killi_tin, kumlu_tin, kum]
   dongu_gun: {min: 55, max: 85}
   cok_yillik: false
+  verimlilik: "moderate"
   sezon: "55-85 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -183,6 +194,7 @@ kinoa:
   don_buyume_c: -8
   don_dinlenme_c: -8
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "90-240 günlük yetişme dönemi"
   notlar: "Grup: tahıl. Erken gelişme/çiçek döneminde -8 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -196,6 +208,7 @@ soya:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 75, max: 180}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "75-180 günlük yetişme dönemi"
   notlar: "Grup: baklagil. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -209,6 +222,7 @@ fasulye:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 50, max: 270}
   cok_yillik: false
+  verimlilik: "moderate"
   sezon: "50-270 günlük yetişme dönemi"
   notlar: "Grup: baklagil. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -225,6 +239,7 @@ nohut:
   don_buyume_c: 0
   don_dinlenme_c: -9
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "90-180 günlük yetişme dönemi"
   notlar: "Grup: baklagil. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -238,6 +253,7 @@ mercimek:
   doku: [kil, killi_tin, tin, siltli_tin]
   dongu_gun: {min: 70, max: 240}
   cok_yillik: false
+  verimlilik: "moderate"
   sezon: "70-240 günlük yetişme dönemi"
   notlar: "Grup: baklagil. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -254,6 +270,7 @@ bezelye:
   don_buyume_c: 0
   don_dinlenme_c: -2
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "60-140 günlük yetişme dönemi"
   notlar: "Grup: baklagil. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -267,6 +284,7 @@ bakla:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 100, max: 150}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "100-150 günlük yetişme dönemi"
   notlar: "Grup: baklagil. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -283,6 +301,7 @@ borulce:
   don_buyume_c: -1
   don_dinlenme_c: -1
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "30-240 günlük yetişme dönemi"
   notlar: "Grup: baklagil. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -298,6 +317,7 @@ mas_fasulyesi:
   cok_yillik: true
   don_dinlenme_c: 2
   don_dinlenme_kaynak: "elle"
+  verimlilik: "moderate"
   sezon: "50-120 günlük yetişme dönemi"
   notlar: "Grup: baklagil. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -313,6 +333,7 @@ guvercin_bezelyesi:
   cok_yillik: true
   don_dinlenme_c: 0
   don_dinlenme_kaynak: "elle"
+  verimlilik: "moderate"
   sezon: "90-365 günlük yetişme dönemi"
   notlar: "Grup: baklagil. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -326,6 +347,7 @@ yer_fistigi:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 90, max: 150}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "90-150 günlük yetişme dönemi"
   notlar: "Grup: baklagil. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -342,6 +364,7 @@ yonca:
   don_buyume_c: 0
   don_dinlenme_c: -25
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "100-210 günlük yetişme dönemi"
   notlar: "Grup: yem bitkisi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -25 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -358,6 +381,7 @@ patates:
   don_buyume_c: 0
   don_dinlenme_c: -1
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "90-160 günlük yetişme dönemi"
   notlar: "Grup: kök/yumru. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -373,6 +397,7 @@ tatli_patates:
   don_buyume_c: 5
   don_dinlenme_c: 1
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "80-170 günlük yetişme dönemi"
   notlar: "Grup: kök/yumru. Erken gelişme/çiçek döneminde 5 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -389,6 +414,7 @@ manyok:
   don_buyume_c: 0
   don_dinlenme_c: 7
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "180-365 günlük yetişme dönemi"
   notlar: "Grup: kök/yumru. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık 7 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -405,6 +431,7 @@ yam:
   don_buyume_c: 9
   don_dinlenme_c: -2
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "220-300 günlük yetişme dönemi"
   notlar: "Grup: kök/yumru. Erken gelişme/çiçek döneminde 9 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -2 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -420,6 +447,7 @@ taro:
   cok_yillik: true
   don_dinlenme_c: 0
   don_dinlenme_kaynak: "elle"
+  verimlilik: "high"
   sezon: "180-300 günlük yetişme dönemi"
   notlar: "Grup: kök/yumru. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -436,6 +464,7 @@ seker_pancari:
   don_buyume_c: 0
   don_dinlenme_c: -3
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "160-240 günlük yetişme dönemi"
   notlar: "Grup: kök/yumru. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -452,6 +481,7 @@ havuc:
   don_buyume_c: 0
   don_dinlenme_c: -1
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "40-150 günlük yetişme dönemi"
   notlar: "Grup: kök/yumru. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -465,6 +495,7 @@ turp:
   doku: [tin, siltli_tin, killi_tin, kumlu_tin, kum]
   dongu_gun: {min: 50, max: 80}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "50-80 günlük yetişme dönemi"
   notlar: "Grup: kök/yumru. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -478,6 +509,7 @@ domates:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 70, max: 150}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "70-150 günlük yetişme dönemi"
   notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -491,6 +523,7 @@ biber:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 60, max: 180}
   cok_yillik: false
+  verimlilik: "moderate"
   sezon: "60-180 günlük yetişme dönemi"
   notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -504,6 +537,7 @@ patlican:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 70, max: 120}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "70-120 günlük yetişme dönemi"
   notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -517,6 +551,7 @@ salatalik:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 40, max: 180}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "40-180 günlük yetişme dönemi"
   notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -530,6 +565,7 @@ kabak:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 40, max: 100}
   cok_yillik: false
+  verimlilik: "moderate"
   sezon: "40-100 günlük yetişme dönemi"
   notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -542,6 +578,7 @@ karpuz:
   yagis_mm: {min: 400, opt_min: 500, opt_max: 700, max: 1800}
   doku: [tin, siltli_tin, killi_tin]
   cok_yillik: false
+  verimlilik: "high"
   sezon: "Yaklaşık 0 günlük dönem"
   notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -555,6 +592,7 @@ kavun:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 50, max: 120}
   cok_yillik: false
+  verimlilik: "moderate"
   sezon: "50-120 günlük yetişme dönemi"
   notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -568,6 +606,7 @@ sogan:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 85, max: 175}
   cok_yillik: false
+  verimlilik: "moderate"
   sezon: "85-175 günlük yetişme dönemi"
   notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -584,6 +623,7 @@ sarimsak:
   don_buyume_c: -5
   don_dinlenme_c: -5
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "90-120 günlük yetişme dönemi"
   notlar: "Grup: sebze. Erken gelişme/çiçek döneminde -5 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -600,6 +640,7 @@ lahana:
   don_buyume_c: -1
   don_dinlenme_c: -10
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "60-200 günlük yetişme dönemi"
   notlar: "Grup: sebze. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -616,6 +657,7 @@ karnabahar:
   don_buyume_c: -5
   don_dinlenme_c: -5
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "60-120 günlük yetişme dönemi"
   notlar: "Grup: sebze. Erken gelişme/çiçek döneminde -5 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -632,6 +674,7 @@ brokoli:
   don_buyume_c: -1
   don_dinlenme_c: -5
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "80-120 günlük yetişme dönemi"
   notlar: "Grup: sebze. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -648,6 +691,7 @@ marul:
   don_buyume_c: 0
   don_dinlenme_c: -1
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "35-85 günlük yetişme dönemi"
   notlar: "Grup: sebze. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -664,6 +708,7 @@ ispanak:
   don_buyume_c: 0
   don_dinlenme_c: -7
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "40-120 günlük yetişme dönemi"
   notlar: "Grup: sebze. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -677,6 +722,7 @@ bamya:
   doku: [kil, killi_tin, tin, siltli_tin, kumlu_tin, kum]
   dongu_gun: {min: 50, max: 180}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "50-180 günlük yetişme dönemi"
   notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -693,6 +739,7 @@ uzum:
   don_buyume_c: -3
   don_dinlenme_c: -20
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "160-270 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -3 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -20 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -709,6 +756,7 @@ zeytin:
   don_buyume_c: 0
   don_dinlenme_c: -10
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "Çok yıllık"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -10 C. Toprak verimlilik ihtiyacı: orta."
 
@@ -725,6 +773,7 @@ portakal:
   don_buyume_c: 0
   don_dinlenme_c: -10
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "180-365 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -10 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -741,6 +790,7 @@ limon:
   don_buyume_c: -2
   don_dinlenme_c: -6
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "210-365 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -2 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -6 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -756,6 +806,7 @@ mandalina:
   cok_yillik: true
   don_dinlenme_c: -8
   don_dinlenme_kaynak: "elle"
+  verimlilik: "high"
   sezon: "60-365 günlük yetişme dönemi"
   notlar: "Grup: meyve. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -772,6 +823,7 @@ elma:
   don_buyume_c: -2
   don_dinlenme_c: -30
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "180-320 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -2 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -30 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -788,6 +840,7 @@ armut:
   don_buyume_c: -9
   don_dinlenme_c: -34
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "180-270 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -9 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -34 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -804,6 +857,7 @@ seftali:
   don_buyume_c: -5
   don_dinlenme_c: -25
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "high"
   sezon: "240-270 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -5 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -820,6 +874,7 @@ kayisi:
   don_buyume_c: -1
   don_dinlenme_c: -29
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "moderate"
   sezon: "180-240 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -836,6 +891,7 @@ kiraz:
   don_buyume_c: 0
   don_dinlenme_c: -27
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "moderate"
   sezon: "180-240 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -3 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -852,6 +908,7 @@ visne:
   don_buyume_c: -4
   don_dinlenme_c: -28
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "moderate"
   sezon: "180-240 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -4 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -10 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -868,6 +925,7 @@ erik:
   don_buyume_c: -2
   don_dinlenme_c: -26
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "high"
   sezon: "180-210 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -2 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -10 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -884,6 +942,7 @@ incir:
   don_buyume_c: -1
   don_dinlenme_c: -12
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "120-300 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -12 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -900,6 +959,7 @@ nar:
   don_buyume_c: 0
   don_dinlenme_c: -10
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "180-365 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -10 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -916,6 +976,7 @@ muz:
   don_buyume_c: 1
   don_dinlenme_c: 1
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "180-365 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde 1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık 1 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -932,6 +993,7 @@ mango:
   don_buyume_c: 0
   don_dinlenme_c: -1
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "150-365 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -1 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -947,6 +1009,7 @@ avokado:
   don_buyume_c: -1
   don_dinlenme_c: -4
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "Yaklaşık 0 günlük dönem"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -4 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -962,6 +1025,7 @@ ananas:
   cok_yillik: true
   don_dinlenme_c: 0
   don_dinlenme_kaynak: "elle"
+  verimlilik: "moderate"
   sezon: "330-365 günlük yetişme dönemi"
   notlar: "Grup: meyve. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -978,6 +1042,7 @@ papaya:
   don_buyume_c: -1
   don_dinlenme_c: -1
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "330-365 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -1 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -993,6 +1058,7 @@ cilek:
   cok_yillik: true
   don_dinlenme_c: -10
   don_dinlenme_kaynak: "elle"
+  verimlilik: "moderate"
   sezon: "180-270 günlük yetişme dönemi"
   notlar: "Grup: meyve. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1009,6 +1075,7 @@ yabanmersini:
   don_buyume_c: -1
   don_dinlenme_c: -29
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "160-200 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -29 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1025,6 +1092,7 @@ ahududu:
   don_buyume_c: -1
   don_dinlenme_c: -35
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "120-180 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -35 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1041,6 +1109,7 @@ frenk_uzumu:
   don_buyume_c: -1
   don_dinlenme_c: -28
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "150-180 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -28 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1057,6 +1126,7 @@ kivi:
   don_buyume_c: -1
   don_dinlenme_c: -9
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "210-330 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -9 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1073,6 +1143,7 @@ hurma:
   don_buyume_c: -4
   don_dinlenme_c: -15
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "Çok yıllık"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -4 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -15 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1089,6 +1160,7 @@ ceviz:
   don_buyume_c: -2
   don_dinlenme_c: -24
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "150-180 günlük yetişme dönemi"
   notlar: "Grup: sert kabuklu. Erken gelişme/çiçek döneminde -2 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -24 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1105,6 +1177,7 @@ findik:
   don_buyume_c: -3
   don_dinlenme_c: -25
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "moderate"
   sezon: "150-210 günlük yetişme dönemi"
   notlar: "Grup: sert kabuklu. Erken gelişme/çiçek döneminde -3 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -10 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1121,6 +1194,7 @@ antep_fistigi:
   don_buyume_c: -1
   don_dinlenme_c: -18
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "150-180 günlük yetişme dönemi"
   notlar: "Grup: sert kabuklu. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -18 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1137,6 +1211,7 @@ badem:
   don_buyume_c: -1
   don_dinlenme_c: -18
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "moderate"
   sezon: "150-240 günlük yetişme dönemi"
   notlar: "Grup: sert kabuklu. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1152,6 +1227,7 @@ kestane:
   cok_yillik: true
   don_dinlenme_c: -25
   don_dinlenme_kaynak: "elle"
+  verimlilik: "moderate"
   sezon: "150-210 günlük yetişme dönemi"
   notlar: "Grup: sert kabuklu. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1168,6 +1244,7 @@ kecibonuzu:
   don_buyume_c: 0
   don_dinlenme_c: -4
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "210-365 günlük yetişme dönemi"
   notlar: "Grup: sert kabuklu. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -4 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1184,6 +1261,7 @@ aycicegi:
   don_buyume_c: 0
   don_dinlenme_c: -10
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "70-200 günlük yetişme dönemi"
   notlar: "Grup: yağ bitkisi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1200,6 +1278,7 @@ kanola:
   don_buyume_c: -6
   don_dinlenme_c: -15
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "85-340 günlük yetişme dönemi"
   notlar: "Grup: yağ bitkisi. Erken gelişme/çiçek döneminde -6 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1213,6 +1292,7 @@ susam:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 40, max: 180}
   cok_yillik: false
+  verimlilik: "moderate"
   sezon: "40-180 günlük yetişme dönemi"
   notlar: "Grup: yağ bitkisi. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1229,6 +1309,7 @@ aspir:
   don_buyume_c: -2
   don_dinlenme_c: -14
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "120-245 günlük yetişme dönemi"
   notlar: "Grup: yağ bitkisi. Erken gelişme/çiçek döneminde -2 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1245,6 +1326,7 @@ keten:
   don_buyume_c: -1
   don_dinlenme_c: -6
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "80-180 günlük yetişme dönemi"
   notlar: "Grup: yağ bitkisi. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1260,6 +1342,7 @@ yag_palmiyesi:
   cok_yillik: true
   don_dinlenme_c: 2
   don_dinlenme_kaynak: "elle"
+  verimlilik: "high"
   sezon: "300-365 günlük yetişme dönemi"
   notlar: "Grup: yağ bitkisi. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1276,6 +1359,7 @@ hindistan_cevizi:
   don_buyume_c: 0
   don_dinlenme_c: -1
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "270-365 günlük yetişme dönemi"
   notlar: "Grup: yağ bitkisi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -1 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1291,6 +1375,7 @@ seker_kamisi:
   don_buyume_c: 0
   don_dinlenme_c: -2
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "210-365 günlük yetişme dönemi"
   notlar: "Grup: endüstriyel. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1304,6 +1389,7 @@ pamuk:
   doku: [kil, killi_tin, tin, siltli_tin]
   dongu_gun: {min: 150, max: 200}
   cok_yillik: false
+  verimlilik: "moderate"
   sezon: "150-200 günlük yetişme dönemi"
   notlar: "Grup: endüstriyel. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1320,6 +1406,7 @@ tutun:
   don_buyume_c: -1
   don_dinlenme_c: -3
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "70-150 günlük yetişme dönemi"
   notlar: "Grup: endüstriyel. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1335,6 +1422,7 @@ kahve:
   cok_yillik: true
   don_dinlenme_c: 0
   don_dinlenme_kaynak: "elle"
+  verimlilik: "high"
   sezon: "210-330 günlük yetişme dönemi"
   notlar: "Grup: içecek. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1351,6 +1439,7 @@ cay:
   don_buyume_c: 0
   don_dinlenme_c: -5
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "240-365 günlük yetişme dönemi"
   notlar: "Grup: içecek. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1367,6 +1456,7 @@ kakao:
   don_buyume_c: 0
   don_dinlenme_c: 5
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "180-365 günlük yetişme dönemi"
   notlar: "Grup: içecek. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık 5 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1382,6 +1472,7 @@ serbetciotu:
   cok_yillik: true
   don_dinlenme_c: -20
   don_dinlenme_kaynak: "elle"
+  verimlilik: "high"
   sezon: "150-210 günlük yetişme dönemi"
   notlar: "Grup: endüstriyel. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1398,6 +1489,7 @@ enginar:
   don_buyume_c: 0
   don_dinlenme_c: -10
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "high"
   sezon: "210-270 günlük yetişme dönemi"
   notlar: "Grup: sebze. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık 1 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1411,6 +1503,7 @@ kereviz:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 40, max: 150}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "40-150 günlük yetişme dönemi"
   notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa dayanıklı."
 
@@ -1424,6 +1517,7 @@ pazi:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 50, max: 150}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "50-150 günlük yetişme dönemi"
   notlar: "Grup: sebze. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1440,6 +1534,7 @@ hindiba:
   don_buyume_c: -1
   don_dinlenme_c: -25
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "moderate"
   sezon: "90-330 günlük yetişme dönemi"
   notlar: "Grup: sebze. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1456,6 +1551,7 @@ kuskonmaz:
   don_buyume_c: -1
   don_dinlenme_c: -30
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "high"
   sezon: "210-270 günlük yetişme dönemi"
   notlar: "Grup: sebze. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1472,6 +1568,7 @@ rezene:
   don_buyume_c: -2
   don_dinlenme_c: -15
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "high"
   sezon: "30-110 günlük yetişme dönemi"
   notlar: "Grup: sebze. Erken gelişme/çiçek döneminde -2 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1488,6 +1585,7 @@ yaban_havucu:
   don_buyume_c: -1
   don_dinlenme_c: -5
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "80-150 günlük yetişme dönemi"
   notlar: "Grup: kök/yumru. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1504,6 +1602,7 @@ maydanoz:
   don_buyume_c: 0
   don_dinlenme_c: -10
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "moderate"
   sezon: "70-365 günlük yetişme dönemi"
   notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1520,6 +1619,7 @@ dereotu:
   don_buyume_c: 0
   don_dinlenme_c: -2
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "100-180 günlük yetişme dönemi"
   notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1536,6 +1636,7 @@ kisnis:
   don_buyume_c: 0
   don_dinlenme_c: -10
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "35-140 günlük yetişme dönemi"
   notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1549,6 +1650,7 @@ kimyon:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 60, max: 110}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "60-110 günlük yetişme dönemi"
   notlar: "Grup: baharat/tıbbi. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1565,6 +1667,7 @@ cemen:
   don_buyume_c: 0
   don_dinlenme_c: -15
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "60-120 günlük yetişme dönemi"
   notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1581,6 +1684,7 @@ nane:
   don_buyume_c: 0
   don_dinlenme_c: -30
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "high"
   sezon: "40-330 günlük yetişme dönemi"
   notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -8 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1594,6 +1698,7 @@ reyhan:
   doku: [tin, siltli_tin, killi_tin]
   dongu_gun: {min: 80, max: 270}
   cok_yillik: false
+  verimlilik: "high"
   sezon: "80-270 günlük yetişme dönemi"
   notlar: "Grup: baharat/tıbbi. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1610,6 +1715,7 @@ kekik:
   don_buyume_c: 0
   don_dinlenme_c: -25
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "high"
   sezon: "180-300 günlük yetişme dönemi"
   notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -5 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1626,6 +1732,7 @@ lavanta:
   don_buyume_c: -20
   don_dinlenme_c: -20
   don_dinlenme_kaynak: "duzeltme"
+  verimlilik: "moderate"
   sezon: "180-365 günlük yetişme dönemi"
   notlar: "Grup: baharat/tıbbi. Erken gelişme/çiçek döneminde -20 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -15 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1642,6 +1749,7 @@ ayva:
   don_buyume_c: -1
   don_dinlenme_c: -25
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "180-270 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -25 C. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."
 
@@ -1657,6 +1765,7 @@ dut:
   cok_yillik: true
   don_dinlenme_c: -30
   don_dinlenme_kaynak: "elle"
+  verimlilik: "high"
   sezon: "180-330 günlük yetişme dönemi"
   notlar: "Grup: meyve. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1673,6 +1782,7 @@ trabzon_hurmasi:
   don_buyume_c: 0
   don_dinlenme_c: -18
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "150-270 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -18 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1689,6 +1799,7 @@ bektasi_uzumu:
   don_buyume_c: 0
   don_dinlenme_c: -28
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "150-180 günlük yetişme dönemi"
   notlar: "Grup: meyve. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Kış dinlenmesinde dayanabildiği en düşük sıcaklık -28 C. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1705,6 +1816,7 @@ aci_bakla:
   don_buyume_c: -3
   don_dinlenme_c: -8
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "90-180 günlük yetişme dönemi"
   notlar: "Grup: baklagil. Erken gelişme/çiçek döneminde -3 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1721,6 +1833,7 @@ ucgul:
   don_buyume_c: 0
   don_dinlenme_c: -5
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "120-300 günlük yetişme dönemi"
   notlar: "Grup: yem bitkisi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1737,6 +1850,7 @@ ingiliz_cimi:
   don_buyume_c: 0
   don_dinlenme_c: -2
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "high"
   sezon: "90-270 günlük yetişme dönemi"
   notlar: "Grup: yem bitkisi. Erken gelişme/çiçek döneminde 0 C altı don zararı yapar. Toprak verimlilik ihtiyacı: yüksek. Tuzluluğa duyarlı."
 
@@ -1753,5 +1867,6 @@ fig:
   don_buyume_c: -1
   don_dinlenme_c: -5
   don_dinlenme_kaynak: "ecocrop"
+  verimlilik: "moderate"
   sezon: "80-170 günlük yetişme dönemi"
   notlar: "Grup: yem bitkisi. Erken gelişme/çiçek döneminde -1 C altı don zararı yapar. Toprak verimlilik ihtiyacı: orta. Tuzluluğa duyarlı."

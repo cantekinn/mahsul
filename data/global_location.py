@@ -42,7 +42,7 @@ import requests
 
 from core.config import ROOT_DIR
 from core.schemas import ClimateData, SoilData
-from data.soilgrids_wcs import wcs_toprak_al
+from data.soilgrids_wcs import wcs_surum_katmani, wcs_toprak_al
 
 ONBELLEK_DIR = ROOT_DIR / "data" / "_onbellek"
 UA = {"User-Agent": "tarim-asistani/1.0 (+https://github.com/cantekinn)"}
@@ -125,6 +125,8 @@ _TOPRAK_PROPS = {
     "sand": ("sand", 10.0),
     "silt": ("silt", 10.0),
     "soc": ("organic_carbon", 10.0),
+    "bdod": ("bulk_density", 100.0),
+    "cec": ("cec", 10.0),
 }
 
 # SoilGrids bos donerse denenecek kaymalar (derece). Merkez once.
@@ -396,6 +398,29 @@ def toprak_al_durum(lat: float, lon: float,
     if son_durum == "bilinmiyor":
         son_durum = f"WCS: {wcs_durum}"
     return None, None, son_durum
+
+
+def surum_katmani_al(lat: float, lon: float) -> tuple[SoilData | None, str]:
+    """Besin karnesi icin 0-30 cm agirlikli toprak. Onbellekli.
+
+    Neden ayri onbellek: bu, /toprak'in verdigi 0-5 cm katmanindan BASKA bir
+    olcumdur, ayni koordinatta iki sayi birden vardir ve ayni dosyaya yazmak
+    birini otekinin uzerine yazardi. Uc derinlik cekildigi icin ilk sorgu ~5 s
+    surer (olculdu: Karacabey 4.6 s, Harran 5.6 s); sonrasi diskten gelir.
+
+    Bos sonuc kalici YAZILMAZ: toprak katmaninda ogrenilen kural (gecici
+    arizanin sonsuza kadar "veri yok" olarak donmasi) burada da gecerli.
+    """
+    onb = _onbellekten("besin", lat, lon)
+    if onb and onb.get("veri"):
+        return SoilData(**onb["veri"]), "ok"
+
+    toprak, durum = wcs_surum_katmani(lat, lon)
+    if toprak is not None:
+        _onbellege("besin", lat, lon,
+                   {"veri": toprak.model_dump(exclude_none=True),
+                    "_tarih": date.today().isoformat()})
+    return toprak, durum
 
 
 def toprak_al(lat: float, lon: float) -> tuple[SoilData | None, float | None]:

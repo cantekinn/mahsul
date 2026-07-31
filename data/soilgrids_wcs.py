@@ -51,6 +51,8 @@ WCS_PROPS = {
     "sand": ("sand", 10.0),
     "silt": ("silt", 10.0),
     "soc": ("organic_carbon", 10.0),
+    "bdod": ("bulk_density", 100.0),   # cg/cm3 -> g/cm3
+    "cec": ("cec", 10.0),              # mmol(c)/kg -> cmol(c)/kg
 }
 
 # Aranacak pencere yaricaplari (metre). Once tam piksel (250 m cozunurluk),
@@ -62,12 +64,12 @@ _TR = Transformer.from_crs("EPSG:4326", IGH, always_xy=True)
 
 
 def _pencere(prop: str, x: float, y: float, yaricap: int,
-             timeout: int) -> tuple[np.ndarray | None, str]:
+             timeout: int, derinlik: str = "0-5cm") -> tuple[np.ndarray | None, str]:
     """Tek ozellik icin Homolosine metre kutusunu GeoTIFF olarak ceker."""
     params = {
         "map": f"/map/{prop}.map",
         "SERVICE": "WCS", "VERSION": "2.0.1", "REQUEST": "GetCoverage",
-        "COVERAGEID": f"{prop}_0-5cm_mean", "FORMAT": "image/tiff",
+        "COVERAGEID": f"{prop}_{derinlik}_mean", "FORMAT": "image/tiff",
         "SUBSET": [f"X({x - yaricap},{x + yaricap})",
                    f"Y({y - yaricap},{y + yaricap})"],
         "SUBSETTINGCRS": "http://www.opengis.net/def/crs/EPSG/0/152160",
@@ -106,12 +108,12 @@ def _en_yakin_gecerli(dizi: np.ndarray) -> tuple[float, float] | None:
     return float(dizi.flat[i]), float(uzak.flat[i])
 
 
-def _ozellik_degeri(prop: str, x: float, y: float,
-                    timeout: int) -> tuple[float | None, float, str]:
+def _ozellik_degeri(prop: str, x: float, y: float, timeout: int,
+                    derinlik: str = "0-5cm") -> tuple[float | None, float, str]:
     """Deger bulunana kadar pencereyi buyutur. (deger, uzaklik_m, durum)."""
     son = "bilinmiyor"
     for yaricap in YARICAPLAR:
-        dizi, durum = _pencere(prop, x, y, yaricap, timeout)
+        dizi, durum = _pencere(prop, x, y, yaricap, timeout, derinlik)
         if dizi is None:
             son = durum
             continue
@@ -161,3 +163,56 @@ def wcs_toprak_al(lat: float, lon: float, timeout: int = WCS_TIMEOUT,
     if ulasilamadi:
         return None, None, ulasilamadi
     return None, None, "bos"
+
+
+# --- Surum katmani (0-30 cm) ----------------------------------------------
+#
+# NEDEN AYRI BIR CEKIM: uygulamanin geri kalani 0-5 cm ile calisiyor ve urun
+# onerisi icin bu yeterli. Besin karnesi ise ciftcinin SURDUGU katmani sormak
+# zorunda; laboratuvar analiz raporlari da 0-20/0-30 cm derinlikten alinan
+# ornekle yapilir.
+#
+# FARK OLCULDU, TAHMIN EDILMEDI. Uc Turk tarim noktasinda organik karbonun
+# 0-5 cm degeri, 0-30 cm agirlikli ortalamasinin kati olarak:
+#     Bursa Karacabey   41.70 -> 23.28 g/kg   kat 1.79
+#     Ankara Polatli    39.70 -> 22.13 g/kg   kat 1.79
+#     Sanliurfa Harran  18.40 -> 10.22 g/kg   kat 1.80
+# Yani yuzey katmani organik maddeyi neredeyse IKI KAT fazla gosteriyor. Bu
+# sapmayi 1.79'luk bir duzeltme katsayisiyla kapatmak uc noktaya egri uydurmak
+# olurdu; onun yerine uc derinligin ucu de cekilip kalinlikla agirliklandirilir,
+# yani sonuc yaklastirma degil dogrudan hesaptir.
+DERINLIKLER = (("0-5cm", 5), ("5-15cm", 10), ("15-30cm", 15))
+
+
+def wcs_surum_katmani(lat: float, lon: float, timeout: int = WCS_TIMEOUT,
+                      ) -> tuple[SoilData | None, str]:
+    """0-30 cm kalinlik agirlikli toprak ozellikleri.
+
+    Bir ozellik icin uc derinligin BIRI bile gelmezse o ozellik hic
+    dondurulmez. Eksik katmani ortalamaya katmamak "iki katmanin ortalamasi"
+    demek olurdu ve alan adi hala 0-30 cm oldugu icin bunu kimse fark etmezdi.
+    """
+    x, y = _TR.transform(lon, lat)
+    isler = [(p, d, k) for p in WCS_PROPS for d, k in DERINLIKLER]
+
+    with ThreadPoolExecutor(max_workers=6) as havuz:
+        sonuclar = list(havuz.map(
+            lambda i: (i[0], i[2], _ozellik_degeri(i[0], x, y, timeout, i[1])[0]),
+            isler))
+
+    toplam: dict[str, list[tuple[float, int]]] = {}
+    for prop, kalinlik, deger in sonuclar:
+        if deger is not None:
+            toplam.setdefault(prop, []).append((deger, kalinlik))
+
+    cikti: dict[str, float] = {}
+    for prop, parcalar in toplam.items():
+        if len(parcalar) != len(DERINLIKLER):
+            continue
+        alan, bolen = WCS_PROPS[prop]
+        agirlikli = sum(d * k for d, k in parcalar) / sum(k for _, k in parcalar)
+        cikti[alan] = round(agirlikli / bolen, 2)
+
+    if not cikti:
+        return None, "bos"
+    return SoilData(**cikti), "ok"
