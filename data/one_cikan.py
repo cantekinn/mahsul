@@ -36,6 +36,10 @@ ONE_CIKANLAR: list[tuple[str, float, float]] = [
     ("Çukurova - Adana", 37.00, 35.50),
     ("Şanlıurfa - Harran ovası", 36.90, 39.00),
     ("Manisa - Gediz ovası", 38.60, 27.60),
+    # Koordinat 2 ondalikta yaziliyor cunku onbellek anahtari da 2 ondalik
+    # (bkz. data/open_meteo.py). Daha fazla basamak yazmak dugmeyi isitilan
+    # hucrenin disina dusurebilirdi; kazanci ~18 m, bedeli soguk istek.
+    ("Bursa - Nilüfer ovası", 40.17, 28.80),
     ("Amasya - Yeşilırmak", 40.60, 35.90),
     ("Bafra ovası - Samsun", 41.50, 35.90),
     ("Iğdır ovası", 39.90, 44.00),

@@ -42,6 +42,8 @@ def iklim_riski(lat: float, lon: float, urunler: tuple[str, ...]) -> dict:
     kb = iklim_bilgi_tabani()
     return {
         "gun": fc["gun"],
+        # Canli veri gelmediyse gomulu anlik kaydin tarihi (bkz. sulama ajani).
+        "kayit_tarihi": fc.get("kayit_tarihi"),
         "riskler": {
             crop: climate_risk.assess_climate_risk(
                 fc["tmin"], fc["tmax"], fc["prec"],

@@ -639,6 +639,11 @@ export interface components {
             litre_dekar: number;
             /** Yorum */
             yorum: string;
+            /**
+             * Kayit Tarihi
+             * @description Doluysa gösterilen sayılar canlı veriden değil, bu tarihte çekilip depoya gömülen anlık kayıttan geliyor demektir.
+             */
+            kayit_tarihi?: string | null;
             /** Uyari */
             uyari: string;
         };
@@ -680,6 +685,11 @@ export interface components {
             gun: number;
             /** Urunler */
             urunler: components["schemas"]["UrunRiski"][];
+            /**
+             * Kayit Tarihi
+             * @description Doluysa gösterilen sayılar canlı veriden değil, bu tarihte çekilip depoya gömülen anlık kayıttan geliyor demektir.
+             */
+            kayit_tarihi?: string | null;
             /** Uyari */
             uyari: string;
         };
@@ -779,6 +789,11 @@ export interface components {
             azaltim: components["schemas"]["KarbonAzaltim"][];
             /** Kapsam Disi */
             kapsam_disi: string[];
+            /**
+             * Kayit Tarihi
+             * @description Doluysa gösterilen sayılar canlı veriden değil, bu tarihte çekilip depoya gömülen anlık kayıttan geliyor demektir.
+             */
+            kayit_tarihi?: string | null;
             /** Aciklama */
             aciklama: string;
         };
@@ -1179,6 +1194,11 @@ export interface components {
             asama_tr: string;
             /** Planlar */
             planlar: components["schemas"]["SulamaPlani"][];
+            /**
+             * Kayit Tarihi
+             * @description Doluysa gösterilen sayılar canlı veriden değil, bu tarihte çekilip depoya gömülen anlık kayıttan geliyor demektir.
+             */
+            kayit_tarihi?: string | null;
             /** Uyari */
             uyari: string;
         };

@@ -13,6 +13,32 @@ export type Katman<T> =
   | { durum: "ok"; veri: T }
   | { durum: "hata"; hata: string };
 
+/**
+ * Gomulu anlik kayittan gelen sayilarin uzerine dusen tarih notu.
+ *
+ * NEDEN VAR: ucretsiz hava servisinin kotasi dolunca sunucu, depoya gomulu
+ * eski bir tahminle cevap veriyor (bkz. data/open_meteo.py). O sayilari
+ * tarihsiz gostermek, eski bir tahmini bugunun plani gibi sunmak olurdu ve
+ * bu, karti bos birakmaktan daha kotu bir hata olurdu.
+ *
+ * `tarih` bos geldiginde HICBIR SEY BASILMAZ: veri canlidir, soylenecek bir
+ * sey yoktur. Her durumda gorunen bir rozet, notu anlamsizlastirirdi.
+ */
+export function KayitNotu({ tarih }: { tarih?: string | null }) {
+  if (!tarih) return null;
+  const g = new Date(`${tarih}T00:00:00`).toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return (
+    <p className="kayit-notu">
+      Canlı hava verisi alınamadı. <strong>{g}</strong> tarihinde alınan tahmin
+      gösteriliyor.
+    </p>
+  );
+}
+
 export function Kart({
   baslik,
   etiket,
