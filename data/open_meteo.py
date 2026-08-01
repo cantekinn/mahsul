@@ -37,6 +37,33 @@ ONBELLEK_TTL_GUN = 180
 IKLIM_DENEME = 3
 IKLIM_BEKLEME_S = 2.0     # 2, 4, 8 saniye
 
+# Open-Meteo'nun past_days ust siniri 92. Sezon gunlugu icin 60 fazlasiyla
+# yeter (iki aydan once sulanmis bir tarlanin su acigini hesaplamak zaten
+# anlamsiz), ama siniri burada acikca yaziyoruz ki cagiran taraf sessizce
+# kirpilmis bir pencereyle dogru sanilan bir toplam almasin.
+GECMIS_GUN_TAVANI = 60
+
+# TAHMIN SORGUSU: NOKTA BASINA TEK ISTEK + SUREC ICI ONBELLEK
+#
+# Olctuk: tarla takvimi sekmesi tek acilista tahmin ucuna DORT istek yolluyordu
+# (sulama, karbon, iklim riski, sezon gunlugu) ve bunlardan ikisi -- sulama ile
+# karbon -- birebir ayni parametrelerle soruyordu, cunku karbon ajani sulama
+# planini yeniden hesapliyor. Render'in giden IP'si baska kiracilarla paylasimli
+# oldugu icin bu yigin "Minutely API request limit exceeded" (HTTP 429) ile geri
+# donuyor ve kartlar "hava verisi alinamadi" yaziyordu.
+#
+# Iki katmanli cozum:
+#   1. Dort sorgu TEKE indirildi. Hepsi ayni ucun ayni gunluk degiskenlerini
+#      istiyor, yalnizca pencereleri farkli. En genis pencereyi bir kez cekip
+#      dilimliyoruz.
+#   2. Sonuc surec icinde tutuluyor. Open-Meteo tahmin modelini saatte bir
+#      guncelliyor; 30 dakikalik TTL veriyi bayatlatmaz ama ayni noktaya arka
+#      arkaya bakan kullanici icin sifir istek demektir.
+_TAHMIN_ONBELLEK: dict[tuple[float, float], tuple[float, dict]] = {}
+_TAHMIN_TTL_S = 1800.0
+_TAHMIN_TAVAN = 64        # 76 gun x 4 dizi x 64 nokta ~ 2 MB, 512 MB icinde ihmal
+_TAHMIN_GUN = 16          # Open-Meteo ucretsiz tahmin ufku
+
 
 def _sunucu_gerekcesi(resp: requests.Response) -> str:
     """Open-Meteo hatanin SEBEBINI govdede yaziyor; onu ziyan etmeyelim.
@@ -137,6 +164,7 @@ def get_monthly_climate(lat: float, lon: float, yil: int = 30, timeout: int = 60
       yil_sayisi      : gercekten kullanilan yil sayisi
     """
     onb = IKLIM_ONBELLEK / f"{lat:.2f}_{lon:.2f}_{yil}y.json"
+    bayat: dict | None = None
     if onb.exists():
         try:
             kayit = json.loads(onb.read_text(encoding="utf-8"))
@@ -145,8 +173,11 @@ def get_monthly_climate(lat: float, lon: float, yil: int = 30, timeout: int = 60
             # "yillik_ekstrem_min" sonradan eklendi; sadece tarihe bakip donseydik
             # eski kayitlar bu alan olmadan gelir, oneri motoru da onu None gorup
             # don elemesini SESSIZCE atlardi. Alan yoksa kayit bayattir.
-            if yas <= ONBELLEK_TTL_GUN and "yillik_ekstrem_min" in kayit:
-                return {k: v for k, v in kayit.items() if k != "_tarih"}
+            if "yillik_ekstrem_min" in kayit:
+                temiz = {k: v for k, v in kayit.items() if k != "_tarih"}
+                if yas <= ONBELLEK_TTL_GUN:
+                    return temiz
+                bayat = temiz
         except Exception:
             pass   # bozuk onbellek sorun degil, yeniden sorulur
 
@@ -158,7 +189,17 @@ def get_monthly_climate(lat: float, lon: float, yil: int = 30, timeout: int = 60
         "daily": "temperature_2m_mean,temperature_2m_min,precipitation_sum",
         "timezone": "auto",
     }
-    daily = _arsiv_sor(params, timeout).get("daily", {})
+    try:
+        daily = _arsiv_sor(params, timeout).get("daily", {})
+    except Exception:
+        # TTL DOLDU DIYE ONERIYI DUSURMEYELIM. 30 yillik normal 180 gunde
+        # olculebilir sekilde degismez; yenilemenin amaci yeni yili eklemek,
+        # elimizdekini gecersiz kilmak degil. Kota doluyken 181 gunluk normali
+        # atip "urun onerisi uretilemez" demek, kullanicinin gordugu sonucu
+        # veri kalitesiyle degil o anki istek yogunluguyla belirlerdi.
+        if bayat is not None:
+            return bayat
+        raise
 
     tarihler = daily.get("time", [])
     ortalar = daily.get("temperature_2m_mean", [])
@@ -244,24 +285,71 @@ def get_season_temps(
     return {"tmin": tmins[:n], "tmax": tmaxs[:n], "gun": n}
 
 
-def get_forecast_series(lat: float, lon: float, days: int = 16, timeout: int = 20) -> dict:
-    """Iklim riski icin gunluk min/max sicaklik + yagis tahmini (forecast API).
+def _tahmin_penceresi(lat: float, lon: float, timeout: int = 20) -> dict:
+    """Bir nokta icin gecmis + tahmin gunlerinin TAMAMINI tek istekte ceker.
 
-    Donen: {"tmin": [...], "tmax": [...], "prec": [...], "gun": n}
+    Donen: Open-Meteo'nun "daily" sozlugu (time, temperature_2m_min,
+    temperature_2m_max, precipitation_sum, et0_fao_evapotranspiration).
+    Ustteki uc fonksiyon bunun dilimidir; ayrica istek atmazlar.
     """
+    anahtar = (round(lat, 2), round(lon, 2))
+    kayit = _TAHMIN_ONBELLEK.get(anahtar)
+    if kayit is not None and (time.time() - kayit[0]) <= _TAHMIN_TTL_S:
+        return kayit[1]
+
     params = {
         "latitude": lat,
         "longitude": lon,
-        "daily": "temperature_2m_min,temperature_2m_max,precipitation_sum",
-        "forecast_days": days,
+        "daily": ("temperature_2m_min,temperature_2m_max,"
+                  "precipitation_sum,et0_fao_evapotranspiration"),
+        "past_days": GECMIS_GUN_TAVANI,
+        "forecast_days": _TAHMIN_GUN,
         "timezone": "auto",
     }
-    resp = requests.get(FORECAST_URL, params=params, timeout=timeout)
-    resp.raise_for_status()
-    daily = resp.json().get("daily", {})
-    tmins = [t for t in daily.get("temperature_2m_min", []) if t is not None]
-    tmaxs = [t for t in daily.get("temperature_2m_max", []) if t is not None]
-    precs = [p for p in daily.get("precipitation_sum", []) if p is not None]
+    try:
+        resp = requests.get(FORECAST_URL, params=params, timeout=timeout)
+        if resp.status_code in (429, 500, 502, 503, 504):
+            raise RuntimeError(f"Open-Meteo {_sunucu_gerekcesi(resp)}")
+        resp.raise_for_status()
+        daily = resp.json().get("daily", {}) or {}
+    except Exception:
+        # BAYAT KAYIT DONULUR. Kotanin dolmasi tahminin degistigi anlamina
+        # gelmiyor; elimizdeki 40 dakikalik tahmin, "hava verisi alinamadi"
+        # yazisindan olculebilir sekilde daha iyi. Hic kayit yoksa hata
+        # yukari cikar, cunku o zaman gercekten soyleyecek bir seyimiz yok.
+        if kayit is not None:
+            return kayit[1]
+        raise
+
+    if len(_TAHMIN_ONBELLEK) >= _TAHMIN_TAVAN:
+        en_eski = min(_TAHMIN_ONBELLEK, key=lambda k: _TAHMIN_ONBELLEK[k][0])
+        _TAHMIN_ONBELLEK.pop(en_eski, None)
+    _TAHMIN_ONBELLEK[anahtar] = (time.time(), daily)
+    return daily
+
+
+def _bugun_indeksi(tarihler: list[str]) -> int:
+    """Pencerede bugunun indeksi. Gecmis ile tahmini burasi ayirir."""
+    try:
+        return tarihler.index(date.today().isoformat())
+    except ValueError:
+        # timezone=auto YEREL tarih dondurur; sunucunun gunu ile noktanin gunu
+        # bir gun kayabiliyor. Pencerenin kurulusu sabit oldugu icin (past_days
+        # kadar gecmis, sonra bugun) indeksi oradan turetmek guvenli.
+        return min(GECMIS_GUN_TAVANI, max(0, len(tarihler) - _TAHMIN_GUN))
+
+
+def get_forecast_series(lat: float, lon: float, days: int = 16, timeout: int = 20) -> dict:
+    """Iklim riski icin gunluk min/max sicaklik + yagis tahmini.
+
+    Donen: {"tmin": [...], "tmax": [...], "prec": [...], "gun": n}
+    """
+    daily = _tahmin_penceresi(lat, lon, timeout)
+    i = _bugun_indeksi(daily.get("time") or [])
+    dilim = slice(i, i + days)
+    tmins = [t for t in (daily.get("temperature_2m_min") or [])[dilim] if t is not None]
+    tmaxs = [t for t in (daily.get("temperature_2m_max") or [])[dilim] if t is not None]
+    precs = [p for p in (daily.get("precipitation_sum") or [])[dilim] if p is not None]
     n = min(len(tmins), len(tmaxs))
     return {"tmin": tmins[:n], "tmax": tmaxs[:n], "prec": precs[:n], "gun": n}
 
@@ -278,32 +366,18 @@ def get_irrigation_inputs(lat: float, lon: float, days: int = 7, timeout: int = 
       yagis_mm_donem   : ayni donemin beklenen toplam yagisi (mm)
       gun              : kullanilan gun sayisi
     """
-    params = {
-        "latitude": lat,
-        "longitude": lon,
-        "daily": "et0_fao_evapotranspiration,precipitation_sum",
-        "forecast_days": days,
-        "timezone": "auto",
-    }
-    resp = requests.get(FORECAST_URL, params=params, timeout=timeout)
-    resp.raise_for_status()
-    daily = resp.json().get("daily", {})
+    daily = _tahmin_penceresi(lat, lon, timeout)
+    i = _bugun_indeksi(daily.get("time") or [])
+    dilim = slice(i, i + days)
 
-    et0s = [e for e in daily.get("et0_fao_evapotranspiration", []) if e is not None]
-    rains = [r for r in daily.get("precipitation_sum", []) if r is not None]
+    et0s = [e for e in (daily.get("et0_fao_evapotranspiration") or [])[dilim] if e is not None]
+    rains = [r for r in (daily.get("precipitation_sum") or [])[dilim] if r is not None]
 
     return {
         "et0_mm_gun": round(sum(et0s) / len(et0s), 2) if et0s else None,
         "yagis_mm_donem": round(sum(rains), 1) if rains else 0.0,
         "gun": len(et0s),
     }
-
-
-# Open-Meteo'nun past_days ust siniri 92. Sezon gunlugu icin 60 fazlasiyla
-# yeter (iki aydan once sulanmis bir tarlanin su acigini hesaplamak zaten
-# anlamsiz), ama siniri burada acikca yaziyoruz ki cagiran taraf sessizce
-# kirpilmis bir pencereyle dogru sanilan bir toplam almasin.
-GECMIS_GUN_TAVANI = 60
 
 
 def get_gunluk_su_serisi(
@@ -325,21 +399,15 @@ def get_gunluk_su_serisi(
     hic dondurulmez (yarim gunu sifir saymak acigi oldugundan kucuk gosterir).
     """
     gecmis_gun = max(1, min(int(gecmis_gun), GECMIS_GUN_TAVANI))
-    params = {
-        "latitude": lat,
-        "longitude": lon,
-        "daily": "et0_fao_evapotranspiration,precipitation_sum",
-        "past_days": gecmis_gun,
-        # 1: bugunu de kapsasin. past_days yalnizca dunu ve oncesini verir.
-        "forecast_days": 1,
-        "timezone": "auto",
-    }
-    resp = requests.get(FORECAST_URL, params=params, timeout=timeout)
-    resp.raise_for_status()
-    daily = resp.json().get("daily", {})
-    tarihler = daily.get("time", []) or []
-    et0s = daily.get("et0_fao_evapotranspiration", []) or []
-    yagislar = daily.get("precipitation_sum", []) or []
+    daily = _tahmin_penceresi(lat, lon, timeout)
+    i = _bugun_indeksi(daily.get("time") or [])
+    # Bugun DAHIL: past_days yalnizca dunu ve oncesini verir, oysa sulamadan
+    # bugune biriken acik bugunun ET0'ini da icermeli.
+    dilim = slice(max(0, i - gecmis_gun), i + 1)
+
+    tarihler = (daily.get("time") or [])[dilim]
+    et0s = (daily.get("et0_fao_evapotranspiration") or [])[dilim]
+    yagislar = (daily.get("precipitation_sum") or [])[dilim]
 
     t, e, y = [], [], []
     for i in range(min(len(tarihler), len(et0s), len(yagislar))):
