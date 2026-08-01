@@ -178,6 +178,14 @@ COPY --from=arayuz --chown=kullanici /kaynak/dist  web/dist
 # fastapi.testclient KULLANILMIYOR: o httpx istiyor ve httpx'i yalnizca
 # kurulum testi ugruna calisma zamani bagimliligina eklemek istemiyorum.
 # Asagisi ayni sorulari dis paket olmadan yanitliyor.
+#
+# SAYI KONTROLLERI TABAN, ESITLIK DEGIL. Kisayol sayisi once "== 37" yaziliydi;
+# listeye 38. nokta eklenince kurulum bu yuzden patladi, oysa eksik dosya yoktu.
+# Bu testin isi eksik KOPYALAMAYI yakalamak, listeye nokta eklenmesini
+# engellemek degil. Esitligi ONE_CIKANLAR'dan turetmek de coz(e)mezdi: kendi
+# uzunluguna esit olan bir liste her zaman esittir, yani hicbir sey olcmez.
+# Not: RUN icindeki python tek satirdir; oraya '#' yazmak satirin geri kalanini
+# yutar, aciklama bu yuzden burada duruyor.
 RUN python -c "\
 from api.main import app, kisayollar, tkgm_parselleri; \
 from models.disease.classifier_onnx import is_available as teshis_hazir, _session, _cam_agirlik; \
@@ -192,7 +200,7 @@ yollar = {r.path for r in app.routes}; \
 iklim = len(kapsam.kapsam('iklim')); \
 assert iklim >= 100, f'iklim kapsami {iklim} urun: crop_params_global.yaml imaja girmemis'; \
 k = kisayollar(); \
-assert len(k) == 37, f'kisayol sayisi beklenen 37 degil: {len(k)}'; \
+assert len(k) >= 38, f'kisayol listesi eksik: {len(k)} nokta (data/one_cikan.py imaja tam girmemis)'; \
 h = sum(1 for x in k if x.isitildi); \
 assert h >= 25, f'gomulu onbellek imaja girmemis, tam hazir nokta: {h}'; \
 assert any(getattr(r, 'name', '') == 'arayuz' for r in app.routes), \
