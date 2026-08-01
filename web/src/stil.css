@@ -2704,3 +2704,17 @@ body {
     line-height: 44px;
   }
 }
+
+/* Gomulu anlik kayit notu. Rengi UYARI: gosterilen sayi yanlis degil ama
+   guncel de degil, kullanicinin karari bu farka bagli olabilir. Hata rengi
+   kullanmiyoruz cunku kart calisiyor; notr birakmiyoruz cunku fark onemli. */
+.kayit-notu {
+  background: var(--uyari-zemin);
+  border-left: 3px solid var(--uyari);
+  padding: var(--bos-2) var(--bos-3);
+  margin: var(--bos-2) 0 0;
+  border-radius: var(--yuvarlak-s);
+  font-size: var(--yazi-s);
+  line-height: var(--yazi-s-satir);
+  color: var(--metin);
+}

@@ -66,6 +66,9 @@ def karbon_plani(
     sonuc["sezon_gun"] = sezon_gun
     sonuc["net_mm_gun"] = net_mm_gun
     sonuc["et0_mm_gun"] = plan["et0_mm_gun"]
+    # Karbonun sulama kalemi ET0'dan geliyor, yani sulama planiyla ayni kaynaga
+    # bagli. Tarihi de birlikte tasiniyor ki iki kart ayni anda ayni seyi desin.
+    sonuc["kayit_tarihi"] = plan.get("kayit_tarihi")
     sonuc["su_senaryosu"] = (
         f"Bugünkü ET0 ({plan['et0_mm_gun']} mm/gün) sezon boyunca sabit kalırsa, "
         f"{sezon_gun} günde net {net_mm_gun} mm/gün."

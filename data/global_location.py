@@ -236,7 +236,7 @@ def hazir_katmanlar(lat: float, lon: float) -> list[str]:
 def onbellekteki_yer_adi(lat: float, lon: float) -> tuple[str | None, str | None]:
     """Onbellekte yer adi VARSA verir, yoksa (None, None). AG ISTEGI YAPMAZ.
 
-    Neden ayri islev: kisayol listesi acilista 37 nokta icin ad gosterecek.
+    Neden ayri islev: kisayol listesi acilista 38 nokta icin ad gosterecek.
     yer_adi_al() cagirsaydik, onbellekte olmayan her nokta icin Nominatim'e
     gidip acilisi kilitlerdi. Burada ad yoksa arayuz kendi kisayol etiketini
     gosterir, uydurma bir ad UYDURULMAZ.

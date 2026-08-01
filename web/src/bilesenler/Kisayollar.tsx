@@ -4,7 +4,7 @@
  * NE OLDUGU KONUSUNDA DURUST OLMAK ZORUNDAYIZ. Bu liste uygulamayi
  * hizlandirmaz. Onbellegi depoya gomulu olan noktalari gosterir, o kadar.
  * Onbellek anahtari koordinati ~1 km hucreye yuvarluyor ve dunyanin kara
- * yuzeyi ~149 milyon km2; 37 nokta rastgele bir tiklamayi yakalayamaz.
+ * yuzeyi ~149 milyon km2; 38 nokta rastgele bir tiklamayi yakalayamaz.
  * Bu yuzden baslikta "populer bolgeler" ya da "onerilen noktalar" YAZMIYOR:
  * ikisi de bu noktalarin bir sekilde secilmis, degerlendirilmis yerler
  * oldugunu ima ederdi. Secme olcutum tek sey: onbelleklerini onceden

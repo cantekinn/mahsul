@@ -104,8 +104,8 @@ her sekme kendi hesabını gerçek ölçülmüş veriyle yapıyor.
 | Hastalık teşhis sınıfı | **45 sınıf / 16 ürün** |
 | Tedavi kaydı (`treatments.yaml`) | **24 hastalık** |
 | Kayıtlı TKGM tapu parseli | **48** |
-| Haritadaki hazır tarım noktası | **37** |
-| Otomatik test | **327** |
+| Haritadaki hazır tarım noktası | **38** |
+| Otomatik test | **332** |
 
 **Sekme sekme ne var:**
 

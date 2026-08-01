@@ -64,6 +64,56 @@ _TAHMIN_TTL_S = 1800.0
 _TAHMIN_TAVAN = 64        # 76 gun x 4 dizi x 64 nokta ~ 2 MB, 512 MB icinde ihmal
 _TAHMIN_GUN = 16          # Open-Meteo ucretsiz tahmin ufku
 
+# ARSIV SEZON PENCERESI: ayni gerekce, ayri sunucu.
+# api.open-meteo.com ile archive-api.open-meteo.com'un kotalari AYRI tutuluyor;
+# olctuk, ikisi ayni anda ama farkli limitlerle doldu (tahmin ucu "Daily",
+# arsiv ucu "Hourly"). Bu yuzden arsiv tarafinin da kendi onbellegi var.
+# TTL 6 saat: arsiv verisi 7 gun gecikmeli geliyor, yani gun icinde degismez.
+SEZON_PENCERE_GUN = 400
+_SEZON_ONBELLEK: dict[tuple[float, float], tuple[float, dict]] = {}
+_SEZON_TTL_S = 21600.0
+_SEZON_TAVAN = 32         # 400 gun x 2 dizi x 32 nokta ~ 2 MB
+
+# ANLIK KAYIT (imaja gomulu yedek)
+#
+# Render'in diski kalici degil ve servis 15 dakika sonra uykuya geciyor, yani
+# calisma aninda yazilan bir yedek yeniden baslatmada kayboluyor. Bu yuzden
+# yedek DEPOYA konur: scripts/onbellek_isit.py bir tarihte cekip yazar, imaja
+# gomulur, kota dolu oldugunda kullanilir.
+#
+# BU BIR TAHMIN YEDEGI, GUNCEL VERI DEGIL. Onun icin dosyada cekildigi tarih
+# de duruyor ve arayuz o tarihi kullaniciya YAZIYOR. Etiketsiz gosterseydik
+# eski bir tahmini bugunun sulama plani diye sunmus olurduk; bu, sayfayi bos
+# birakmaktan daha kotu bir hata olurdu.
+TAHMIN_YEDEK = Path(__file__).resolve().parent / "_onbellek" / "tahmin_yedek"
+
+
+def _yedek_yolu(lat: float, lon: float) -> Path:
+    return TAHMIN_YEDEK / f"{lat:.2f}_{lon:.2f}.json"
+
+
+def yedek_yaz(lat: float, lon: float, daily: dict) -> Path:
+    """Anlik tahmin penceresini tarihiyle birlikte diske yazar (isitma scripti)."""
+    yol = _yedek_yolu(lat, lon)
+    yol.parent.mkdir(parents=True, exist_ok=True)
+    yol.write_text(
+        json.dumps({**daily, "_tarih": date.today().isoformat()}, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    return yol
+
+
+def _yedek_oku(lat: float, lon: float) -> dict | None:
+    """Gomulu anlik kaydi okur. Donen sozlukte `_tarih` alani KORUNUR."""
+    yol = _yedek_yolu(lat, lon)
+    if not yol.exists():
+        return None
+    try:
+        kayit = json.loads(yol.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return kayit if kayit.get("time") else None
+
 
 def _sunucu_gerekcesi(resp: requests.Response) -> str:
     """Open-Meteo hatanin SEBEBINI govdede yaziyor; onu ziyan etmeyelim.
@@ -258,6 +308,50 @@ def get_monthly_climate(lat: float, lon: float, yil: int = 30, timeout: int = 60
     return sonuc
 
 
+def _sezon_penceresi(lat: float, lon: float, timeout: int = 20) -> dict:
+    """Bir nokta icin son SEZON_PENCERE_GUN gunun min/max sicakligi, tek sorguda.
+
+    NEDEN SABIT PENCERE: get_season_temps'in penceresi biofix'e gore degisiyordu,
+    yani ayni nokta icin farkli urunler farkli baslangic tarihi ureterek AYRI
+    sorgular aciyordu (/zararli bir kez, /sor'un zararli niyeti bir kez daha).
+    Pencereyi sabitleyip dilimlersek nokta basina tek sorgu kaliyor ve arsiv
+    ucunun saatlik kotasi bir sayfa acilisinda dolmuyor.
+
+    NEDEN 400 GUN: en erken biofix bile gecen sezonun icinde kaliyor; 400 gun
+    bir tam yili artigiyla kapsiyor. Arsiv verisi zaten 7 gun gecikmeli ve
+    gecmis gun bir daha degismiyor, o yuzden TTL uzun tutulabiliyor.
+    """
+    anahtar = (round(lat, 2), round(lon, 2))
+    kayit = _SEZON_ONBELLEK.get(anahtar)
+    if kayit is not None and (time.time() - kayit[0]) <= _SEZON_TTL_S:
+        return kayit[1]
+
+    end = date.today() - timedelta(days=7)   # arsiv gecikmesi
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "start_date": (end - timedelta(days=SEZON_PENCERE_GUN)).isoformat(),
+        "end_date": end.isoformat(),
+        "daily": "temperature_2m_min,temperature_2m_max",
+        "timezone": "auto",
+    }
+    try:
+        daily = _arsiv_sor(params, timeout).get("daily", {}) or {}
+    except Exception:
+        # Tahmin tarafiyla ayni gerekce: kotanin dolmasi GECMIS sicakligin
+        # degistigi anlamina gelmiyor. Elimizdeki pencere zaten degismeyecek
+        # gunlerden olusuyor, bayat kayit burada gercekten de dogru cevap.
+        if kayit is not None:
+            return kayit[1]
+        raise
+
+    if len(_SEZON_ONBELLEK) >= _SEZON_TAVAN:
+        en_eski = min(_SEZON_ONBELLEK, key=lambda k: _SEZON_ONBELLEK[k][0])
+        _SEZON_ONBELLEK.pop(en_eski, None)
+    _SEZON_ONBELLEK[anahtar] = (time.time(), daily)
+    return daily
+
+
 def get_season_temps(
     lat: float, lon: float, start: date, timeout: int = 20
 ) -> dict:
@@ -268,19 +362,19 @@ def get_season_temps(
     end = date.today() - timedelta(days=7)   # arsiv gecikmesi
     if start > end:
         start = end - timedelta(days=30)
-    params = {
-        "latitude": lat,
-        "longitude": lon,
-        "start_date": start.isoformat(),
-        "end_date": end.isoformat(),
-        "daily": "temperature_2m_min,temperature_2m_max",
-        "timezone": "auto",
-    }
-    resp = requests.get(ARCHIVE_URL, params=params, timeout=timeout)
-    resp.raise_for_status()
-    daily = resp.json().get("daily", {})
-    tmins = [t for t in daily.get("temperature_2m_min", []) if t is not None]
-    tmaxs = [t for t in daily.get("temperature_2m_max", []) if t is not None]
+    daily = _sezon_penceresi(lat, lon, timeout)
+
+    tarihler = daily.get("time") or []
+    bas = 0
+    for i, t in enumerate(tarihler):
+        if t >= start.isoformat():
+            bas = i
+            break
+    else:
+        bas = len(tarihler)
+    dilim = slice(bas, len(tarihler))
+    tmins = [t for t in (daily.get("temperature_2m_min") or [])[dilim] if t is not None]
+    tmaxs = [t for t in (daily.get("temperature_2m_max") or [])[dilim] if t is not None]
     n = min(len(tmins), len(tmaxs))
     return {"tmin": tmins[:n], "tmax": tmaxs[:n], "gun": n}
 
@@ -313,12 +407,16 @@ def _tahmin_penceresi(lat: float, lon: float, timeout: int = 20) -> dict:
         resp.raise_for_status()
         daily = resp.json().get("daily", {}) or {}
     except Exception:
-        # BAYAT KAYIT DONULUR. Kotanin dolmasi tahminin degistigi anlamina
+        # SIRA: once surec ici bayat kayit, sonra imaja gomulu anlik kayit.
+        # Bayat kayit donulur cunku kotanin dolmasi tahminin degistigi anlamina
         # gelmiyor; elimizdeki 40 dakikalik tahmin, "hava verisi alinamadi"
-        # yazisindan olculebilir sekilde daha iyi. Hic kayit yoksa hata
-        # yukari cikar, cunku o zaman gercekten soyleyecek bir seyimiz yok.
+        # yazisindan olculebilir sekilde daha iyi. Ikisi de yoksa hata yukari
+        # cikar, cunku o zaman gercekten soyleyecek bir seyimiz yok.
         if kayit is not None:
             return kayit[1]
+        yedek = _yedek_oku(lat, lon)
+        if yedek is not None:
+            return yedek
         raise
 
     if len(_TAHMIN_ONBELLEK) >= _TAHMIN_TAVAN:
@@ -351,7 +449,8 @@ def get_forecast_series(lat: float, lon: float, days: int = 16, timeout: int = 2
     tmaxs = [t for t in (daily.get("temperature_2m_max") or [])[dilim] if t is not None]
     precs = [p for p in (daily.get("precipitation_sum") or [])[dilim] if p is not None]
     n = min(len(tmins), len(tmaxs))
-    return {"tmin": tmins[:n], "tmax": tmaxs[:n], "prec": precs[:n], "gun": n}
+    return {"tmin": tmins[:n], "tmax": tmaxs[:n], "prec": precs[:n], "gun": n,
+            "kayit_tarihi": daily.get("_tarih")}
 
 
 def get_irrigation_inputs(lat: float, lon: float, days: int = 7, timeout: int = 20) -> dict:
@@ -377,6 +476,9 @@ def get_irrigation_inputs(lat: float, lon: float, days: int = 7, timeout: int = 
         "et0_mm_gun": round(sum(et0s) / len(et0s), 2) if et0s else None,
         "yagis_mm_donem": round(sum(rains), 1) if rains else 0.0,
         "gun": len(et0s),
+        # Canli veri geldiyse None. Doluysa gosterilen sayilar bu tarihte
+        # cekilmis tahminden geliyor demektir ve arayuz bunu yaziyor.
+        "kayit_tarihi": daily.get("_tarih"),
     }
 
 
@@ -416,4 +518,4 @@ def get_gunluk_su_serisi(
         t.append(tarihler[i])
         e.append(float(et0s[i]))
         y.append(float(yagislar[i]))
-    return {"tarih": t, "et0": e, "yagis": y}
+    return {"tarih": t, "et0": e, "yagis": y, "kayit_tarihi": daily.get("_tarih")}

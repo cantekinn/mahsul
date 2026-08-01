@@ -37,7 +37,7 @@ import type {
 } from "../api/istemci";
 import { bugunISO, TUR_TR, useGunluk } from "../gunluk";
 import type { GunlukTur } from "../gunluk";
-import { Kart, KatmanKabugu } from "./Durum";
+import { Kart, KatmanKabugu, KayitNotu } from "./Durum";
 import type { Katman } from "./Durum";
 import ParselSecici from "./ParselSecici";
 
@@ -221,6 +221,7 @@ function SulamaKarti({ katman }: { katman: Katman<Sulama> }) {
               </div>
             ))}
           </dl>
+          <KayitNotu tarih={v.kayit_tarihi} />
           <p className="tarla-uyari">{v.uyari}</p>
         </Kart>
       )}
@@ -256,6 +257,7 @@ function RiskKarti({ katman }: { katman: Katman<IklimRisk> }) {
               )}
             </div>
           ))}
+          <KayitNotu tarih={v.kayit_tarihi} />
           <p className="tarla-uyari">{v.uyari}</p>
         </Kart>
       )}
@@ -300,6 +302,10 @@ function ZararliKarti({ katman }: { katman: Katman<Zararli> }) {
               ))}
             </ul>
           )}
+          {/* KayitNotu YOK: bu kart tahmin degil ARSIV verisiyle calisiyor
+              (get_season_temps -> archive-api). Gomulu anlik kayit tahmin
+              penceresini tutuyor, arsivi degil; buraya bir tarih notu koymak
+              olmayan bir yedegi varmis gibi gostermek olurdu. */}
           <p className="tarla-uyari">{v.uyari}</p>
         </Kart>
       )}
@@ -404,6 +410,7 @@ function GunlukKarti({
                 </div>
               </dl>
               <p className="gunluk-yorum">{v.yorum}</p>
+              <KayitNotu tarih={v.kayit_tarihi} />
               <p className="tarla-uyari">{v.uyari}</p>
             </div>
           )}
@@ -637,6 +644,7 @@ function KarbonKarti({
               <p className="tarla-uyari">{v.su_senaryosu}</p>
               <p className="tarla-uyari">Kapsam dışı: {v.kapsam_disi.join("; ")}.</p>
             </details>
+            <KayitNotu tarih={v.kayit_tarihi} />
             <p className="tarla-uyari">{v.aciklama}</p>
           </Kart>
         );

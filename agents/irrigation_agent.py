@@ -81,6 +81,10 @@ def sulama_plani(
         "yagis_mm_donem": inputs["yagis_mm_donem"],
         "gun": gun,
         "asama": asama,
+        # Canli veri gelmediyse gomulu anlik kaydin tarihi. Cagiran taraf bunu
+        # kullaniciya YAZAR; sayiyi tarihsiz gostermek eski bir tahmini bugunun
+        # plani gibi sunmak olurdu.
+        "kayit_tarihi": inputs.get("kayit_tarihi"),
         "planlar": [
             fao56.irrigation_plan(et0, c, asama, rain_daily, alan_m2) for c in urunler
         ],

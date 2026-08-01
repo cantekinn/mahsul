@@ -1027,6 +1027,11 @@ class SulamaYanit(BaseModel):
     asama: str
     asama_tr: str
     planlar: list[SulamaPlani]
+    kayit_tarihi: str | None = Field(
+        None,
+        description="Doluysa gösterilen sayılar canlı veriden değil, bu tarihte "
+                    "çekilip depoya gömülen anlık kayıttan geliyor demektir.",
+    )
     uyari: str
 
 
@@ -1048,6 +1053,11 @@ class IklimRiskYanit(BaseModel):
     lon: float
     gun: int = Field(..., description="Değerlendirilen tahmin günü sayısı.")
     urunler: list[UrunRiski]
+    kayit_tarihi: str | None = Field(
+        None,
+        description="Doluysa gösterilen sayılar canlı veriden değil, bu tarihte "
+                    "çekilip depoya gömülen anlık kayıttan geliyor demektir.",
+    )
     uyari: str
 
 
@@ -1112,6 +1122,7 @@ def sulama(
             SulamaPlani(urun_tr=_urun_tr(p["urun"]), **p)
             for p in sonuc["planlar"]
         ],
+        kayit_tarihi=sonuc.get("kayit_tarihi"),
         uyari="Net sulama ihtiyacıdır. Damla sulamada verim payı, toprak nemi "
               "ve tuzluluk yıkaması bu hesapta yok; yerel tarım müdürlüğünün "
               "önerisiyle birlikte değerlendirin.",
@@ -1146,6 +1157,11 @@ class GunlukYanit(BaseModel):
     acik_mm: float
     litre_dekar: float
     yorum: str
+    kayit_tarihi: str | None = Field(
+        None,
+        description="Doluysa gösterilen sayılar canlı veriden değil, bu tarihte "
+                    "çekilip depoya gömülen anlık kayıttan geliyor demektir.",
+    )
     uyari: str
 
 
@@ -1204,6 +1220,7 @@ def gunluk_su_acigi(
         asama=asama, asama_tr=_ASAMA_TR[asama],
         son_sulama=son_sulama.isoformat(),
         yorum=gunluk_kb.acik_yorumu(s, gunluk_etc),
+        kayit_tarihi=seri.get("kayit_tarihi"),
         uyari="Toprakta hâlihazırda bulunan nem bu hesapta yok; açık, "
               "bitkinin tükettiği su ile düşen yağışın farkıdır. Sulama "
               "yönteminin verim payı da eklenmemiştir.",
@@ -1243,6 +1260,7 @@ def iklim_risk(
             )
             for k, v in sonuc["riskler"].items()
         ],
+        kayit_tarihi=sonuc.get("kayit_tarihi"),
         uyari="Risk listesi boşsa 'önümüzdeki 16 günde bu ürün için eşik "
               "aşımı yok' demektir; 'hiç risk yok' demek değildir.",
     )
@@ -1324,6 +1342,11 @@ class KarbonYanit(BaseModel):
     dekar_basina_kg_co2e: float
     azaltim: list[KarbonAzaltim]
     kapsam_disi: list[str]
+    kayit_tarihi: str | None = Field(
+        None,
+        description="Doluysa gösterilen sayılar canlı veriden değil, bu tarihte "
+                    "çekilip depoya gömülen anlık kayıttan geliyor demektir.",
+    )
     aciklama: str
 
 
@@ -1386,6 +1409,7 @@ def karbon_ayak_izi(
         dekar_basina_kg_co2e=s["dekar_basina_kg_co2e"],
         azaltim=[KarbonAzaltim(**a) for a in s["azaltim"]],
         kapsam_disi=s["kapsam_disi"],
+        kayit_tarihi=s.get("kayit_tarihi"),
         aciklama=s["not"],
     )
 
