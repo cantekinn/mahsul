@@ -369,6 +369,84 @@ zorunda kaldı.
 | Test | Yok | **327 otomatik test** |
 | Dağıtım | Yok | Docker imajı + kurulum sonrası duman testi, Render'da canlı |
 
+**Teslim edilen mimarı yapı.** Aşağıdaki ağaç, sprint sonunda depoda duran
+**gerçek** dizin yapısıdır. Sprint 3'te teslim öncesi depo kökü de toparlandı:
+kökte dağınık duran dört tapu bölge klasörü `data/parseller/` altına, ekip
+paylaşım arşivi `docs/arsiv/` altına taşındı. Taşımadan etkilenen üç yol
+referansı (`data/parcel_files.py`, `scripts/yayin_hazirla.py`, `Dockerfile`)
+birlikte güncellendi; `load_parcels()` yine 48 parsel döndürüyor.
+
+```
+tarim-asistani/
+  api/
+    main.py               # FastAPI: 19 uç nokta (tek servis, arayüzü de sunar)
+    requirements.txt      # canlı ortamın bağımlılıkları (repo kökündekinden ayrı)
+  web/                    # React + TypeScript + Vite arayüzü
+    src/
+      App.tsx             # üç sekme: ürün önerisi / tarla takvimi / hastalık teşhisi
+      gunluk.ts           # sezon günlüğü (localStorage)
+      stil.css            # tasarım sistemi (jeton tabanlı)
+      api/
+        istemci.ts        # JSON GET istemcisi
+        teshis.ts         # multipart POST (fotoğraf yükleme)
+        tipler.ts         # OpenAPI'den ÜRETİLİR, elle yazılmaz
+      bilesenler/         # Harita, KonumKarti, ToprakKarti, ParselKarti,
+                          # OneriListesi, TarlaPaneli, TeshisPaneli, SoruKutusu,
+                          # ParselSecici, Kisayollar, Durum
+  agents/                 # uzman düğümleri (LangGraph YOK, düz fonksiyon)
+    router.py             # anahtar kelime tabanlı niyet yönlendirici
+    orchestrator.py
+    irrigation_agent.py   # FAO-56 sulama
+    climate_risk_agent.py # 16 günlük tahminden ürüne özel risk
+    pest_agent.py         # gün-derece zararlı eşikleri
+    diagnosis_agent.py
+    advisor_agent.py
+    carbon_agent.py       # IPCC 2019 Tier 1
+    state.py
+  models/
+    crop_reco/
+      global_reco.py      # kural + GAEZ kalibrasyonlu skorlama (canlıda bu çalışır)
+      gbdt.py             # LightGBM baseline (eğitildi, canlıya alınmadı)
+      recommender.py
+    disease/
+      classifier_onnx.py  # canlı çıkarım (onnxruntime, torch YOK)
+      classifier.py       # eğitim/yerel çıkarım (torch)
+      efficientnetv2_plant.onnx   # 45 sınıf, 16 ürün
+      cam_agirlik.npy     # sınıf aktivasyon ağırlıkları
+      tedavi.py           # etiket -> treatments.yaml eşleştirici
+      train.py, eval_field.py, train_colab.ipynb
+  data/                   # dış veri istemcileri + önbellek
+    global_location.py    # konum/toprak/parsel katman düzeni
+    open_meteo.py         # ET0, yağış, tahmin, geçmiş seri
+    soilgrids.py, soilgrids_wcs.py
+    gaez_lookup.py        # FAO GAEZ v4 uygunluk ızgarası
+    megsis.py             # TKGM/MEGSİS (canlı servis erişilemedi)
+    parcel_files.py       # kayıtlı 48 tapu parselini okur
+    parseller/            # Sprint 3'te kökten buraya taşındı, 49 sorgu sonucu
+      aksu/, alanya_turkler/, gazipasa_beyobasi/, serik_bogazkent/
+  knowledge/              # bilgi tabanları ve saf hesap modülleri
+    crop_params_global.yaml  # 115 ürün
+    fao56.py              # Kc, ETc, etkili yağış
+    besin.py              # toprak besin karnesi
+    gunluk.py             # sezon günlüğünden biriken su açığı
+    karbon.py             # IPCC 2019 Tier 1 envanteri
+    degree_day.py, climate_risk.py, kapsam.py, treatments.yaml
+  memory/
+    farm_profile_db.py    # SQLite (yerelde çalışır, canlıda KULLANILMIYOR)
+  core/                   # config, şemalar
+  tests/                  # pytest, 327 test
+  scripts/                # model dönüşümü, önbellek ısıtma, yayın paketi
+  docs/                   # sprint raporlarının ayrı dosya hâlleri
+    sprint1.md, sprint2.md, sprint3.md
+    arsiv/paylasim/       # Sprint 3'te kökten buraya taşındı, ekip paylaşımları
+  app/streamlit_app.py    # Sprint 1'in ilk arayüzü (web/ ile değiştirildi)
+  Dockerfile              # tek imaj + kurulum sonrası duman testi
+```
+
+Sprint raporlarının hem `docs/` altında hem bu sayfada bulunması bilinçli:
+bootcamp şablonu raporu README'de istiyor, sprint bazında tek dosya okumak
+isteyen için `docs/` hâli korunuyor.
+
 ---
 
 ### 3. Daily Scrum Notları
