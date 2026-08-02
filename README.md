@@ -345,8 +345,6 @@ ekleyelim" değil **"neyi eklemeyelim"** kararıydı ve hepsi bir ölçüme daya
 Reddedilen işlerin listesi ve her birinin ölçülmüş gerekçesi 5. bölümdeki
 tablodadır.
 
-<!-- SS1: Sprint 3 backlog / görev tablosu ekran görüntüsü -->
-
 ---
 
 ### 2. Sprint 2'den Sprint 3'e Ne Değişti
@@ -504,7 +502,9 @@ ve hepsi canlı adreste çalışır durumda.
   vektör hafıza backlog'dan **çıkarıldı**, ertelenmedi; gerekçeleri 6. bölümdeki
   tabloda. WhatsApp entegrasyonu ertelendi.
 
-<!-- SS3: Sprint sonu Sprint Board görünümü (hepsi Done sütununda) -->
+<img width="1600" height="929" alt="WhatsApp Image 2026-08-02 at 18 13 42" src="https://github.com/user-attachments/assets/a4ff29b1-9091-452a-8900-55a3a275fde5" />
+<img width="1600" height="925" alt="WhatsApp Image 2026-08-02 at 18 13 42 (1)" src="https://github.com/user-attachments/assets/be061e81-b507-49fb-b444-362c5aa8306e" />
+<img width="1600" height="925" alt="WhatsApp Image 2026-08-02 at 18 13 42 (2)" src="https://github.com/user-attachments/assets/45493f16-6f3d-4f6b-aae5-4686c78d7060" />
 
 ---
 
@@ -545,11 +545,16 @@ her sekme kendi hesabını gerçek, ölçülmüş veriyle yapıyor.
 * **Soru kutusu (her sekmede):** Serbest cümle doğru uzmana gider; hesabı
   yapılamıyorsa doğru sekmeye yönlendirir.
 
-<!-- SS4: Ürün önerisi sekmesi - harita üzerinde seçili nokta + öneri listesi -->
-<!-- SS5: Tarla takvimi sekmesi - sulama, iklim riski ve zararlı kartları -->
-<!-- SS6: Karbon ayak izi ve toprak besin karnesi kartları -->
-<!-- SS7: Hastalık teşhisi sekmesi - fotoğraf, teşhis, ısı haritası, tedavi kartı -->
-<!-- SS8: Soru kutusu - serbest metin sorusu ve dönen cevap -->
+<img width="1919" height="871" alt="Ekran görüntüsü 2026-08-02 183655" src="https://github.com/user-attachments/assets/9b96642f-db14-44be-8d3c-6ade929f44a0" />
+<img width="1919" height="868" alt="Ekran görüntüsü 2026-08-02 183716" src="https://github.com/user-attachments/assets/a9656e3e-a84c-417d-856e-87db108dfdc4" />
+
+<img width="1919" height="867" alt="Ekran görüntüsü 2026-08-02 183752" src="https://github.com/user-attachments/assets/5862ec58-734b-4de4-b6fa-8e2f7ea889a7" />
+<img width="1919" height="874" alt="Ekran görüntüsü 2026-08-02 183826" src="https://github.com/user-attachments/assets/9cc35cbc-1a38-4def-ad3a-f8e4fb1c4c6d" />
+
+<img width="1919" height="866" alt="Ekran görüntüsü 2026-08-02 183928" src="https://github.com/user-attachments/assets/6a9bd4d6-bdff-4cef-8df6-816126a49af0" />
+<img width="1919" height="869" alt="Ekran görüntüsü 2026-08-02 183951" src="https://github.com/user-attachments/assets/c81d4e04-72ca-4f0b-bcde-98861aaa58af" />
+
+<img width="1919" height="860" alt="Ekran görüntüsü 2026-08-02 184014" src="https://github.com/user-attachments/assets/0dd640a0-41e8-418b-b02e-b250d2d99158" />
 
 **Hafıza katmanı (bu sprintin son işi):** Sezon günlüğü tarayıcıda
 (`localStorage`) tutulur, **hesap sunucuda** yapılır. Günlüğün cevabı gerçekten
@@ -563,9 +568,6 @@ değiştirdiği iki yer var ve ikisi de hafıza olmadan hesaplanamaz:
 2. `/teshis` - aynı hastalık günlükte daha önce var mı, arada kaç ilaçlama
    yazılmış. İki olgu yan yana konur, **hüküm verilmez**: "ilaç işe yaramadı"
    demiyoruz, çünkü bunu ölçmedik.
-
-<!-- SS9: Sezon günlüğü kaydı ve biriken su açığı kartı -->
-<!-- SS10: Mobil (telefon) görünümü -->
 
 **Çalıştırma:**
 ```bash
@@ -582,9 +584,6 @@ pytest -q
 # Yayın paketi
 py -m scripts.yayin_hazirla    # -> _yayin/
 ```
-
-<!-- SS11: pytest çıktısı (327 test geçti) -->
-<!-- SS12: /docs Swagger arayüzü (19 uç nokta listesi) -->
 
 ---
 
@@ -619,8 +618,6 @@ zararlı, karbon ve besin kartları -> günlüğe sulama tarihi yaz, biriken su 
 kartı belirir -> Teşhis sekmesinde yaprak fotoğrafı yükle, teşhis, ısı haritası
 ve tedavi gelsin -> soru kutusuna "domatese kaç litre su vermeliyim" yaz, plan
 ve günlükten gelen birikmiş açık birlikte gelsin.
-
-<!-- SS13: Render dashboard - canlı servis çalışıyor -->
 
 ---
 
